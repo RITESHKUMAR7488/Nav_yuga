@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "62258414930",
+    "project_id": "navyuga-b10aa",
+    "storage_bucket": "navyuga-b10aa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:62258414930:android:2589b6b4f3cc4f9e20668b",
+        "android_client_info": {
+          "package_name": "com.example.navyuga"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKEg5uwhxb9ih2Rk1UYqAwkV2S5uGoz8E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
