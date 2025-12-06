@@ -1,3 +1,5 @@
+// REMOVE THE ERRONEOUS LINE FROM THE TOP OF THIS FILE
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -66,6 +68,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
+    implementation(platform(libs.firebase.bom))
     implementation(libs.googleid)
     implementation(libs.firebase.firestore)
     kapt(libs.hilt.android.compiler)
@@ -76,4 +79,10 @@ dependencies {
     // Debugging
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Icons
+    implementation(libs.material.icons.extended)
 }
+
