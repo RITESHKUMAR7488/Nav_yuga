@@ -10,32 +10,44 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.navyuga.feature.auth.presentation.LoginScreen
 import com.example.navyuga.feature.arthyuga.presentation.ArthYugaDashboard
+import com.example.navyuga.feature.arthyuga.presentation.home.HomeScreen
+import com.example.navyuga.feature.auth.presentation.LoginScreen
 import com.example.navyuga.feature.auth.presentation.RegisterScreen
 import com.example.navyuga.feature.hub.presentation.HubScreen
 import com.example.navyuga.ui.theme.MidnightBg
 import com.example.navyuga.ui.theme.TextWhiteHigh
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    startDestination: String,
+    onThemeToggle: () -> Unit
+) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(navController = navController, startDestination = startDestination) {
         // Auth Module
-        composable("login") { LoginScreen(navController) }
-        composable("register") { RegisterScreen(navController) }
+        composable("login") {
+            LoginScreen(navController = navController, onThemeToggle = onThemeToggle)
+        }
+        composable("register") {
+            RegisterScreen(navController)
+        }
 
-        // Hub Module (Phase 2)
-        composable("super_app_hub") { HubScreen(navController) }
+        // Hub Module
+        composable("super_app_hub") {
+            HubScreen(navController)
+        }
 
-        // ArthYuga Module (Phase 3 Entry Point)
+        // ArthYuga Module (Placeholder for now, or link to Dashboard if you added Phase 3)
         composable("arthyuga_dashboard") {
-            ArthYugaDashboard()
+            ArthYugaDashboard(navController)
         }
 
         // Admin
-        composable("admin_dashboard") { PlaceholderScreen("Admin Dashboard") }
+        composable("admin_dashboard") {
+            PlaceholderScreen("Admin Dashboard")
+        }
     }
 }
 
