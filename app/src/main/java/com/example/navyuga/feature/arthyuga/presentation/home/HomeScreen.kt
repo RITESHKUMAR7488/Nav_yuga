@@ -28,7 +28,8 @@ import com.example.navyuga.ui.theme.*
 
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    onPropertyClick: (String) -> Unit
 ) {
     val stories by viewModel.stories.collectAsState()
     val propertiesState by viewModel.properties.collectAsState()
@@ -37,13 +38,12 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MidnightBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // 1. Stories Section
         Text(
             text = "Trending Tenants",
             style = MaterialTheme.typography.titleLarge,
-            color = TextWhiteHigh,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(16.dp)
         )
 
@@ -58,12 +58,11 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. Tabs (Available / Funded / Exited)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .background(MidnightSurface, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
                 .padding(4.dp)
         ) {
             listOf("Available", "Funded", "Exited").forEach { tab ->
@@ -73,13 +72,13 @@ fun HomeScreen(
                         .weight(1f)
                         .height(40.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (isSelected) BrandBlue else Color.Transparent)
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                         .clickable { viewModel.selectTab(tab) },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = tab,
-                        color = if (isSelected) Color.White else TextWhiteMedium,
+                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -88,7 +87,6 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Properties List
         when (val state = propertiesState) {
             is UiState.Success -> {
                 LazyColumn(
@@ -96,13 +94,13 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(state.data) { property ->
-                        PropertyCard(property)
+                        PropertyCard(property, onClick = { onPropertyClick(property.id) })
                     }
                 }
             }
             is UiState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = CyanAccent)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
             else -> {}
@@ -116,7 +114,7 @@ fun StoryItem(story: TenantStory) {
         Box(
             modifier = Modifier
                 .size(70.dp)
-                .border(2.dp, CyanAccent, CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.secondary, CircleShape)
                 .padding(4.dp)
                 .clip(CircleShape)
                 .background(Color.White)
@@ -129,29 +127,40 @@ fun StoryItem(story: TenantStory) {
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = story.name, style = MaterialTheme.typography.labelSmall, color = TextWhiteHigh)
+        Text(text = story.name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onBackground)
     }
 }
 
 @Composable
-fun PropertyCard(property: PropertyModel) {
+fun PropertyCard(
+    property: PropertyModel,
+    onClick: () -> Unit = {}
+) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MidnightCard),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(8.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Column {
-            // Placeholder Image (In real app, this would be property.imageUrl)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
-                    .background(Color.Gray) // Placeholder color
+                    .background(Color.Gray)
             ) {
-                // Overlay for ROI
+                // ⚡ FIXED: Loads the first image from the list
+                AsyncImage(
+                    model = property.imageUrls.firstOrNull(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
                 Surface(
-                    color = MidnightSurface.copy(alpha = 0.9f),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
                     shape = RoundedCornerShape(bottomEnd = 12.dp),
                     modifier = Modifier.align(Alignment.TopStart)
                 ) {
@@ -168,29 +177,31 @@ fun PropertyCard(property: PropertyModel) {
                 Text(
                     text = property.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextWhiteHigh,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = property.location,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextWhiteMedium
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Progress Bar
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     LinearProgressIndicator(
                         progress = { property.fundedPercent / 100f },
-                        modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)),
-                        color = BrandBlue,
-                        trackColor = MidnightSurface,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "${property.fundedPercent}%",
-                        color = CyanAccent,
+                        color = MaterialTheme.colorScheme.secondary,
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -198,8 +209,8 @@ fun PropertyCard(property: PropertyModel) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Min: ${property.minInvest}", color = TextWhiteHigh, fontWeight = FontWeight.Bold)
-                    Text("Invest >", color = BrandBlue, fontWeight = FontWeight.Bold)
+                    Text("Min: ${property.minInvest}", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                    Text("Invest >", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -210,6 +221,6 @@ fun PropertyCard(property: PropertyModel) {
 @Composable
 fun HomeScreenPreview() {
     NavyugaTheme {
-        HomeScreen()
+        HomeScreen(onPropertyClick = {})
     }
 }

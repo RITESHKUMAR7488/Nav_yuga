@@ -10,8 +10,8 @@ data class PropertyModel(
     val title: String,
     val location: String,
     val minInvest: String,
-    val roi: Double,
+    val roi: Double,          // ⚡ ROI is here
     val fundedPercent: Int,
-    val imageUrl: String,
-    val status: String = "Available" // Available, Funded, Exited
+    val imageUrls: List<String>, // ⚡ Changed to List for Carousel
+    val status: String = "Available"
 )

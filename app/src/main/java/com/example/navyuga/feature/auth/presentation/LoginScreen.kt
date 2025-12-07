@@ -28,6 +28,7 @@ import com.example.navyuga.ui.theme.*
 fun LoginScreen(
     navController: NavController,
     viewModel: AuthViewModel = hiltViewModel(),
+    isDarkTheme: Boolean,
     onThemeToggle: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
@@ -39,20 +40,15 @@ fun LoginScreen(
         if (loginState is UiState.Success) {
             val user = (loginState as UiState.Success).data
             if (user.role == "admin") {
-                navController.navigate("admin_dashboard") {
-                    popUpTo("login") { inclusive = true }
-                }
+                navController.navigate("admin_dashboard") { popUpTo("login") { inclusive = true } }
             } else {
-                navController.navigate("super_app_hub") {
-                    popUpTo("login") { inclusive = true }
-                }
+                navController.navigate("super_app_hub") { popUpTo("login") { inclusive = true } }
             }
         } else if (loginState is UiState.Failure) {
             Toast.makeText(context, (loginState as UiState.Failure).message, Toast.LENGTH_LONG).show()
         }
     }
 
-    // Scaffold ensures content is not cut off by system bars
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
@@ -60,25 +56,21 @@ fun LoginScreen(
 
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
 
-            // Theme Toggle Button (Top Right)
+            // Theme Toggle
             IconButton(
                 onClick = onThemeToggle,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
             ) {
-                // You can swap the icon based on state if you pass isDarkTheme here
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_moon),
+                    // Swaps icon based on state
+                    painter = painterResource(id = if (isDarkTheme) R.drawable.ic_sun else R.drawable.ic_moon),
                     contentDescription = "Toggle Theme",
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
+                modifier = Modifier.fillMaxSize().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -100,12 +92,10 @@ fun LoginScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = "Login to manage your portfolio",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -138,13 +128,10 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Row {
-                    Text(
-                        text = "New to Navyuga? ",
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                    )
+                    Text(text = "New to Navyuga? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         text = "Create Account",
-                        color = BrandBlue,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable { navController.navigate("register") }
                     )

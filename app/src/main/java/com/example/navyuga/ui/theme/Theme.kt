@@ -12,32 +12,37 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// 1. Dark Scheme
 private val DarkColorScheme = darkColorScheme(
     primary = BrandBlue,
     secondary = CyanAccent,
     background = MidnightBg,
     surface = MidnightCard,
+    surfaceVariant = MidnightSurface, // Use for Input Fields
     onPrimary = Color.White,
     onBackground = TextWhiteHigh,
     onSurface = TextWhiteHigh,
+    onSurfaceVariant = TextWhiteMedium,
     outline = BorderStroke
 )
 
-// ⚡ Added a Light Scheme for the toggle to work
+// 2. Light Scheme
 private val LightColorScheme = lightColorScheme(
     primary = BrandBlue,
-    secondary = CyanAccent,
-    background = Color(0xFFF4F4F4),
-    surface = Color.White,
+    secondary = DeepBlueAccent,
+    background = LightBg,
+    surface = LightCard,
+    surfaceVariant = LightSurface,  // Use for Input Fields
     onPrimary = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
-    outline = Color(0xFFE0E0E0)
+    onBackground = TextBlackHigh,
+    onSurface = TextBlackHigh,
+    onSurfaceVariant = TextBlackMedium,
+    outline = LightBorderStroke
 )
 
 @Composable
 fun NavyugaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(), // ⚡ Now accepts a parameter
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -46,11 +51,10 @@ fun NavyugaTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Set Status bar color to match background
             window.statusBarColor = colorScheme.background.toArgb()
             window.navigationBarColor = colorScheme.background.toArgb()
 
-            // ⚡ Fix Icon Colors: If theme is Light, icons should be Dark (and vice versa)
+            // Status Bar Icons: Dark Mode -> Light Icons; Light Mode -> Dark Icons
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
         }

@@ -27,9 +27,9 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(preferenceManager.isDarkMode)
             }
 
-            // 2. Determine Start Destination based on Login State
+            // 2. Determine Start Destination
             val startDestination = if (preferenceManager.isLoggedIn) {
-                "super_app_hub" // ⚡ Skip login if already logged in
+                "super_app_hub"
             } else {
                 "login"
             }
@@ -37,8 +37,8 @@ class MainActivity : ComponentActivity() {
             NavyugaTheme(darkTheme = isDarkTheme) {
                 AppNavigation(
                     startDestination = startDestination,
+                    isDarkTheme = isDarkTheme, // Pass state down
                     onThemeToggle = {
-                        // ⚡ Logic to toggle theme
                         val newMode = !isDarkTheme
                         isDarkTheme = newMode
                         preferenceManager.saveThemeMode(newMode)

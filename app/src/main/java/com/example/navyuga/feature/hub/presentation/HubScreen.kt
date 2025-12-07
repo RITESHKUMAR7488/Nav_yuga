@@ -37,7 +37,6 @@ fun HubScreen(
     val modulesState by viewModel.modules.collectAsState()
     val context = LocalContext.current
 
-    // Scaffold prevents clipping
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
@@ -45,11 +44,11 @@ fun HubScreen(
 
         Column(
             modifier = Modifier
-                .padding(innerPadding) // Crucial for system bars
+                .padding(innerPadding)
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // 1. Header
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -65,14 +64,12 @@ fun HubScreen(
                     Text(
                         text = "Select your universe",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 IconButton(onClick = {
-                    navController.navigate("login") {
-                        popUpTo(0)
-                    }
+                    navController.navigate("login") { popUpTo(0) }
                 }) {
                     Icon(
                         imageVector = Icons.Default.ExitToApp,
@@ -84,7 +81,7 @@ fun HubScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 2. Grid Content
+            // Grid
             when (val state = modulesState) {
                 is UiState.Success -> {
                     LazyVerticalGrid(
@@ -93,7 +90,7 @@ fun HubScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(state.data) { module ->
-                            ModuleCard(module = module) {
+                            ModuleCard(module) {
                                 if (module.isEnabled) {
                                     if (module.id == "arthyuga") {
                                         navController.navigate("arthyuga_dashboard")
@@ -109,7 +106,7 @@ fun HubScreen(
                 }
                 is UiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = CyanAccent)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
                     }
                 }
                 else -> {}
@@ -124,11 +121,12 @@ fun ModuleCard(
     onClick: () -> Unit
 ) {
     val cardAlpha = if (module.isEnabled) 1f else 0.5f
+    val containerColor = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
 
     val borderModifier = if (module.isEnabled) {
-        Modifier.border(1.dp, Brush.linearGradient(listOf(CyanAccent, BrandBlue)), RoundedCornerShape(16.dp))
+        Modifier.border(1.dp, Brush.linearGradient(listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)), RoundedCornerShape(16.dp))
     } else {
-        Modifier.border(1.dp, BorderStroke, RoundedCornerShape(16.dp))
+        Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
     }
 
     Card(
@@ -138,27 +136,25 @@ fun ModuleCard(
             .clip(RoundedCornerShape(16.dp))
             .then(borderModifier)
             .clickable(enabled = module.isEnabled, onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MidnightCard.copy(alpha = cardAlpha)),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .background(MidnightSurface, CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = module.icon,
                     contentDescription = null,
-                    tint = if (module.isEnabled) CyanAccent else TextWhiteLow,
+                    tint = if (module.isEnabled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -168,7 +164,7 @@ fun ModuleCard(
             Text(
                 text = module.title,
                 style = MaterialTheme.typography.titleMedium,
-                color = TextWhiteHigh,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
 
@@ -177,9 +173,7 @@ fun ModuleCard(
             Text(
                 text = module.description,
                 style = MaterialTheme.typography.labelSmall,
-                color = TextWhiteMedium,
-                maxLines = 2,
-                modifier = Modifier.padding(horizontal = 4.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
