@@ -21,14 +21,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // ⚡ FIX: Extract values here to prevent compiler crash inside setContent
+        val initialDarkMode = preferenceManager.isDarkMode
+        val initialLoggedIn = preferenceManager.isLoggedIn
+
         setContent {
-            // 1. Read Theme Preference
+            // 1. Read Theme Preference using the extracted value as default
             var isDarkTheme by remember {
-                mutableStateOf(preferenceManager.isDarkMode)
+                mutableStateOf(initialDarkMode)
             }
 
             // 2. Determine Start Destination
-            val startDestination = if (preferenceManager.isLoggedIn) {
+            val startDestination = if (initialLoggedIn) {
                 "super_app_hub"
             } else {
                 "login"
@@ -37,10 +41,11 @@ class MainActivity : ComponentActivity() {
             NavyugaTheme(darkTheme = isDarkTheme) {
                 AppNavigation(
                     startDestination = startDestination,
-                    isDarkTheme = isDarkTheme, // Pass state down
+                    isDarkTheme = isDarkTheme,
                     onThemeToggle = {
                         val newMode = !isDarkTheme
                         isDarkTheme = newMode
+                        // It is safe to call the method inside the callback
                         preferenceManager.saveThemeMode(newMode)
                     }
                 )

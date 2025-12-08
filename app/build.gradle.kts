@@ -84,5 +84,8 @@ dependencies {
 
     // Icons
     implementation(libs.material.icons.extended)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
 }
 

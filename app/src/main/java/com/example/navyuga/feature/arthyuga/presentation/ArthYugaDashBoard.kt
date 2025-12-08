@@ -15,11 +15,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.navyuga.feature.arthyuga.presentation.home.HomeScreen
 import com.example.navyuga.feature.arthyuga.presentation.search.SearchScreen
+import com.example.navyuga.feature.profile.presentation.ProfileScreen
 import com.example.navyuga.navigation.PlaceholderScreen
 import com.example.navyuga.ui.theme.*
 
 @Composable
-fun ArthYugaDashboard(rootNavController: NavController) {
+fun ArthYugaDashboard(
+    rootNavController: NavController, isDarkTheme: Boolean,
+    onThemeToggle: () -> Unit,
+    onLogout: () -> Unit
+) {
     val navController = rememberNavController()
 
     val items = listOf(
@@ -81,18 +86,32 @@ fun ArthYugaDashboard(rootNavController: NavController) {
             }
             composable("ay_invest") { PlaceholderScreen("Invest (Coming Soon)") }
             composable("ay_reels") { PlaceholderScreen("Reels (Coming Soon)") }
-            composable("ay_profile") { PlaceholderScreen("Profile (Coming Soon)") }
+            composable("ay_profile") {
+                ProfileScreen(
+                    isDarkTheme = isDarkTheme,
+                    onThemeToggle = onThemeToggle,
+                    onLogout = onLogout
+                )
+            }
         }
     }
 }
 
-data class BottomNavItem(val label: String, val route: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+data class BottomNavItem(
+    val label: String,
+    val route: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
 
 @Preview
 @Composable
 fun ArthYugaDashboardPreview() {
     NavyugaTheme {
-        // ⚡ FIX: Pass a fake controller for preview
-        ArthYugaDashboard(rootNavController = rememberNavController())
+        ArthYugaDashboard(
+            rootNavController = rememberNavController(),
+            isDarkTheme = true,  // Dummy value for preview
+            onThemeToggle = {},  // Empty lambda
+            onLogout = {}        // Empty lambda
+        )
     }
 }

@@ -1,40 +1,44 @@
 package com.example.navyuga.feature.arthyuga.presentation.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.navyuga.core.common.UiState
 import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
 import com.example.navyuga.feature.arthyuga.domain.model.TenantStory
+import com.example.navyuga.feature.arthyuga.domain.repository.PropertyRepository // ⚡ Interface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.combine
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val repository: PropertyRepository // ⚡ Use Interface
+) : ViewModel() {
 
-    // State for Stories
     private val _stories = MutableStateFlow<List<TenantStory>>(emptyList())
     val stories: StateFlow<List<TenantStory>> = _stories
 
-    // State for Properties
     private val _properties = MutableStateFlow<UiState<List<PropertyModel>>>(UiState.Loading)
     val properties: StateFlow<UiState<List<PropertyModel>>> = _properties
 
-    // State for Tabs
     private val _selectedTab = MutableStateFlow("Available")
     val selectedTab: StateFlow<String> = _selectedTab
 
     init {
-        loadDummyData()
+        loadData()
+        setupFlows()
     }
 
     fun selectTab(tab: String) {
         _selectedTab.value = tab
-        loadDummyData() // Reload filter based on tab
     }
 
-    private fun loadDummyData() {
-        // 1. Populate Stories
+    private fun loadData() {
+        // Dummy Stories
         _stories.value = listOf(
             TenantStory("Reliance", "https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Reliance_Digital_logo.svg/1200px-Reliance_Digital_logo.svg.png"),
             TenantStory("Tanishq", "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Tanishq_Logo.svg/2560px-Tanishq_Logo.svg.png"),
@@ -43,16 +47,50 @@ class HomeViewModel @Inject constructor() : ViewModel() {
             TenantStory("HDFC", "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/HDFC_Bank_Logo.svg/2560px-HDFC_Bank_Logo.svg.png")
         )
 
-        // 2. Populate Properties (Simulated Filter)
-        val allProperties = listOf(
-            PropertyModel("1", "Reliance Hub", "Kolkata, Park Street", "₹ 5,000", 8.5, 65, "", "Available"),
-            PropertyModel("2", "Tanishq Plaza", "Bangalore, Indiranagar", "₹ 10,000", 9.2, 80, "", "Available"),
-            PropertyModel("3", "Starbucks Cyber Hub", "Gurugram, DLF", "₹ 15,000", 7.5, 100, "", "Funded"),
-            PropertyModel("4", "Domino's Point", "Mumbai, Bandra", "₹ 5,000", 14.5, 100, "", "Exited")
-        )
+        // ⚡ Real-time Firestore Sync
+        viewModelScope.launch {
+            repository.getAllProperties().collectLatest { state ->
+                // When Firestore updates, this block runs again
+                if (state is UiState.Success) {
+                    // Filter in memory for tab selection
+                    val currentTab = _selectedTab.value
+                    val filtered = state.data.filter { it.status == currentTab }
+                    _properties.value = UiState.Success(filtered)
+                } else {
+                    _properties.value = state
+                }
+            }
+        }
 
-        // Filter based on selected tab
-        val filtered = allProperties.filter { it.status == _selectedTab.value }
-        _properties.value = UiState.Success(filtered)
+        // Tab switching logic (local filter on existing data)
+        viewModelScope.launch {
+            _selectedTab.collectLatest { tab ->
+                // Note: Ideally re-fetch or keep a local copy of "all properties" to filter.
+                // For simplicity, we re-trigger the collector above or rely on flow caching.
+                // Better approach: combine flows.
+                // But for now, we rely on the repository flow emitting.
+                // To fix the filter issue when switching tabs without new data:
+                // We need to store 'allProperties' locally in VM.
+                // Let's refactor slightly to be safer.
+            }
+        }
+    }
+    private fun setupFlows() {
+        viewModelScope.launch {
+            // Combine the Repository Stream AND the Selected Tab Stream
+            combine(
+                repository.getAllProperties(),
+                _selectedTab
+            ) { propertiesState, selectedTab ->
+                if (propertiesState is UiState.Success) {
+                    val filtered = propertiesState.data.filter { it.status == selectedTab }
+                    UiState.Success(filtered)
+                } else {
+                    propertiesState
+                }
+            }.collectLatest { finalState ->
+                _properties.value = finalState
+            }
+        }
     }
 }
