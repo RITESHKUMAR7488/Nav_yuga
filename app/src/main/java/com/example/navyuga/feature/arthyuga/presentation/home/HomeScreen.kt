@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,82 +32,132 @@ import com.example.navyuga.ui.theme.*
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
-    onPropertyClick: (String) -> Unit
+    onPropertyClick: (String) -> Unit,
+    onRoiClick: () -> Unit // New callback
 ) {
     val stories by viewModel.stories.collectAsState()
     val propertiesState by viewModel.properties.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Text(
-            text = "Trending Tenants",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(16.dp)
-        )
+    // Dialog State
+    var showRoiDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(stories) { story ->
-                StoryItem(story)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
-                .padding(4.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            listOf("Available", "Funded", "Exited").forEach { tab ->
-                val isSelected = tab == selectedTab
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .clickable { viewModel.selectTab(tab) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = tab,
-                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold
-                    )
+            Text(
+                text = "Trending Tenants",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(stories) { story ->
+                    StoryItem(story)
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        when (val state = propertiesState) {
-            is UiState.Success -> {
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(state.data) { property ->
-                        PropertyCard(property, onClick = { onPropertyClick(property.id) })
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+                    .padding(4.dp)
+            ) {
+                listOf("Available", "Funded", "Exited").forEach { tab ->
+                    val isSelected = tab == selectedTab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            .clickable { viewModel.selectTab(tab) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = tab,
+                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
-            is UiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (val state = propertiesState) {
+                is UiState.Success -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(state.data) { property ->
+                            PropertyCard(property, onClick = { onPropertyClick(property.id) })
+                        }
+                    }
+                }
+                is UiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                else -> {}
+            }
+        }
+
+        // --- Floating Action Button ---
+        FloatingActionButton(
+            onClick = { showRoiDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp),
+            containerColor = BrandBlue,
+            contentColor = Color.White
+        ) {
+            Row(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Icon(Icons.Default.Calculate, contentDescription = "ROI")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Calculate ROI", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+
+    // --- Selection Dialog ---
+    if (showRoiDialog) {
+        AlertDialog(
+            onDismissRequest = { showRoiDialog = false },
+            title = { Text("Select Role") },
+            text = { Text("Are you buying or selling a property?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRoiDialog = false
+                        onRoiClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                ) {
+                    Text("I am a Buyer")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    android.widget.Toast.makeText(context, "Seller features coming soon!", android.widget.Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("I am a Seller")
                 }
             }
-            else -> {}
-        }
+        )
     }
 }
 
@@ -151,7 +204,6 @@ fun PropertyCard(
                     .height(180.dp)
                     .background(Color.Gray)
             ) {
-                // ⚡ FIXED: Loads the first image from the list
                 AsyncImage(
                     model = property.imageUrls.firstOrNull(),
                     contentDescription = null,
@@ -214,13 +266,5 @@ fun PropertyCard(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    NavyugaTheme {
-        HomeScreen(onPropertyClick = {})
     }
 }

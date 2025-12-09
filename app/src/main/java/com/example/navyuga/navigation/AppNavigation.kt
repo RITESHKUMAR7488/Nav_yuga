@@ -18,12 +18,12 @@ import com.example.navyuga.feature.admin.presentation.AdminDashboardScreen
 import com.example.navyuga.feature.admin.presentation.CreateUserScreen
 import com.example.navyuga.feature.admin.presentation.ManagePropertiesScreen
 import com.example.navyuga.feature.admin.presentation.ManageUsersScreen
-//import com.example.navyuga.feature.admin.presentation.RegisterInvestmentScreen
 import com.example.navyuga.feature.arthyuga.presentation.ArthYugaDashboard
 import com.example.navyuga.feature.arthyuga.presentation.detail.PropertyDetailScreen
 import com.example.navyuga.feature.auth.presentation.LoginScreen
 import com.example.navyuga.feature.auth.presentation.RegisterScreen
 import com.example.navyuga.feature.hub.presentation.HubScreen
+import com.example.navyuga.feature.roi.presentation.RoiScreen
 
 @Composable
 fun AppNavigation(
@@ -56,13 +56,16 @@ fun AppNavigation(
             )
         }
 
-        // ⚡ FIX IS HERE: propertyId is NOT passed anymore
         composable(
             "property_detail/{propertyId}",
             arguments = listOf(navArgument("propertyId") { type = NavType.StringType })
         ) {
-            // The ViewModel extracts propertyId automatically using SavedStateHandle
             PropertyDetailScreen(navController = navController)
+        }
+
+        // --- NEW FEATURE: ROI CALCULATOR ---
+        composable("roi_calculator") {
+            RoiScreen(onBackClick = { navController.popBackStack() })
         }
 
         // --- ADMIN MODULE ---
@@ -77,16 +80,9 @@ fun AppNavigation(
         }
 
         composable("admin_create_user") { CreateUserScreen(navController) }
-
-//        composable("admin_register_investment") { RegisterInvestmentScreen(navController) }
-
         composable("admin_manage_properties") { ManagePropertiesScreen(navController) }
         composable("admin_manage_users") { ManageUsersScreen(navController) }
-
-        // Placeholder for Add Property
-        composable("admin_add_property") {
-            AddPropertyScreen( navController)
-        }
+        composable("admin_add_property") { AddPropertyScreen(navController) }
     }
 }
 

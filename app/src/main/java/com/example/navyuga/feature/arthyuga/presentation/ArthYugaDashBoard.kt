@@ -76,10 +76,14 @@ fun ArthYugaDashboard(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("ay_home") {
-                // ⚡ HomeScreen needs to accept this lambda
-                HomeScreen(onPropertyClick = { id ->
-                    rootNavController.navigate("property_detail/$id")
-                })
+                HomeScreen(
+                    onPropertyClick = { id ->
+                        rootNavController.navigate("property_detail/$id")
+                    },
+                    onRoiClick = {
+                        rootNavController.navigate("roi_calculator")
+                    }
+                )
             }
             composable("ay_search") {
                 SearchScreen(navController = rootNavController)
@@ -102,16 +106,3 @@ data class BottomNavItem(
     val route: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
-
-@Preview
-@Composable
-fun ArthYugaDashboardPreview() {
-    NavyugaTheme {
-        ArthYugaDashboard(
-            rootNavController = rememberNavController(),
-            isDarkTheme = true,  // Dummy value for preview
-            onThemeToggle = {},  // Empty lambda
-            onLogout = {}        // Empty lambda
-        )
-    }
-}
