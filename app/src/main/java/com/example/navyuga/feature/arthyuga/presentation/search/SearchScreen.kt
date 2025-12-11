@@ -14,11 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.navyuga.core.common.UiState
 import com.example.navyuga.feature.arthyuga.presentation.home.InstagramStylePropertyCard
 import com.example.navyuga.feature.auth.presentation.components.NavyugaGradientButton
-import com.example.navyuga.ui.theme.*
 
 @Composable
 fun SearchScreen(
@@ -27,9 +27,9 @@ fun SearchScreen(
 ) {
     var selectedCountry by remember { mutableStateOf("India") }
     var selectedCity by remember { mutableStateOf("All Cities") }
-    var selectedCurrency by remember { mutableStateOf("INR") }
 
-    val searchState by viewModel.searchResults.collectAsState()
+    // Use collectAsStateWithLifecycle for better lifecycle handling
+    val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -48,14 +48,12 @@ fun SearchScreen(
         NavyugaDropdown("Country", viewModel.countries, selectedCountry) { selectedCountry = it }
         Spacer(modifier = Modifier.height(12.dp))
         NavyugaDropdown("City", viewModel.cities, selectedCity) { selectedCity = it }
-        Spacer(modifier = Modifier.height(12.dp))
-        NavyugaDropdown("Currency", viewModel.currencies, selectedCurrency) { selectedCurrency = it }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         NavyugaGradientButton(
             text = "Search",
-            onClick = { viewModel.performSearch(selectedCountry, selectedCity, selectedCurrency) }
+            onClick = { viewModel.performSearch(selectedCountry, selectedCity) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -70,11 +68,11 @@ fun SearchScreen(
             is UiState.Success -> {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(state.data) { property ->
-                        // FIXED: Removed onMessageClick
                         InstagramStylePropertyCard(
                             property = property,
                             onItemClick = { navController.navigate("property_detail/${property.id}") },
-                            onLikeClick = { /* Handle Search Like */ },
+                            // ⚡ FIXED: Calls the ViewModel to toggle like status
+                            onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
                             onShareClick = { /* Handle Share */ }
                         )
                     }

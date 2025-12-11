@@ -3,10 +3,18 @@ package com.example.navyuga.feature.arthyuga.domain.model
 data class Property(
     val id: String,
     val title: String,
-    val location: String,
-    val price: String,      // Total Investment
-    val rent: String,       // New: Rent per month
-    val roi: String,        // New: ROI percentage
     val imageUrl: String,
+    // Financials
+    val price: String,      // Total Investment
+    val rent: String,       // Rent per month / Return
+    val roi: String,        // Net ROI percentage
+    val totalFunding: String, // Total funding done
+    // Description (Nullable as requested)
+    val description: String? = null,
+    // Location Details
+    val address: String,
+    val city: String,
+    val state: String,
+    val country: String,
     val isLiked: Boolean = false
 )

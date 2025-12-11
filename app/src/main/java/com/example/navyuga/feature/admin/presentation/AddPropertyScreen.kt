@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,7 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -26,7 +28,6 @@ import com.example.navyuga.core.common.UiState
 import com.example.navyuga.feature.arthyuga.presentation.search.NavyugaDropdown
 import com.example.navyuga.feature.auth.presentation.components.NavyugaGradientButton
 import com.example.navyuga.feature.auth.presentation.components.NavyugaTextField
-import com.example.navyuga.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +35,21 @@ fun AddPropertyScreen(
     navController: NavController,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
+    // Basic Info
     var title by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var minInvest by remember { mutableStateOf("") }
-    var roi by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    // Location Details
+    var address by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
+    var state by remember { mutableStateOf("") }
+
+    // Financials
+    var totalValuation by remember { mutableStateOf("") } // e.g., ₹2.5 Cr
+    var minInvest by remember { mutableStateOf("") }      // e.g., 5000
+    var rentReturn by remember { mutableStateOf("") }     // e.g., 8.5% or ₹50k/mo
+    var roi by remember { mutableStateOf("") }            // e.g., 12.5
+
     var selectedStatus by remember { mutableStateOf("Available") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -84,7 +96,7 @@ fun AddPropertyScreen(
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // IMAGE PICKER
+            // --- 1. IMAGE PICKER ---
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -112,18 +124,63 @@ fun AddPropertyScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // FORM FIELDS
+            // --- 2. BASIC INFO ---
+            Text("Basic Details", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+
             NavyugaTextField(value = title, onValueChange = { title = it }, label = "Property Title", icon = Icons.Default.Home)
             Spacer(modifier = Modifier.height(16.dp))
-            NavyugaTextField(value = location, onValueChange = { location = it }, label = "Location", icon = Icons.Default.LocationOn)
+
+            // Description (Using standard OutlinedTextField for multiline support if wrapper doesn't support it,
+            // but sticking to NavyugaTextField for consistency if it handles it, otherwise:)
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth().height(120.dp),
+                shape = RoundedCornerShape(12.dp),
+                maxLines = 5
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- 3. LOCATION ---
+            Text("Location", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            NavyugaTextField(value = address, onValueChange = { address = it }, label = "Street Address", icon = Icons.Default.LocationOn)
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Box(modifier = Modifier.weight(1f)) {
-                    NavyugaTextField(value = minInvest, onValueChange = { minInvest = it }, label = "Min Invest (₹)", icon = Icons.Default.AttachMoney)
+                    NavyugaTextField(value = city, onValueChange = { city = it }, label = "City", icon = Icons.Default.LocationCity)
                 }
                 Box(modifier = Modifier.weight(1f)) {
-                    NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI (%)", icon = Icons.Default.TrendingUp)
+                    NavyugaTextField(value = state, onValueChange = { state = it }, label = "State", icon = Icons.Default.Map)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- 4. FINANCIALS ---
+            Text("Financials", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(modifier = Modifier.weight(1f)) {
+                    NavyugaTextField(value = totalValuation, onValueChange = { totalValuation = it }, label = "Total Val (₹ Cr)", icon = Icons.Default.MonetizationOn)
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    NavyugaTextField(value = minInvest, onValueChange = { minInvest = it }, label = "Min Invest (₹)", icon = Icons.Default.AttachMoney)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(modifier = Modifier.weight(1f)) {
+                    NavyugaTextField(value = rentReturn, onValueChange = { rentReturn = it }, label = "Rent (e.g. 8%)", icon = Icons.Default.Percent)
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "Net ROI (%)", icon = Icons.Default.TrendingUp)
                 }
             }
 
@@ -138,26 +195,33 @@ fun AddPropertyScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // PUBLISH BUTTON
+            // --- 5. PUBLISH BUTTON ---
             NavyugaGradientButton(
                 text = if (uploadState is UiState.Loading) "Uploading..." else "Publish Live",
-                isLoading = uploadState is UiState.Loading, // ⚡ Shows spinner while uploading
+                isLoading = uploadState is UiState.Loading,
                 onClick = {
-                    if (title.isNotEmpty() && minInvest.isNotEmpty()) {
-                        // ⚡ Trigger real upload + save
+                    if (title.isNotEmpty() && minInvest.isNotEmpty() && city.isNotEmpty()) {
                         viewModel.listNewProperty(
                             title = title,
-                            location = location,
+                            description = description,
+                            address = address,
+                            city = city,
+                            state = state,
+                            totalValuation = totalValuation,
                             minInvest = minInvest,
+                            rentReturn = rentReturn,
                             roi = roi.toDoubleOrNull() ?: 0.0,
                             status = selectedStatus,
                             imageUri = selectedImageUri
                         )
                     } else {
-                        Toast.makeText(context, "Please fill all details", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please fill all required details", Toast.LENGTH_SHORT).show()
                     }
                 }
             )
+
+            // Bottom padding for scrolling
+            Spacer(modifier = Modifier.height(50.dp))
         }
     }
 }

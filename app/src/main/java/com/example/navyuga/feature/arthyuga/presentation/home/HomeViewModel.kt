@@ -2,7 +2,7 @@ package com.example.navyuga.feature.arthyuga.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.navyuga.feature.arthyuga.domain.model.Property
+import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel // Changed to PropertyModel for consistency
 import com.example.navyuga.feature.arthyuga.domain.repository.PropertyRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -25,7 +25,7 @@ data class StoryState(
 data class HomeUiState(
     val isLoading: Boolean = true,
     val userName: String = "",
-    val properties: List<Property> = emptyList(),
+    val properties: List<PropertyModel> = emptyList(), // Changed to PropertyModel
     val stories: List<StoryState> = emptyList(),
     val error: String? = null
 )
@@ -40,7 +40,7 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private var allPropertiesCache: List<Property> = emptyList()
+    private var allPropertiesCache: List<PropertyModel> = emptyList()
 
     init {
         loadRealData()
@@ -51,28 +51,17 @@ class HomeViewModel @Inject constructor(
 
         _uiState.update { it.copy(isLoading = true) }
 
-        // 1. Fetch Properties (Assuming Repo fetches from 'approved_properties')
         viewModelScope.launch {
             try {
                 propertyRepository.getAllProperties().collect { state ->
-                    // For now, mapping your Repo data.
-                    // Ideally, your Repo should return the Data, and we merge it with User Data below.
-                    // This is a simplified merge for the immediate requirement.
                     if (state is com.example.navyuga.core.common.UiState.Success) {
-                        val rawProperties = state.data.map {
-                            Property(
-                                id = it.id,
-                                title = it.title,
-                                location = it.location,
-                                price = "₹${it.minInvest}",
-                                rent = "₹15,000", // Placeholder until you add rent to DB
-                                roi = "12%",      // Placeholder until you add roi to DB
-                                imageUrl = it.imageUrls.firstOrNull() ?: "",
-                                isLiked = false
-                            )
-                        }
-                        allPropertiesCache = rawProperties
-                        listenToUserData(userId) // Trigger user data merge
+                        // The repository already returns List<PropertyModel>, so we use it directly.
+                        // We assume PropertyModel has the necessary fields (title, location, minInvest, etc.)
+                        // populated by the Repository or Data Source.
+                        val fetchedProperties = state.data
+
+                        allPropertiesCache = fetchedProperties
+                        listenToUserData(userId)
                     }
                 }
             } catch (e: Exception) {
@@ -88,7 +77,6 @@ class HomeViewModel @Inject constructor(
                 if (e != null || snapshot == null) return@addSnapshotListener
 
                 val name = snapshot.getString("name") ?: "User"
-                // Get Lists safely
                 val likedIds = (snapshot.get("likedProperties") as? List<String>)?.toSet() ?: emptySet()
                 val seenStoryIds = (snapshot.get("seenStories") as? List<String>)?.toSet() ?: emptySet()
 
@@ -103,16 +91,16 @@ class HomeViewModel @Inject constructor(
         }
 
         // 2. Create and Sort Stories
-        // Logic: Create stories, check if seen.
-        // Sort: Unseen stories (false) come FIRST, Seen (true) come LAST.
         val stories = updatedProperties.map { prop ->
             StoryState(
                 id = prop.id,
-                imageUrl = prop.imageUrl,
+                // Access 'mainImage' helper if 'imageUrl' field doesn't exist directly on PropertyModel
+                // or safely get the first from list
+                imageUrl = if (prop.imageUrls.isNotEmpty()) prop.imageUrls[0] else "",
                 title = prop.title.take(10),
                 isSeen = seenIds.contains(prop.id)
             )
-        }.sortedBy { it.isSeen } // False (Unseen) < True (Seen)
+        }.sortedBy { it.isSeen }
 
         _uiState.update {
             it.copy(
@@ -130,14 +118,9 @@ class HomeViewModel @Inject constructor(
         val userId = auth.currentUser?.uid ?: return
         val userRef = firestore.collection("users").document(userId)
 
-        // Optimistic Update (Immediate UI change before Server)
-        // (Optional but makes it feel faster. The listener will correct it if it fails)
-
         if (currentLikeState) {
-            // If currently liked, remove it
             userRef.update("likedProperties", com.google.firebase.firestore.FieldValue.arrayRemove(propertyId))
         } else {
-            // If not liked, add it
             userRef.set(
                 mapOf("likedProperties" to com.google.firebase.firestore.FieldValue.arrayUnion(propertyId)),
                 SetOptions.merge()
@@ -147,8 +130,6 @@ class HomeViewModel @Inject constructor(
 
     fun markStoryAsSeen(storyId: String) {
         val userId = auth.currentUser?.uid ?: return
-
-        // Only update if not already seen to save writes
         val isAlreadySeen = _uiState.value.stories.find { it.id == storyId }?.isSeen == true
         if (isAlreadySeen) return
 
@@ -157,6 +138,5 @@ class HomeViewModel @Inject constructor(
             mapOf("seenStories" to com.google.firebase.firestore.FieldValue.arrayUnion(storyId)),
             SetOptions.merge()
         )
-        // The snapshot listener will automatically update the UI and move the story to the back!
     }
 }

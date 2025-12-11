@@ -2,7 +2,6 @@ package com.example.navyuga.feature.admin.presentation
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.navyuga.core.common.UiState
@@ -10,7 +9,7 @@ import com.example.navyuga.feature.admin.domain.repository.AdminRepository
 import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
 import com.example.navyuga.feature.arthyuga.domain.repository.PropertyRepository
 import com.example.navyuga.feature.auth.data.model.UserModel
-import com.example.navyuga.feature.profile.data.remote.ImageUploadApi // ⚡ Import API
+import com.example.navyuga.feature.profile.data.remote.ImageUploadApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +28,7 @@ import javax.inject.Inject
 class AdminViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val propertyRepository: PropertyRepository,
-    private val api: ImageUploadApi, // ⚡ Inject API
+    private val api: ImageUploadApi,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -39,7 +38,6 @@ class AdminViewModel @Inject constructor(
     private val _propertiesState = MutableStateFlow<UiState<List<PropertyModel>>>(UiState.Loading)
     val propertiesState: StateFlow<UiState<List<PropertyModel>>> = _propertiesState
 
-    // ⚡ New State to track Upload Progress
     private val _propertyUploadState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val propertyUploadState: StateFlow<UiState<String>> = _propertyUploadState
 
@@ -66,12 +64,18 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ REAL UPLOAD & SAVE LOGIC
+    // ⚡ UPDATED: Accepts all new fields for the detailed PropertyModel
     fun listNewProperty(
         title: String,
-        location: String,
-        minInvest: String,
+        totalValuation: String, // Replaces minInvest for display
+        minInvest: String,      // Keep for logic/search
+        rentReturn: String,
         roi: Double,
+        description: String,
+        address: String,
+        city: String,
+        state: String,
+        country: String = "India",
         status: String,
         imageUri: Uri?
     ) {
@@ -79,9 +83,9 @@ class AdminViewModel @Inject constructor(
             _propertyUploadState.value = UiState.Loading
 
             try {
-                var finalImageUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab" // Fallback
+                var finalImageUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab"
 
-                // 1. Upload Image if exists
+                // 1. Upload Image
                 if (imageUri != null) {
                     val file = getFileFromUri(imageUri)
                     if (file != null) {
@@ -92,27 +96,35 @@ class AdminViewModel @Inject constructor(
 
                         val response = api.uploadImage(key, body, format)
                         if (response.status_code == 200) {
-                            finalImageUrl = response.image.url // ⚡ Gets real HTTP link
+                            finalImageUrl = response.image.url
                         }
                     }
                 }
 
-                // 2. Create Model
+                // 2. Create Updated Model
                 val newProperty = PropertyModel(
                     id = UUID.randomUUID().toString(),
                     title = title,
-                    location = location,
+                    location = "$city, $state", // Auto-generate location string
                     minInvest = minInvest,
                     roi = roi,
                     fundedPercent = 0,
-                    imageUrls = listOf(finalImageUrl), // ⚡ Saves HTTP link, NOT content://
-                    status = status
+                    imageUrls = listOf(finalImageUrl),
+                    status = status,
+                    // New Fields mapped here
+                    description = description,
+                    totalValuation = totalValuation,
+                    rentReturn = rentReturn,
+                    address = address,
+                    city = city,
+                    state = state,
+                    country = country
                 )
 
                 // 3. Save to Firestore
                 val result = propertyRepository.addProperty(newProperty)
                 if (result is UiState.Success) {
-                    _propertyUploadState.value = UiState.Success("Property Listed!")
+                    _propertyUploadState.value = UiState.Success("Property Listed Successfully!")
                 } else {
                     _propertyUploadState.value = UiState.Failure("Failed to save to DB")
                 }
