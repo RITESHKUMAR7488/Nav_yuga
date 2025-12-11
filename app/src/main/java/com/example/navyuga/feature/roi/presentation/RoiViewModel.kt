@@ -51,7 +51,7 @@ class RoiViewModel @Inject constructor() : ViewModel() {
             0 -> true
             1 -> state.saleableArea.isNotBlank()
             2 -> state.monthlyRent.isNotBlank() && state.periodOfOccupation.isNotBlank()
-            3 -> state.propertyTaxMonthly.isNotBlank() && state.maintenanceCost.isNotBlank() // Mandatory
+            3 -> state.propertyTaxMonthly.isNotBlank() && state.maintenanceCost.isNotBlank()
             4 -> if (state.isBuyerMode) state.acquisitionCost.isNotBlank() else state.targetRoi.isNotBlank()
             else -> false
         }
@@ -104,9 +104,10 @@ class RoiViewModel @Inject constructor() : ViewModel() {
         _uiState.update { it.copy(cashFlows = cashFlowList) }
     }
 
-    fun calculateCounterOffer(desiredRoi: Double): Double {
+    fun calculateCounterOffer(desiredRoi: Double) {
         val s = _uiState.value
-        if (desiredRoi <= 0) return 0.0
-        return ((s.netAnnualIncome / (desiredRoi / 100)) - s.totalOtherCharges) / 1.08
+        if (desiredRoi <= 0) return
+        val counterPrice = ((s.netAnnualIncome / (desiredRoi / 100)) - s.totalOtherCharges) / 1.08
+        _uiState.update { it.copy(counterOfferPrice = counterPrice, counterOfferRoi = desiredRoi) }
     }
 }

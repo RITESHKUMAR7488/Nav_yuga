@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.navyuga.ui.theme.BrandBlue
 import com.example.navyuga.ui.theme.SuccessGreen
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +40,9 @@ fun RoiScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val pdfGenerator = remember { RoiPdfGenerator(context) }
 
     Scaffold(
         topBar = {
@@ -63,7 +67,6 @@ fun RoiScreen(
                 .padding(16.dp)
         ) {
             if (state.currentStep in 1..4) {
-                // Progress Indicator (Only in flow)
                 RoiProgressBar(currentStep = state.currentStep, totalSteps = 4)
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -87,9 +90,20 @@ fun RoiScreen(
                     2 -> Step2Lease(state, viewModel)
                     3 -> Step3Expenses(state, viewModel)
                     4 -> Step4Financials(state, viewModel)
-                    5 -> Step5Result(state, viewModel, onShare = { context ->
-                        shareRoiReport(context, state)
-                    })
+                    5 -> Step5Result(
+                        state = state,
+                        vm = viewModel,
+                        onShare = {
+                            scope.launch {
+                                pdfGenerator.generateAndSharePdf(state, PdfMode.REPORT)
+                            }
+                        },
+                        onGenerateCounterPdf = {
+                            scope.launch {
+                                pdfGenerator.generateAndSharePdf(state, PdfMode.COUNTER_OFFER)
+                            }
+                        }
+                    )
                 }
             }
 
@@ -221,12 +235,10 @@ fun Step2Lease(state: RoiState, vm: RoiViewModel) {
 fun Step3Expenses(state: RoiState, vm: RoiViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader("Monthly Expenses")
-        // Mandatory *
         RoiInput("Property Tax / Month (₹)*", state.propertyTaxMonthly, isNumber = true) { vm.updateExpenses(tax = it) }
 
-        Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        // Mandatory *
         RoiInput("Maintenance Cost / Month (₹)*", state.maintenanceCost, isNumber = true) { vm.updateExpenses(maint = it) }
 
         Text("Paid By", style = MaterialTheme.typography.labelLarge)
@@ -277,8 +289,12 @@ fun Step4Financials(state: RoiState, vm: RoiViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
-    val context = LocalContext.current
+fun Step5Result(
+    state: RoiState,
+    vm: RoiViewModel,
+    onShare: () -> Unit,
+    onGenerateCounterPdf: () -> Unit
+) {
     var showCounterDialog by remember { mutableStateOf(false) }
     var showCashFlowSheet by remember { mutableStateOf(false) }
 
@@ -329,7 +345,7 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
 
                 ResultRow("Registry (8%)", state.registryCost)
                 ResultRow("Legal & Others", state.totalOtherCharges)
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 ResultRow("TOTAL INVESTMENT", state.totalInvestment, isBold = true)
             }
         }
@@ -389,7 +405,7 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Button(
-            onClick = { onShare(context) },
+            onClick = onShare,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
         ) {
@@ -403,7 +419,12 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
         CounterRoiDialog(
             currentRoi = state.calculatedRoi,
             onDismiss = { showCounterDialog = false },
-            onCalculate = { targetRoi -> vm.calculateCounterOffer(targetRoi) }
+            onCalculate = { targetRoi -> vm.calculateCounterOffer(targetRoi) },
+            resultPrice = state.counterOfferPrice,
+            onGeneratePdf = {
+                onGenerateCounterPdf()
+                showCounterDialog = false
+            }
         )
     }
 
@@ -415,9 +436,14 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
 }
 
 @Composable
-fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Double) -> Double) {
+fun CounterRoiDialog(
+    currentRoi: Double,
+    onDismiss: () -> Unit,
+    onCalculate: (Double) -> Unit,
+    resultPrice: Double?,
+    onGeneratePdf: () -> Unit
+) {
     var targetRoiStr by remember { mutableStateOf("") }
-    var resultPrice by remember { mutableStateOf<Double?>(null) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -450,7 +476,7 @@ fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Do
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                if (resultPrice != null) {
+                if (resultPrice != null && resultPrice > 0) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Card(
                         colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.1f)),
@@ -466,6 +492,17 @@ fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Do
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = onGeneratePdf,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+                    ) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Generate Proposal PDF")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -477,7 +514,7 @@ fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Do
                     Button(
                         onClick = {
                             val target = targetRoiStr.toDoubleOrNull() ?: 0.0
-                            resultPrice = onCalculate(target)
+                            onCalculate(target)
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
@@ -492,14 +529,13 @@ fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Do
 
 @Composable
 fun CashFlowContent(cashFlows: List<CashFlowRow>) {
-    // Calculate Total Net Income
     val totalIncome = cashFlows.sumOf { it.netIncome }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .heightIn(max = 600.dp) // Slightly taller to fit footer
+            .heightIn(max = 600.dp)
     ) {
         Text(
             "Projected Cash Flow",
@@ -514,7 +550,6 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Table Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -527,10 +562,9 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
             Text("Net Income", modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
         }
 
-        // List
         LazyColumn(
             modifier = Modifier
-                .weight(1f) // Fill remaining space but allow footer
+                .weight(1f)
                 .padding(vertical = 8.dp)
         ) {
             items(cashFlows) { row ->
@@ -555,12 +589,11 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 }
             }
         }
 
-        // --- NEW: TOTAL FOOTER ---
         Spacer(modifier = Modifier.height(8.dp))
         Card(
             colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.15f)),
@@ -642,8 +675,9 @@ fun RoiProgressBar(currentStep: Int, totalSteps: Int) {
             val color = if (isActive) BrandBlue else MaterialTheme.colorScheme.surfaceVariant
 
             if (i > 1) {
-                Divider(
-                    modifier = Modifier.weight(1f).height(2.dp),
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    thickness = 2.dp,
                     color = color
                 )
             }
@@ -660,9 +694,4 @@ fun RoiProgressBar(currentStep: Int, totalSteps: Int) {
             }
         }
     }
-}
-
-fun shareRoiReport(context: Context, state: RoiState) {
-    val pdfGenerator = RoiPdfGenerator(context)
-    pdfGenerator.generateAndSharePdf(state)
 }
