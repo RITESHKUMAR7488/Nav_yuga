@@ -11,10 +11,15 @@ import javax.inject.Inject
 @HiltViewModel
 class RoiViewModel @Inject constructor() : ViewModel() {
 
-    // COROUTINE USAGE: MutableStateFlow holds the current state.
-    // It emits updates to collectors (the UI) whenever the value changes.
+    // COROUTINE USAGE: MutableStateFlow is a state-holder observable flow that emits the current and new state updates to its collectors.
+    // By using .update {}, we ensure atomic, thread-safe updates to the state.
     private val _uiState = MutableStateFlow(RoiState())
     val uiState: StateFlow<RoiState> = _uiState.asStateFlow()
+
+    // --- Mode Selection ---
+    fun selectMode(isBuyer: Boolean) {
+        _uiState.update { it.copy(isBuyerMode = isBuyer, currentStep = 1) }
+    }
 
     // --- Field Updaters ---
 
@@ -58,9 +63,14 @@ class RoiViewModel @Inject constructor() : ViewModel() {
         )}
     }
 
-    fun updateAcquisition(cost: String? = null, legal: String? = null, elec: String? = null, dg: String? = null, fire: String? = null) {
+    fun updateFinancials(
+        cost: String? = null, // Buyer: Acquisition Cost
+        targetRoi: String? = null, // Seller: Desired ROI
+        legal: String? = null, elec: String? = null, dg: String? = null, fire: String? = null
+    ) {
         _uiState.update { it.copy(
             acquisitionCost = cost ?: it.acquisitionCost,
+            targetRoi = targetRoi ?: it.targetRoi,
             legalCharges = legal ?: it.legalCharges,
             electricityCharges = elec ?: it.electricityCharges,
             dgCharges = dg ?: it.dgCharges,
@@ -74,38 +84,40 @@ class RoiViewModel @Inject constructor() : ViewModel() {
         val currentState = _uiState.value
         if (canProceed(currentState)) {
             if (currentState.currentStep == 4) {
-                calculateRoi()
+                calculateResults()
             }
             _uiState.update { it.copy(currentStep = it.currentStep + 1) }
         }
     }
 
     fun previousStep() {
-        if (_uiState.value.currentStep > 1) {
-            _uiState.update { it.copy(currentStep = it.currentStep - 1) }
+        val current = _uiState.value.currentStep
+        if (current > 0) {
+            _uiState.update { it.copy(currentStep = current - 1) }
         }
     }
 
     fun canProceed(state: RoiState): Boolean {
         return when (state.currentStep) {
+            0 -> true
             1 -> state.saleableArea.isNotBlank() // Only Area is mandatory
             2 -> state.monthlyRent.isNotBlank() && state.periodOfOccupation.isNotBlank()
             3 -> true // Expenses can be 0
-            4 -> state.acquisitionCost.isNotBlank() // Cost is mandatory
+            4 -> if (state.isBuyerMode) state.acquisitionCost.isNotBlank() else state.targetRoi.isNotBlank()
             else -> false
         }
     }
 
     // --- The Core Math Logic ---
 
-    private fun calculateRoi() {
+    private fun calculateResults() {
         val s = _uiState.value
 
-        // 1. Income
+        // 1. Income (Common)
         val monthlyRent = s.monthlyRent.toDoubleOrNull() ?: 0.0
         val grossAnnualRent = monthlyRent * 12
 
-        // 2. Outflows (Deductions)
+        // 2. Outflows (Common)
         val monthlyTax = s.propertyTaxMonthly.toDoubleOrNull() ?: 0.0
         val annualTax = monthlyTax * 12
 
@@ -114,31 +126,60 @@ class RoiViewModel @Inject constructor() : ViewModel() {
 
         val netAnnualIncome = grossAnnualRent - annualTax - annualMaint
 
-        // 3. Investment Cost
-        val acquisitionBase = s.acquisitionCost.toDoubleOrNull() ?: 0.0
-        val registry = acquisitionBase * 0.08 // 8% Registry
-
+        // Others (Common)
         val legal = s.legalCharges.toDoubleOrNull() ?: 0.0
         val elec = s.electricityCharges.toDoubleOrNull() ?: 0.0
         val dg = s.dgCharges.toDoubleOrNull() ?: 0.0
         val fire = s.fireFightingCharges.toDoubleOrNull() ?: 0.0
+        val otherCharges = legal + elec + dg + fire
 
-        val totalInvestment = acquisitionBase + registry + legal + elec + dg + fire
+        if (s.isBuyerMode) {
+            // --- BUYER LOGIC: Calculate ROI ---
+            val acquisitionBase = s.acquisitionCost.toDoubleOrNull() ?: 0.0
+            val registry = acquisitionBase * 0.08 // 8% Registry on Base
 
-        // 4. ROI
-        val roi = if (totalInvestment > 0) (netAnnualIncome / totalInvestment) * 100 else 0.0
+            val totalInvestment = acquisitionBase + registry + otherCharges
 
-        // 5. GST (Pass-through display only)
-        val gst = monthlyRent * 0.18
+            val roi = if (totalInvestment > 0) (netAnnualIncome / totalInvestment) * 100 else 0.0
 
-        _uiState.update { it.copy(
-            calculatedRoi = roi,
-            totalInvestment = totalInvestment,
-            netAnnualIncome = netAnnualIncome,
-            grossAnnualRent = grossAnnualRent,
-            totalPropertyTaxAnnually = annualTax,
-            registryCost = registry,
-            gstAmount = gst
-        )}
+            _uiState.update { it.copy(
+                calculatedRoi = roi,
+                totalInvestment = totalInvestment,
+                netAnnualIncome = netAnnualIncome,
+                grossAnnualRent = grossAnnualRent,
+                totalPropertyTaxAnnually = annualTax,
+                registryCost = registry,
+                gstAmount = monthlyRent * 0.18,
+                totalOtherCharges = otherCharges
+            )}
+        } else {
+            // --- SELLER LOGIC: Calculate Price ---
+            val targetRoiVal = s.targetRoi.toDoubleOrNull() ?: 0.0
+
+            if (targetRoiVal > 0) {
+                // Formula: Total Investment = Net Income / (ROI / 100)
+                val requiredTotalInvestment = netAnnualIncome / (targetRoiVal / 100)
+
+                // Back calculate Base Price:
+                // Total Inv = Base + 8% Base + Others
+                // Total Inv - Others = 1.08 * Base
+                // Base = (Total Inv - Others) / 1.08
+
+                val baseSellingPrice = (requiredTotalInvestment - otherCharges) / 1.08
+                val registry = baseSellingPrice * 0.08
+
+                _uiState.update { it.copy(
+                    calculatedSellingPrice = baseSellingPrice,
+                    calculatedRoi = targetRoiVal, // Showing the target
+                    totalInvestment = requiredTotalInvestment,
+                    netAnnualIncome = netAnnualIncome,
+                    grossAnnualRent = grossAnnualRent,
+                    totalPropertyTaxAnnually = annualTax,
+                    registryCost = registry,
+                    gstAmount = monthlyRent * 0.18,
+                    totalOtherCharges = otherCharges
+                )}
+            }
+        }
     }
 }
