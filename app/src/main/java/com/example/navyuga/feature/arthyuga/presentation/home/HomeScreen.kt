@@ -32,9 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle // Use correct lifecycle import
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel // IMPORT THIS
+import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
 
 // --- Theme Colors ---
 private val DeepDarkBlue = Color(0xFF0F172A)
@@ -49,7 +49,6 @@ fun HomeScreen(
     onRoiClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    // Collecting state safely
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -119,7 +118,9 @@ fun HomeScreen(
                         property = property,
                         onItemClick = { onNavigateToDetail(property.id) },
                         onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
-                        onShareClick = { /* Handle Share */ }
+                        onShareClick = { /* Handle Share */ },
+                        // ⚡ Added padding here so it floats like the Profile screen
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     )
                 }
 
@@ -128,8 +129,6 @@ fun HomeScreen(
         }
     }
 }
-
-// ... HomeTopBar and StoryCircle remain the same ...
 
 @Composable
 fun HomeTopBar(
@@ -221,41 +220,46 @@ fun StoryCircle(
     }
 }
 
+// ⚡ REFACTORED: Now matches the Profile Screen's Card Style
 @Composable
 fun InstagramStylePropertyCard(
-    property: PropertyModel, // CHANGED TO PropertyModel
+    property: PropertyModel,
     onItemClick: () -> Unit,
     onLikeClick: () -> Unit,
-    onShareClick: () -> Unit
+    onShareClick: () -> Unit,
+    modifier: Modifier = Modifier // Added modifier param
 ) {
     val scale by animateFloatAsState(if (property.isLiked) 1.2f else 1.0f, label = "like")
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onItemClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        modifier = modifier.clickable { onItemClick() },
+        // ⚡ Changed to Surface color + Elevation + Shape (Card Look)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = property.mainImage, // Use helper
+                    model = property.mainImage,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(32.dp).clip(CircleShape)
+                    modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.Gray)
                 )
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(property.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
-                    Text(property.location, style = MaterialTheme.typography.bodySmall, color = Color.Gray) // Uses location field
+                    Text(property.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                    Text(property.location, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(Icons.Default.MoreVert, "Options", tint = Color.White)
+                Icon(Icons.Default.MoreVert, "Options", tint = MaterialTheme.colorScheme.onSurface)
             }
 
             Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(320.dp).clip(RoundedCornerShape(16.dp))) {
                 AsyncImage(
-                    model = property.mainImage, // Use helper
+                    model = property.mainImage,
                     contentDescription = "Property Image",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -263,8 +267,9 @@ fun InstagramStylePropertyCard(
             }
 
             Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp, start = 16.dp, end = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                PropertyStat("Investment", "₹${property.minInvest}") // Mapped correctly
-                PropertyStat("Rent", property.rentReturn.ifEmpty { "₹15k" }) // Fallback if empty
+                // ⚡ Updated Labels: Price & Return
+                PropertyStat("Price", "₹${property.minInvest}")
+                PropertyStat("Return", property.rentReturn.ifEmpty { "₹15k" })
                 PropertyStat("ROI", "${property.roi}%", true)
             }
 
@@ -273,12 +278,12 @@ fun InstagramStylePropertyCard(
                     Icon(
                         if (property.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         "Like",
-                        tint = if (property.isLiked) Color.Red else Color.White,
+                        tint = if (property.isLiked) Color.Red else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.scale(scale)
                     )
                 }
                 IconButton(onClick = onShareClick) {
-                    Icon(Icons.AutoMirrored.Filled.Send, "Share", tint = Color.White, modifier = Modifier.rotate(-45f).padding(bottom = 4.dp))
+                    Icon(Icons.AutoMirrored.Filled.Send, "Share", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.rotate(-45f).padding(bottom = 4.dp))
                 }
             }
         }
@@ -288,7 +293,7 @@ fun InstagramStylePropertyCard(
 @Composable
 fun PropertyStat(label: String, value: String, isHighlight: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = if (isHighlight) Color(0xFF4ADE80) else Color.White)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = if (isHighlight) Color(0xFF4ADE80) else MaterialTheme.colorScheme.onSurface)
     }
 }
