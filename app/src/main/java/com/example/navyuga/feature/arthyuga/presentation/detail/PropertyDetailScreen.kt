@@ -44,10 +44,10 @@ fun PropertyDetailScreen(
     onNavigateBack: () -> Unit,
     viewModel: PropertyDetailViewModel = hiltViewModel()
 ) {
-    // 1. Collect Property Data
+    // 1. Collect Property Data (Coroutine Flow Collection)
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // 2. ⚡ Collect Dynamic WhatsApp Number from ViewModel (Firestore)
+    // 2. Collect Dynamic WhatsApp Number
     val whatsappNumber by viewModel.supportNumber.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -57,7 +57,6 @@ fun PropertyDetailScreen(
             state.property?.let { property ->
                 PropertyBottomBar(
                     onInvestClick = {
-                        // 3. Pass the dynamic number to the launcher
                         launchWhatsApp(context, property, whatsappNumber)
                     }
                 )
@@ -102,6 +101,7 @@ fun PropertyDetailContent(
     val scrollState = rememberScrollState()
     var visible by remember { mutableStateOf(false) }
 
+    // Coroutine: Trigger animation when composition enters
     LaunchedEffect(Unit) { visible = true }
 
     Column(
@@ -110,11 +110,11 @@ fun PropertyDetailContent(
             .verticalScroll(scrollState)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // --- 1. Header Image ---
+        // --- 1. Header Image (Restored Height & Overlay) ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(350.dp)
+                .height(400.dp) // Restored original height
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -132,88 +132,101 @@ fun PropertyDetailContent(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.8f)
+                            )
                         )
                     )
             )
 
-            // Back Button
-            IconButton(
-                onClick = onBackClick,
+            // Top Bar: Back Button & Verified Tag
+            Row(
                 modifier = Modifier
-                    .padding(top = 40.dp, start = 16.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .align(Alignment.TopStart)
-            ) {
-                Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
-            }
-        }
-
-        // --- 2. Details Sheet ---
-        AnimatedVisibility(
-            visible = visible,
-            enter = slideInVertically(initialOffsetY = { 100 }) + fadeIn()
-        ) {
-            Column(
-                modifier = Modifier
-                    .offset(y = (-30).dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(24.dp)
+                    .padding(top = 40.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Verified Tag
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.4f))
+                ) {
+                    Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
+                }
+
+                // Verified Tag (Restored Position)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.9f))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Verified,
                         contentDescription = "Verified",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(14.dp)
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Verified Property",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Title & Location
+            // Bottom Overlay: Title & Location
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(24.dp)
+                    .padding(bottom = 20.dp) // Push up slightly to avoid overlap clipping
+            ) {
                 Text(
                     text = property.title,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Color.White
                 )
-
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.LocationOn,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
+                        tint = Color.White.copy(alpha = 0.8f),
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = property.fullLocation,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.White.copy(alpha = 0.9f)
                     )
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // --- 3. Funded Progress Bar ---
+        // --- 2. Content Body ---
+        AnimatedVisibility(
+            visible = visible,
+            enter = slideInVertically(initialOffsetY = { 100 }) + fadeIn()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-30).dp) // Overlap effect
+                    .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(24.dp)
+            ) {
+                // Funded Progress Bar (Restored Look)
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -221,16 +234,16 @@ fun PropertyDetailContent(
                     ) {
                         Text(
                             text = "Funded",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${property.fundedPercent}%",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     LinearProgressIndicator(
                         progress = { property.fundedPercent / 100f },
                         modifier = Modifier
@@ -238,14 +251,14 @@ fun PropertyDetailContent(
                             .height(8.dp)
                             .clip(RoundedCornerShape(4.dp)),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         strokeCap = StrokeCap.Round,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                // --- 4. Stats Row ---
+                // --- 3. Financial Stats Row (Price / Return / ROI) ---
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -253,41 +266,76 @@ fun PropertyDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SingleStatItem(
-                        label = "Total Investment",
-                        value = property.totalValuation
+                    // Price
+                    BigStatItem(
+                        value = property.totalValuation.ifEmpty { "-" },
+                        label = "Price"
                     )
 
                     VerticalDivider(height = 40.dp)
 
-                    SingleStatItem(
-                        label = "Rent Return",
-                        value = property.rentReturn.ifEmpty { "8%" }
+                    // Return
+                    BigStatItem(
+                        value = property.rentReturn.ifEmpty { "-" },
+                        label = "Return"
                     )
 
                     VerticalDivider(height = 40.dp)
 
-                    SingleStatItem(
-                        label = "Net ROI",
+                    // ROI
+                    BigStatItem(
                         value = "${property.roi}%",
+                        label = "ROI",
                         isHighlight = true
                     )
                 }
 
+                Spacer(modifier = Modifier.height(32.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // --- 4. Detailed Information Sections ---
+
+                // Header 1: Property Information
+                InfoSectionHeader(title = "Property Information")
+                InfoRow(label = "Property Name", value = property.title)
+                InfoRow(label = "Address", value = property.fullLocation)
+                InfoRow(label = "Type", value = "-")
+                InfoRow(label = "Age", value = "-")
+                InfoRow(label = "Area", value = "-")
+                InfoRow(label = "Floor", value = "-")
+                InfoRow(label = "Car Park", value = "-")
+
                 Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Header 2: Lease Information
+                InfoSectionHeader(title = "Lease Information")
+                InfoRow(label = "Tenant Name", value = "-")
+                InfoRow(label = "Period of Occupation", value = "-")
+                InfoRow(label = "Escalation", value = "-")
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Header 3: Financial Analysis
+                InfoSectionHeader(title = "Financial Analysis")
+                InfoRow(label = "Monthly RENT", value = property.rentReturn.ifEmpty { "-" })
+                InfoRow(label = "Gross Annual Rent", value = "-")
+                InfoRow(label = "Annual Property Tax", value = "-")
+
+                Spacer(modifier = Modifier.height(32.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // --- 5. Description ---
                 Text(
-                    text = "Property Description",
+                    text = "Description",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = if (property.description.isNotEmpty()) property.description else "A premium property located in the heart of the city, offering high returns and guaranteed rental income.",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = if (property.description.isNotEmpty()) property.description else "-",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 24.sp
                 )
@@ -301,25 +349,60 @@ fun PropertyDetailContent(
 // --- Helper Components ---
 
 @Composable
-fun SingleStatItem(
-    label: String,
+fun BigStatItem(
     value: String,
+    label: String,
     isHighlight: Boolean = false
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = value,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
+            ),
+            color = if (isHighlight) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun InfoSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            ),
-            color = if (isHighlight) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
         )
     }
 }
@@ -330,7 +413,7 @@ fun VerticalDivider(height: androidx.compose.ui.unit.Dp) {
         modifier = Modifier
             .height(height)
             .width(1.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant)
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     )
 }
 
@@ -372,14 +455,14 @@ fun PropertyBottomBar(
     }
 }
 
-// 4. Update Helper Function to accept dynamic number
 private fun launchWhatsApp(context: Context, property: PropertyModel, contactNumber: String) {
     val message = """
         Hi, I am interested in *${property.title}*.
         
         *Details:*
-        Location: ${property.city}
-        Total Investment: ${property.totalValuation}
+        Location: ${property.fullLocation}
+        Price: ${property.totalValuation}
+        Return: ${property.rentReturn}
         ROI: ${property.roi}%
         
         Please provide more details.
