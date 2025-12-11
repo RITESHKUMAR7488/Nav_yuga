@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.navyuga.core.common.UiState
-import com.example.navyuga.feature.arthyuga.presentation.home.PropertyCard // Uses the fixed PropertyCard from above
+import com.example.navyuga.feature.arthyuga.presentation.home.InstagramStylePropertyCard
 import com.example.navyuga.feature.auth.presentation.components.NavyugaGradientButton
 import com.example.navyuga.ui.theme.*
 
@@ -44,7 +44,7 @@ fun SearchScreen(
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
-        // --- 3 SMART DROPDOWNS ---
+        // --- DROPDOWNS ---
         NavyugaDropdown("Country", viewModel.countries, selectedCountry) { selectedCountry = it }
         Spacer(modifier = Modifier.height(12.dp))
         NavyugaDropdown("City", viewModel.cities, selectedCity) { selectedCity = it }
@@ -70,18 +70,24 @@ fun SearchScreen(
             is UiState.Success -> {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(state.data) { property ->
-                        PropertyCard(property, onClick = {
-                            navController.navigate("property_detail/${property.id}")
-                        })
+                        // FIXED: Removed onMessageClick
+                        InstagramStylePropertyCard(
+                            property = property,
+                            onItemClick = { navController.navigate("property_detail/${property.id}") },
+                            onLikeClick = { /* Handle Search Like */ },
+                            onShareClick = { /* Handle Share */ }
+                        )
                     }
                 }
             }
             is UiState.Failure -> {
-                Text(
-                    text = state.message,
-                    color = ErrorRed,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
             else -> {}
         }
@@ -112,7 +118,9 @@ fun NavyugaDropdown(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
             ),
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true },
             shape = RoundedCornerShape(12.dp)
         )
         DropdownMenu(

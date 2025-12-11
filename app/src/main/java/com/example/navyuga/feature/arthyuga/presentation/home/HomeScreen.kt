@@ -1,5 +1,7 @@
 package com.example.navyuga.feature.arthyuga.presentation.home
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,261 +12,342 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.navyuga.core.common.UiState
-import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
-import com.example.navyuga.feature.arthyuga.domain.model.TenantStory
-import com.example.navyuga.ui.theme.*
+import com.example.navyuga.feature.arthyuga.domain.model.Property
+
+// --- Theme Colors ---
+private val MidnightBlue = Color(0xFF191970)
+private val DeepDarkBlue = Color(0xFF0F172A)
+private val VibrantBlue = Color(0xFF4361EE)
+private val StoryGradientStart = Color(0xFF4361EE)
+private val StoryGradientEnd = Color(0xFF3F37C9)
+private val CardBackground = Color(0xFF1E293B) // Slightly lighter than background for card
 
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel(),
-    onPropertyClick: (String) -> Unit,
-    onRoiClick: () -> Unit // New callback
+    onNavigateToDetail: (String) -> Unit,
+    onNavigateBack: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val stories by viewModel.stories.collectAsState()
-    val propertiesState by viewModel.properties.collectAsState()
-    val selectedTab by viewModel.selectedTab.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
-    // Dialog State
-    var showRoiDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            Text(
-                text = "Trending Tenants",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(16.dp)
+    Scaffold(
+        containerColor = DeepDarkBlue,
+        topBar = {
+            HomeTopBar(
+                onBackClick = onNavigateBack,
+                onNotificationClick = { /* Handle Notification */ }
             )
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(stories) { story ->
-                    StoryItem(story)
-                }
+        }
+    ) { paddingValues ->
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = VibrantBlue)
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
+        } else {
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
-                    .padding(4.dp)
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                verticalArrangement = Arrangement.spacedBy(24.dp) // More space between sections
             ) {
-                listOf("Available", "Funded", "Exited").forEach { tab ->
-                    val isSelected = tab == selectedTab
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { viewModel.selectTab(tab) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = tab,
-                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                // 1. Greeting Section
+                item {
+                    Text(
+                        text = "Hello ${uiState.userName}",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        ),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                // 2. Stories / Trending Rail
+                item {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Trending Properties",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White.copy(alpha = 0.9f)
+                            ),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
 
-            when (val state = propertiesState) {
-                is UiState.Success -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(state.data) { property ->
-                            PropertyCard(property, onClick = { onPropertyClick(property.id) })
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(uiState.stories, key = { it.id }) { story ->
+                                StoryCircle(
+                                    story = story,
+                                    onClick = {
+                                        viewModel.markStoryAsSeen(story.id)
+                                        onNavigateToDetail(story.id)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
-                is UiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-                else -> {}
-            }
-        }
 
-        // --- Floating Action Button ---
-        FloatingActionButton(
-            onClick = { showRoiDialog = true },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp),
-            containerColor = BrandBlue,
-            contentColor = Color.White
-        ) {
-            Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Icon(Icons.Default.Calculate, contentDescription = "ROI")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Calculate ROI", fontWeight = FontWeight.Bold)
+                item {
+                    Divider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
+                }
+
+                // 3. Property Feed
+                items(uiState.properties, key = { it.id }) { property ->
+                    InstagramStylePropertyCard(
+                        property = property,
+                        onItemClick = { onNavigateToDetail(property.id) },
+                        onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
+                        onShareClick = { /* Handle Share */ }
+                    )
+                }
+
+                // Bottom Spacing
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }
+}
 
-    // --- Selection Dialog ---
-    if (showRoiDialog) {
-        AlertDialog(
-            onDismissRequest = { showRoiDialog = false },
-            title = { Text("Select Role") },
-            text = { Text("Are you buying or selling a property?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showRoiDialog = false
-                        onRoiClick()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
-                ) {
-                    Text("I am a Buyer")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    android.widget.Toast.makeText(context, "Seller features coming soon!", android.widget.Toast.LENGTH_SHORT).show()
-                }) {
-                    Text("I am a Seller")
-                }
+@Composable
+fun HomeTopBar(
+    onBackClick: () -> Unit,
+    onNotificationClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier
+                .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                .size(40.dp)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White
+            )
+        }
+
+        IconButton(
+            onClick = onNotificationClick,
+            modifier = Modifier
+                .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                .size(40.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Notifications,
+                contentDescription = "Notifications",
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun StoryCircle(
+    story: StoryState,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Box(
+            modifier = Modifier.size(76.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Gradient Ring - Only visible if NOT seen
+            if (!story.isSeen) {
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .border(
+                            width = 2.5.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(StoryGradientStart, StoryGradientEnd)
+                            ),
+                            shape = CircleShape
+                        )
+                )
             }
+
+            // Image
+            AsyncImage(
+                model = story.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(66.dp)
+                    .clip(CircleShape)
+                    .background(Color.Gray)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = story.title,
+            style = MaterialTheme.typography.bodySmall,
+            color = if(story.isSeen) Color.Gray else Color.White, // Dim text if seen
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(70.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
 }
 
 @Composable
-fun StoryItem(story: TenantStory) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(70.dp)
-                .border(2.dp, MaterialTheme.colorScheme.secondary, CircleShape)
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(Color.White)
-        ) {
-            AsyncImage(
-                model = story.logoUrl,
-                contentDescription = story.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
+fun InstagramStylePropertyCard(
+    property: Property,
+    onItemClick: () -> Unit,
+    onLikeClick: () -> Unit,
+    onShareClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (property.isLiked) 1.2f else 1.0f,
+        label = "Like Animation"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 0.dp) // Edge to edge container
+            .clickable { onItemClick() },
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Column {
+            // 1. User Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = property.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = property.title,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+                    Text(
+                        text = property.location,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Options",
+                    tint = Color.White
+                )
+            }
+
+            // 2. Main Image (Decreased width via padding)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp) // Added padding to decrease width
+                    .height(320.dp) // Slightly adjusted height
+                    .clip(RoundedCornerShape(16.dp))
+            ) {
+                AsyncImage(
+                    model = property.imageUrl,
+                    contentDescription = "Property Image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // 3. Stats Row (Investment | Rent | ROI)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, bottom = 4.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                PropertyStat(label = "Investment", value = property.price)
+                PropertyStat(label = "Rent", value = property.rent)
+                PropertyStat(label = "ROI", value = property.roi, isHighlight = true)
+            }
+
+            // 4. Action Buttons (Like & Share only)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp), // Less padding to align icons
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onLikeClick) {
+                    Icon(
+                        imageVector = if (property.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Like",
+                        tint = if (property.isLiked) Color.Red else Color.White,
+                        modifier = Modifier.scale(scale)
+                    )
+                }
+
+                IconButton(onClick = onShareClick) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = Color.White
+                    )
+                }
+            }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = story.name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onBackground)
     }
 }
 
 @Composable
-fun PropertyCard(
-    property: PropertyModel,
-    onClick: () -> Unit = {}
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .background(Color.Gray)
-            ) {
-                AsyncImage(
-                    model = property.imageUrls.firstOrNull(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-                    shape = RoundedCornerShape(bottomEnd = 12.dp),
-                    modifier = Modifier.align(Alignment.TopStart)
-                ) {
-                    Text(
-                        text = "${property.roi}% Yield",
-                        color = SuccessGreen,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = property.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = property.location,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LinearProgressIndicator(
-                        progress = { property.fundedPercent / 100f },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "${property.fundedPercent}%",
-                        color = MaterialTheme.colorScheme.secondary,
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Min: ${property.minInvest}", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                    Text("Invest >", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
+fun PropertyStat(label: String, value: String, isHighlight: Boolean = false) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = if (isHighlight) Color(0xFF4ADE80) else Color.White // Green for ROI
+        )
     }
 }

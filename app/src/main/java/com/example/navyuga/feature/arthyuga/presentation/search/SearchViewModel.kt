@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.navyuga.core.common.UiState
 import com.example.navyuga.feature.arthyuga.data.FakePropertyRepository
+import com.example.navyuga.feature.arthyuga.domain.model.Property
 import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,10 +17,9 @@ class SearchViewModel @Inject constructor(
     private val repository: FakePropertyRepository
 ) : ViewModel() {
 
-    private val _searchResults = MutableStateFlow<UiState<List<PropertyModel>>>(UiState.Success(emptyList()))
-    val searchResults: StateFlow<UiState<List<PropertyModel>>> = _searchResults
+    private val _searchResults = MutableStateFlow<UiState<List<Property>>>(UiState.Success(emptyList()))
+    val searchResults: StateFlow<UiState<List<Property>>> = _searchResults
 
-    // Dropdown Data
     val countries = listOf("India", "USA", "UAE")
     val cities = listOf("All Cities", "Kolkata", "Bangalore", "Gurugram", "Mumbai")
     val currencies = listOf("INR", "USD", "AED")
@@ -27,18 +27,30 @@ class SearchViewModel @Inject constructor(
     fun performSearch(country: String, city: String, currency: String) {
         viewModelScope.launch {
             _searchResults.value = UiState.Loading
-            // Simulate network delay
             kotlinx.coroutines.delay(500)
 
-            // Logic: We filter by City (since dummy data has city).
-            // Country/Currency are just placeholders for the UI logic in this prototype.
-            val results = repository.searchProperties("", city)
+            val rawResults = repository.searchProperties("", city)
 
-            if (results.isEmpty()) {
+            if (rawResults.isEmpty()) {
                 _searchResults.value = UiState.Failure("No properties found in $city")
             } else {
-                _searchResults.value = UiState.Success(results)
+                val uiResults = rawResults.map { it.toUiModel() }
+                _searchResults.value = UiState.Success(uiResults)
             }
         }
+    }
+
+    // FIXED: Updated to include rent and roi
+    private fun PropertyModel.toUiModel(): Property {
+        return Property(
+            id = this.id,
+            title = this.title,
+            location = this.location,
+            price = "₹${this.minInvest}",
+            rent = "₹15,000", // Default/Placeholder for now
+            roi = "12%",      // Default/Placeholder for now
+            imageUrl = this.imageUrls.firstOrNull() ?: "",
+            isLiked = false
+        )
     }
 }
