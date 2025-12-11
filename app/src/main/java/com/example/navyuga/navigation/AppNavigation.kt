@@ -8,7 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue // ⚡ FIX 1: This import fixes the 'by' delegate error
+import androidx.compose.runtime.getValue // ⚡ FIXED: Necessary for 'by' delegation
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,7 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.navyuga.core.common.UiState // Ensure this is imported
+import com.example.navyuga.core.common.UiState
 import com.example.navyuga.feature.admin.presentation.AddPropertyScreen
 import com.example.navyuga.feature.admin.presentation.AdminDashboardScreen
 import com.example.navyuga.feature.admin.presentation.CreateUserScreen
@@ -25,6 +25,7 @@ import com.example.navyuga.feature.admin.presentation.ManagePropertiesScreen
 import com.example.navyuga.feature.admin.presentation.ManageUsersScreen
 import com.example.navyuga.feature.arthyuga.presentation.ArthYugaDashboard
 import com.example.navyuga.feature.arthyuga.presentation.detail.PropertyDetailScreen
+import com.example.navyuga.feature.auth.data.model.UserModel // ⚡ FIXED: Import needed for casting
 import com.example.navyuga.feature.auth.presentation.AuthViewModel
 import com.example.navyuga.feature.auth.presentation.LoginScreen
 import com.example.navyuga.feature.auth.presentation.RegisterScreen
@@ -80,17 +81,17 @@ fun AppNavigation(
         // --- ADMIN MODULE (SECURED) ---
 
         composable("admin_dashboard") {
-            // ⚡ SECURITY CHECK
             val authViewModel: AuthViewModel = hiltViewModel()
             val currentUserState by authViewModel.currentUser.collectAsState()
 
-            // ⚡ FIX 2: Safely unwrap UiState to access role
-            val isAdmin = (currentUserState as? UiState.Success)?.data?.role == "admin"
+            // ⚡ FIXED: Safe Casting with Generics
+            // We specifically cast to UiState.Success<UserModel> so Kotlin knows 'data' is a UserModel
+            val isAdmin = (currentUserState as? UiState.Success<UserModel>)?.data?.role == "admin"
 
-            // If user is NOT admin (and state is loaded), kick them back
+            // Security Check
             LaunchedEffect(currentUserState) {
                 if (currentUserState is UiState.Success && !isAdmin) {
-                    // Uncomment to enforce security:
+                    // Uncomment to activate security:
                     // navController.navigate("login") { popUpTo(0) { inclusive = true } }
                 }
             }

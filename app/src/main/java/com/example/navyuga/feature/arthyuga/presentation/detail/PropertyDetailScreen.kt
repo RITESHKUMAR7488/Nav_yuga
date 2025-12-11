@@ -44,17 +44,22 @@ fun PropertyDetailScreen(
     onNavigateBack: () -> Unit,
     viewModel: PropertyDetailViewModel = hiltViewModel()
 ) {
-    // COROUTINE USAGE:
-    // We collect the UI state (which contains the PropertyModel) using a lifecycle-aware coroutine.
-    // This ensures the UI updates automatically when data changes and pauses when the screen is not visible.
+    // 1. Collect Property Data
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // 2. ⚡ Collect Dynamic WhatsApp Number from ViewModel (Firestore)
+    val whatsappNumber by viewModel.supportNumber.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
 
     Scaffold(
         bottomBar = {
             state.property?.let { property ->
                 PropertyBottomBar(
-                    onInvestClick = { launchWhatsApp(context, property) }
+                    onInvestClick = {
+                        // 3. Pass the dynamic number to the launcher
+                        launchWhatsApp(context, property, whatsappNumber)
+                    }
                 )
             }
         }
@@ -240,7 +245,7 @@ fun PropertyDetailContent(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // --- 4. Stats Row (Total Investment | Rent Return | Net ROI) ---
+                // --- 4. Stats Row ---
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -248,7 +253,6 @@ fun PropertyDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // CHANGED: Label to "Total Investment" and value to 'totalValuation'
                     SingleStatItem(
                         label = "Total Investment",
                         value = property.totalValuation
@@ -368,9 +372,8 @@ fun PropertyBottomBar(
     }
 }
 
-private fun launchWhatsApp(context: Context, property: PropertyModel) {
-    val contact = "917488253954"
-    // Updated message to reflect Total Investment
+// 4. Update Helper Function to accept dynamic number
+private fun launchWhatsApp(context: Context, property: PropertyModel, contactNumber: String) {
     val message = """
         Hi, I am interested in *${property.title}*.
         
@@ -383,7 +386,7 @@ private fun launchWhatsApp(context: Context, property: PropertyModel) {
     """.trimIndent()
 
     try {
-        val url = "https://api.whatsapp.com/send?phone=$contact&text=${URLEncoder.encode(message, "UTF-8")}"
+        val url = "https://api.whatsapp.com/send?phone=$contactNumber&text=${URLEncoder.encode(message, "UTF-8")}"
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse(url)
         }

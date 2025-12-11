@@ -1,8 +1,7 @@
-package com.example.navyuga.feature.auth.data.repository
+package com.example.navyuga.feature.auth.domain.repository
 
 import com.example.navyuga.core.common.UiState
 import com.example.navyuga.feature.auth.data.model.UserModel
-import com.example.navyuga.feature.auth.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
@@ -17,41 +16,71 @@ class AuthRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : AuthRepository {
 
-    // COROUTINES EXPLANATION:
-    // 1. suspend fun: This function pauses execution without blocking the main thread.
-    // 2. flow { ... }: We use Flow to emit multiple values (Loading -> Success/Failure) over time.
-    // This makes your code robust because it handles the stream of data state reactively.
-
     override suspend fun loginUser(email: String, pass: String): Flow<UiState<UserModel>> = flow {
-        emit(UiState.Loading) // 1. Emit Loading State immediately
+        emit(UiState.Loading)
         try {
-            // 2. Use .await() to suspend coroutine until Firebase finishes (no callbacks!)
-            auth.signInWithEmailAndPassword(email, pass).await()
-            val uid = auth.currentUser?.uid ?: throw Exception("UID is null")
-
-            val snapshot = firestore.collection("users").document(uid).get().await()
-            val user = snapshot.toObject(UserModel::class.java)
-                ?: throw Exception("User profile not found")
-
-            emit(UiState.Success(user)) // 3. Emit Success with Data
-
+            val result = auth.signInWithEmailAndPassword(email, pass).await()
+            val uid = result.user?.uid
+            if (uid != null) {
+                val document = firestore.collection("users").document(uid).get().await()
+                val user = document.toObject(UserModel::class.java)
+                if (user != null) {
+                    emit(UiState.Success(user))
+                } else {
+                    emit(UiState.Failure("User data not found"))
+                }
+            } else {
+                emit(UiState.Failure("Login failed"))
+            }
         } catch (e: Exception) {
-            emit(UiState.Failure(e.localizedMessage ?: "Login Failed"))
+            emit(UiState.Failure(e.message ?: "Unknown error"))
         }
     }
 
     override suspend fun registerUser(user: UserModel, pass: String): Flow<UiState<String>> = flow {
         emit(UiState.Loading)
         try {
-            auth.createUserWithEmailAndPassword(user.email, pass).await()
-            val uid = auth.currentUser?.uid ?: throw Exception("User creation failed")
-
-            val newUser = user.copy(uid = uid)
-            firestore.collection("users").document(uid).set(newUser).await()
-
-            emit(UiState.Success("Account Created"))
+            val result = auth.createUserWithEmailAndPassword(user.email, pass).await()
+            val uid = result.user?.uid
+            if (uid != null) {
+                val newUser = user.copy(uid = uid)
+                firestore.collection("users").document(uid).set(newUser).await()
+                emit(UiState.Success("Registration Successful"))
+            } else {
+                emit(UiState.Failure("Registration failed"))
+            }
         } catch (e: Exception) {
-            emit(UiState.Failure(e.localizedMessage ?: "Registration Failed"))
+            emit(UiState.Failure(e.message ?: "Unknown error"))
         }
+    }
+
+    // ⚡ IMPLEMENTATION for Admin Check
+    override fun getCurrentUser(): Flow<UiState<UserModel>> = callbackFlow {
+        trySend(UiState.Loading)
+
+        val uid = auth.currentUser?.uid
+
+        if (uid == null) {
+            trySend(UiState.Failure("Not logged in"))
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("users").document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(UiState.Failure(error.message ?: "Sync error"))
+                    return@addSnapshotListener
+                }
+
+                val user = snapshot?.toObject(UserModel::class.java)
+                if (user != null) {
+                    trySend(UiState.Success(user))
+                } else {
+                    trySend(UiState.Failure("User not found"))
+                }
+            }
+
+        awaitClose { listener.remove() }
     }
 }

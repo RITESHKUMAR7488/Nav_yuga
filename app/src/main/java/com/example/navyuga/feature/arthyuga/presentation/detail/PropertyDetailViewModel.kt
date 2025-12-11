@@ -1,20 +1,22 @@
 package com.example.navyuga.feature.arthyuga.presentation.detail
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel // Import correct model
+import com.example.navyuga.core.common.Constants
+import com.example.navyuga.core.domain.repository.SettingsRepository // Import this
+import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
 import com.example.navyuga.feature.arthyuga.domain.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// ⚡ State now uses PropertyModel
 data class PropertyDetailState(
     val isLoading: Boolean = false,
     val property: PropertyModel? = null,
@@ -24,14 +26,23 @@ data class PropertyDetailState(
 @HiltViewModel
 class PropertyDetailViewModel @Inject constructor(
     private val repository: PropertyRepository,
+    private val settingsRepository: SettingsRepository, // ⚡ Inject Settings Repo
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Retrieve ID as String to match your Model
     private val propertyId: String = savedStateHandle.get<String>("propertyId") ?: ""
 
     private val _state = MutableStateFlow(PropertyDetailState())
     val state: StateFlow<PropertyDetailState> = _state.asStateFlow()
+
+    // ⚡ REAL-TIME WHATSAPP NUMBER
+    // This flow will start with the default constant, then update if Firestore changes.
+    val supportNumber: StateFlow<String> = settingsRepository.getWhatsAppNumber()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Constants.SUPPORT_WHATSAPP_NUMBER
+        )
 
     init {
         loadProperty()
@@ -45,18 +56,10 @@ class PropertyDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-
-            // Your repository returns Flow<PropertyModel?> directly in some versions,
-            // or Flow<UiState> in others. Based on your uploaded interface:
-            // fun getPropertyById(id: String): Flow<PropertyModel?>
-
             try {
                 repository.getPropertyById(propertyId).collect { fetchedProperty ->
                     _state.update {
-                        it.copy(
-                            isLoading = false,
-                            property = fetchedProperty
-                        )
+                        it.copy(isLoading = false, property = fetchedProperty)
                     }
                 }
             } catch (e: Exception) {
