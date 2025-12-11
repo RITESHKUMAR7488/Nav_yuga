@@ -1,7 +1,6 @@
 package com.example.navyuga.feature.arthyuga.presentation.home
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,40 +12,41 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.navyuga.feature.arthyuga.domain.model.Property
 
 // --- Theme Colors ---
-private val MidnightBlue = Color(0xFF191970)
 private val DeepDarkBlue = Color(0xFF0F172A)
-private val VibrantBlue = Color(0xFF4361EE)
 private val StoryGradientStart = Color(0xFF4361EE)
 private val StoryGradientEnd = Color(0xFF3F37C9)
-private val CardBackground = Color(0xFF1E293B) // Slightly lighter than background for card
+private val FabColor = Color(0xFF4361EE) // Vibrant Blue for the Action Button
 
 @Composable
 fun HomeScreen(
     onNavigateToDetail: (String) -> Unit,
     onNavigateBack: () -> Unit,
+    onRoiClick: () -> Unit, // New Callback for FAB
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -58,18 +58,32 @@ fun HomeScreen(
                 onBackClick = onNavigateBack,
                 onNotificationClick = { /* Handle Notification */ }
             )
+        },
+        // ADDED FAB (Calculate ROI)
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onRoiClick,
+                containerColor = FabColor,
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Calculate,
+                    contentDescription = "Calculate ROI"
+                )
+            }
         }
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = VibrantBlue)
+                CircularProgressIndicator(color = FabColor)
             }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                verticalArrangement = Arrangement.spacedBy(24.dp) // More space between sections
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 // 1. Greeting Section
                 item {
@@ -113,7 +127,7 @@ fun HomeScreen(
                 }
 
                 item {
-                    Divider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
                 }
 
                 // 3. Property Feed
@@ -126,8 +140,8 @@ fun HomeScreen(
                     )
                 }
 
-                // Bottom Spacing
-                item { Spacer(modifier = Modifier.height(80.dp)) }
+                // Bottom Spacing for FAB and Nav Bar
+                item { Spacer(modifier = Modifier.height(100.dp)) }
             }
         }
     }
@@ -186,7 +200,6 @@ fun StoryCircle(
             modifier = Modifier.size(76.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Gradient Ring - Only visible if NOT seen
             if (!story.isSeen) {
                 Box(
                     modifier = Modifier
@@ -201,7 +214,6 @@ fun StoryCircle(
                 )
             }
 
-            // Image
             AsyncImage(
                 model = story.imageUrl,
                 contentDescription = null,
@@ -216,7 +228,7 @@ fun StoryCircle(
         Text(
             text = story.title,
             style = MaterialTheme.typography.bodySmall,
-            color = if(story.isSeen) Color.Gray else Color.White, // Dim text if seen
+            color = if(story.isSeen) Color.Gray else Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.width(70.dp),
@@ -240,12 +252,11 @@ fun InstagramStylePropertyCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 0.dp) // Edge to edge container
             .clickable { onItemClick() },
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Column {
-            // 1. User Header
+            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -280,12 +291,12 @@ fun InstagramStylePropertyCard(
                 )
             }
 
-            // 2. Main Image (Decreased width via padding)
+            // Image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp) // Added padding to decrease width
-                    .height(320.dp) // Slightly adjusted height
+                    .padding(horizontal = 12.dp)
+                    .height(320.dp)
                     .clip(RoundedCornerShape(16.dp))
             ) {
                 AsyncImage(
@@ -296,7 +307,7 @@ fun InstagramStylePropertyCard(
                 )
             }
 
-            // 3. Stats Row (Investment | Rent | ROI)
+            // Stats
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -308,11 +319,11 @@ fun InstagramStylePropertyCard(
                 PropertyStat(label = "ROI", value = property.roi, isHighlight = true)
             }
 
-            // 4. Action Buttons (Like & Share only)
+            // Buttons: Like & Paper Plane (Send/Share)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp), // Less padding to align icons
+                    .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onLikeClick) {
@@ -326,9 +337,11 @@ fun InstagramStylePropertyCard(
 
                 IconButton(onClick = onShareClick) {
                     Icon(
-                        imageVector = Icons.Default.Share,
+                        // CHANGED TO PAPER PLANE ICON
+                        imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Share",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.rotate(-45f).padding(bottom = 4.dp) // Optional rotation for style
                     )
                 }
             }
@@ -347,7 +360,7 @@ fun PropertyStat(label: String, value: String, isHighlight: Boolean = false) {
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-            color = if (isHighlight) Color(0xFF4ADE80) else Color.White // Green for ROI
+            color = if (isHighlight) Color(0xFF4ADE80) else Color.White
         )
     }
 }

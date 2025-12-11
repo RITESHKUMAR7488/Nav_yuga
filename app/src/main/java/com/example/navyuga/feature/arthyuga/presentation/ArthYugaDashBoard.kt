@@ -1,5 +1,6 @@
 package com.example.navyuga.feature.arthyuga.presentation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,11 +22,12 @@ import com.example.navyuga.feature.arthyuga.presentation.search.SearchScreen
 import com.example.navyuga.feature.profile.presentation.ProfileScreen
 import com.example.navyuga.navigation.PlaceholderScreen
 
-// --- Custom Colors for the Bar ---
-private val NavBackground = Color(0xFF0F172A) // Deep Midnight Blue
-private val UnselectedIconColor = Color.White.copy(alpha = 0.6f) // Hollow Gray/Dim White
-private val SelectedIconColor = Color.White // Pure White
-private val IndicatorColor = Color.Transparent // No background pill
+// --- Custom Colors for the Instagram Look ---
+private val NavBackground = Color.Black // Distinct from app background
+private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
+private val SelectedIconColor = Color.White
+private val IndicatorColor = Color.Transparent
+private val BorderColor = Color.White.copy(alpha = 0.15f) // Faint whitish border
 
 @Composable
 fun ArthYugaDashboard(
@@ -36,89 +38,60 @@ fun ArthYugaDashboard(
 ) {
     val navController = rememberNavController()
 
-    // Define the "Hollow" (Unselected) vs "Solid" (Selected) icons
     val items = listOf(
-        BottomNavItem(
-            label = "Home",
-            route = "ay_home",
-            selectedIcon = Icons.Filled.Home,
-            unselectedIcon = Icons.Outlined.Home
-        ),
-        BottomNavItem(
-            label = "Search",
-            route = "ay_search",
-            selectedIcon = Icons.Filled.Search,
-            unselectedIcon = Icons.Outlined.Search
-        ),
-        BottomNavItem(
-            label = "Invest",
-            route = "ay_invest",
-            // 'Paid' is a great icon for Investment (Circle with Dollar)
-            selectedIcon = Icons.Filled.Paid,
-            unselectedIcon = Icons.Outlined.Paid
-        ),
-        BottomNavItem(
-            label = "Reels",
-            route = "ay_reels",
-            // 'SlowMotionVideo' looks very similar to the Instagram Reels icon
-            selectedIcon = Icons.Filled.SlowMotionVideo,
-            unselectedIcon = Icons.Outlined.SlowMotionVideo
-        ),
-        BottomNavItem(
-            label = "Profile",
-            route = "ay_profile",
-            selectedIcon = Icons.Filled.Person,
-            unselectedIcon = Icons.Outlined.Person
-        )
+        BottomNavItem("Home", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
+        BottomNavItem("Search", "ay_search", Icons.Filled.Search, Icons.Outlined.Search),
+        BottomNavItem("Invest", "ay_invest", Icons.Filled.Paid, Icons.Outlined.Paid),
+        BottomNavItem("Reels", "ay_reels", Icons.Filled.SlowMotionVideo, Icons.Outlined.SlowMotionVideo),
+        BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = NavBackground,
-                contentColor = Color.White,
-                tonalElevation = 0.dp // Flat look like Instagram
-            ) {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
+            // Column to stack Border + Navbar
+            Column {
+                HorizontalDivider(thickness = 0.5.dp, color = BorderColor) // The faint border
 
-                items.forEach { item ->
-                    val isSelected = currentRoute == item.route
+                NavigationBar(
+                    containerColor = NavBackground,
+                    contentColor = Color.White,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.padding(top = 0.dp)
+                ) {
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
 
-                    NavigationBarItem(
-                        icon = {
-                            Icon(
-                                // MAGIC: Switch between Hollow and Solid here
-                                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                                contentDescription = item.label,
-                                modifier = Modifier.padding(bottom = 4.dp) // Slight lift
-                            )
-                        },
-                        // Optional: Hide labels for a cleaner "Instagram" look, or keep them
-                        label = {
-                            Text(
-                                text = item.label,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        },
-                        selected = isSelected,
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = SelectedIconColor,
-                            selectedTextColor = SelectedIconColor,
-                            indicatorColor = IndicatorColor, // Important: Makes the "pill" invisible
-                            unselectedIconColor = UnselectedIconColor,
-                            unselectedTextColor = UnselectedIconColor
-                        ),
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                    items.forEach { item ->
+                        val isSelected = currentRoute == item.route
+
+                        NavigationBarItem(
+                            icon = {
+                                Icon(
+                                    imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                                    contentDescription = item.label,
+                                    modifier = Modifier.padding(vertical = 4.dp) // Center icon vertically
+                                )
+                            },
+                            // REMOVED LABEL for Instagram look
+                            selected = isSelected,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = SelectedIconColor,
+                                selectedTextColor = SelectedIconColor,
+                                indicatorColor = IndicatorColor,
+                                unselectedIconColor = UnselectedIconColor,
+                                unselectedTextColor = UnselectedIconColor
+                            ),
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -135,6 +108,10 @@ fun ArthYugaDashboard(
                     },
                     onNavigateBack = {
                         rootNavController.popBackStack()
+                    },
+                    // WIRED UP ROI BUTTON
+                    onRoiClick = {
+                        rootNavController.navigate("roi_calculator")
                     }
                 )
             }
