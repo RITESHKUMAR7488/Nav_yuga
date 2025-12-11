@@ -1,12 +1,12 @@
 package com.example.navyuga.feature.roi.presentation
 
 import android.content.Context
-import android.view.View
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +24,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.navyuga.ui.theme.BrandBlue
 import com.example.navyuga.ui.theme.SuccessGreen
@@ -85,7 +87,7 @@ fun RoiScreen(
                     2 -> Step2Lease(state, viewModel)
                     3 -> Step3Expenses(state, viewModel)
                     4 -> Step4Financials(state, viewModel)
-                    5 -> Step5Result(state, onShare = { context ->
+                    5 -> Step5Result(state, viewModel, onShare = { context ->
                         shareRoiReport(context, state)
                     })
                 }
@@ -219,11 +221,13 @@ fun Step2Lease(state: RoiState, vm: RoiViewModel) {
 fun Step3Expenses(state: RoiState, vm: RoiViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader("Monthly Expenses")
-        RoiInput("Property Tax / Month (₹)", state.propertyTaxMonthly, isNumber = true) { vm.updateExpenses(tax = it) }
+        // Mandatory *
+        RoiInput("Property Tax / Month (₹)*", state.propertyTaxMonthly, isNumber = true) { vm.updateExpenses(tax = it) }
 
         Divider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        RoiInput("Maintenance Cost / Month (₹)", state.maintenanceCost, isNumber = true) { vm.updateExpenses(maint = it) }
+        // Mandatory *
+        RoiInput("Maintenance Cost / Month (₹)*", state.maintenanceCost, isNumber = true) { vm.updateExpenses(maint = it) }
 
         Text("Paid By", style = MaterialTheme.typography.labelLarge)
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -271,13 +275,16 @@ fun Step4Financials(state: RoiState, vm: RoiViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Step5Result(state: RoiState, onShare: (Context) -> Unit) {
+fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
     val context = LocalContext.current
+    var showCounterDialog by remember { mutableStateOf(false) }
+    var showCashFlowSheet by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-        // --- Income Analysis (Moved Up) ---
+        // --- Income Analysis ---
         Text("Income Analysis", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -289,7 +296,7 @@ fun Step5Result(state: RoiState, onShare: (Context) -> Unit) {
             }
         }
 
-        // NET INCOME - BOLD and Separate
+        // NET INCOME
         Card(
             colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.1f)),
             modifier = Modifier.fillMaxWidth(),
@@ -327,7 +334,7 @@ fun Step5Result(state: RoiState, onShare: (Context) -> Unit) {
             }
         }
 
-        // --- Final Result Box (Blue Theme) ---
+        // --- Final Result Box ---
         Card(
             colors = CardDefaults.cardColors(containerColor = BrandBlue),
             elevation = CardDefaults.cardElevation(8.dp),
@@ -348,7 +355,38 @@ fun Step5Result(state: RoiState, onShare: (Context) -> Unit) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // --- ACTION BUTTONS ---
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (state.isBuyerMode) {
+                Button(
+                    onClick = { showCounterDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Counter ROI")
+                }
+            }
+
+            Button(
+                onClick = {
+                    vm.generateCashFlow()
+                    showCashFlowSheet = true
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Timeline, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Cash Flow")
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
 
         Button(
             onClick = { onShare(context) },
@@ -359,6 +397,198 @@ fun Step5Result(state: RoiState, onShare: (Context) -> Unit) {
             Spacer(modifier = Modifier.width(8.dp))
             Text("Share PDF Report")
         }
+    }
+
+    if (showCounterDialog) {
+        CounterRoiDialog(
+            currentRoi = state.calculatedRoi,
+            onDismiss = { showCounterDialog = false },
+            onCalculate = { targetRoi -> vm.calculateCounterOffer(targetRoi) }
+        )
+    }
+
+    if (showCashFlowSheet) {
+        ModalBottomSheet(onDismissRequest = { showCashFlowSheet = false }) {
+            CashFlowContent(state.cashFlows)
+        }
+    }
+}
+
+@Composable
+fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Double) -> Double) {
+    var targetRoiStr by remember { mutableStateOf("") }
+    var resultPrice by remember { mutableStateOf<Double?>(null) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Counter ROI Calculator",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = BrandBlue,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Current ROI: ${String.format("%.2f%%", currentRoi)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = targetRoiStr,
+                    onValueChange = { targetRoiStr = it },
+                    label = { Text("Target ROI (%)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (resultPrice != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.1f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, SuccessGreen)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Make this Offer:", style = MaterialTheme.typography.labelMedium, color = SuccessGreen)
+                            Text(
+                                "₹${String.format("%,.0f", resultPrice)}",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = SuccessGreen
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Close")
+                    }
+                    Button(
+                        onClick = {
+                            val target = targetRoiStr.toDoubleOrNull() ?: 0.0
+                            resultPrice = onCalculate(target)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                    ) {
+                        Text("Calculate")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CashFlowContent(cashFlows: List<CashFlowRow>) {
+    // Calculate Total Net Income
+    val totalIncome = cashFlows.sumOf { it.netIncome }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .heightIn(max = 600.dp) // Slightly taller to fit footer
+    ) {
+        Text(
+            "Projected Cash Flow",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = BrandBlue
+        )
+        Text(
+            "Based on annual rent escalation and constant expenses.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Table Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Year", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.Bold)
+            Text("Rent", modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+            Text("Net Income", modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+        }
+
+        // List
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f) // Fill remaining space but allow footer
+                .padding(vertical = 8.dp)
+        ) {
+            items(cashFlows) { row ->
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp, horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(row.year.toString(), modifier = Modifier.weight(0.5f))
+                        Text(
+                            "₹${String.format("%,.0f", row.annualRent)}",
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.End
+                        )
+                        Text(
+                            "₹${String.format("%,.0f", row.netIncome)}",
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.End,
+                            color = SuccessGreen,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                }
+            }
+        }
+
+        // --- NEW: TOTAL FOOTER ---
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.15f)),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "TOTAL PROJECTED INCOME",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = SuccessGreen,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "₹${String.format("%,.0f", totalIncome)}",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = SuccessGreen,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
