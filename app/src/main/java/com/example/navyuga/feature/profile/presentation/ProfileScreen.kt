@@ -4,7 +4,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,7 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+// Removed: import androidx.compose.ui.unit.sp (No longer needed)
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.navyuga.R
@@ -48,7 +47,7 @@ fun ProfileScreen(
     val ownedProperties by viewModel.ownedProperties.collectAsState()
     val likedProperties by viewModel.likedProperties.collectAsState()
 
-    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Properties, 1 = Liked
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     val userName = if (currentUserState is UiState.Success) {
         (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
@@ -76,13 +75,18 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text(text = "Hello,", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        // Fixed: Using bodyLarge (16sp) instead of hardcoded 18sp
+                        Text(
+                            text = "Hello,",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        // Fixed: Using headlineMedium instead of hardcoded 32sp
                         Text(
                             text = userName,
-                            fontSize = 32.sp,
+                            style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            lineHeight = 36.sp
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
                     IconButton(
@@ -105,9 +109,10 @@ fun ProfileScreen(
 
             // 2. STATS GRID
             item {
+                // Fixed: Using titleLarge instead of hardcoded 20sp
                 Text(
                     text = "Your Real Estate Portfolio",
-                    fontSize = 20.sp,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
@@ -155,7 +160,12 @@ fun ProfileScreen(
             if (activeList.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                        Text(text = emptyMessage, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                        // Fixed: Using bodyMedium (14sp) instead of hardcoded 14sp
+                        Text(
+                            text = emptyMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             } else {
@@ -202,16 +212,18 @@ fun BigStatCard(stat: ProfileStat, modifier: Modifier = Modifier) {
                     trackColor = Color.Transparent
                 )
             }
+            // Fixed: Using bodySmall (12sp) instead of hardcoded 12sp
             Text(
                 text = stat.title,
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
+            // Fixed: Using titleMedium instead of hardcoded 18sp
             Text(
                 text = stat.value,
-                fontSize = 18.sp,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -253,7 +265,6 @@ fun ProfilePropertyCard(
                 AsyncImage(model = property.mainImage, contentDescription = "Property Image", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
             Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp, start = 16.dp, end = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                // ⚡ MODIFIED LABELS HERE
                 ProfilePropertyStat("Price", "₹${property.minInvest}")
                 ProfilePropertyStat("Return", property.rentReturn.ifEmpty { "₹15k" })
                 ProfilePropertyStat("ROI", "${property.roi}%", true)
@@ -278,7 +289,8 @@ fun ProfilePropertyCard(
 @Composable
 fun ProfilePropertyStat(label: String, value: String, isHighlight: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // Fixed: Using bodySmall/bodyMedium from theme
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = if (isHighlight) Color(0xFF4ADE80) else MaterialTheme.colorScheme.onSurface)
     }
 }
@@ -294,6 +306,7 @@ fun ProfileTabButton(text: String, isSelected: Boolean, modifier: Modifier = Mod
         shape = RoundedCornerShape(12.dp),
         elevation = ButtonDefaults.buttonElevation(0.dp)
     ) {
-        Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = contentColor)
+        // Fixed: Using bodyMedium (14sp) instead of hardcoded 14sp
+        Text(text = text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = contentColor)
     }
 }
