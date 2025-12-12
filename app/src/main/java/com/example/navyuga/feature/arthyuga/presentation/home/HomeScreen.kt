@@ -119,7 +119,6 @@ fun HomeScreen(
                         onItemClick = { onNavigateToDetail(property.id) },
                         onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
                         onShareClick = { /* Handle Share */ },
-                        // ⚡ Added padding here so it floats like the Profile screen
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     )
                 }
@@ -220,20 +219,18 @@ fun StoryCircle(
     }
 }
 
-// ⚡ REFACTORED: Now matches the Profile Screen's Card Style
 @Composable
 fun InstagramStylePropertyCard(
     property: PropertyModel,
     onItemClick: () -> Unit,
     onLikeClick: () -> Unit,
     onShareClick: () -> Unit,
-    modifier: Modifier = Modifier // Added modifier param
+    modifier: Modifier = Modifier
 ) {
     val scale by animateFloatAsState(if (property.isLiked) 1.2f else 1.0f, label = "like")
 
     Card(
         modifier = modifier.clickable { onItemClick() },
-        // ⚡ Changed to Surface color + Elevation + Shape (Card Look)
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(2.dp)
@@ -267,9 +264,12 @@ fun InstagramStylePropertyCard(
             }
 
             Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp, start = 16.dp, end = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                // ⚡ Updated Labels: Price & Return
                 PropertyStat("Price", "₹${property.minInvest}")
-                PropertyStat("Return", property.rentReturn.ifEmpty { "₹15k" })
+
+                // ⚡ FIX: Safer empty check for Rent
+                val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else property.rentReturn
+                PropertyStat("Rent", displayRent)
+
                 PropertyStat("ROI", "${property.roi}%", true)
             }
 

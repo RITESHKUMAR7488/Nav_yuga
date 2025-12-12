@@ -12,6 +12,8 @@ import com.example.navyuga.feature.auth.data.model.UserModel
 import com.example.navyuga.feature.profile.data.remote.ImageUploadApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -64,81 +66,134 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ UPDATED: Accepts all new fields for the detailed PropertyModel
+    // ⚡ HUGE UPDATE: Accepts all new fields
     fun listNewProperty(
+        // Basic
         title: String,
-        totalValuation: String, // Replaces minInvest for display
-        minInvest: String,      // Keep for logic/search
-        rentReturn: String,
-        roi: Double,
         description: String,
+        type: String,
+        status: String,
+
+        // Location
         address: String,
         city: String,
         state: String,
-        country: String = "India",
-        status: String,
-        imageUri: Uri?
+
+        // Property Specs
+        age: String,
+        area: String,
+        floor: String,
+        carPark: String,
+
+        // Financials (Overview)
+        totalValuation: String,
+        minInvest: String,
+        roi: Double,
+        fundedPercent: Int,
+
+        // Financials (Deep Dive)
+        monthlyRent: String,
+        grossAnnualRent: String,
+        annualPropertyTax: String,
+
+        // Lease Info
+        tenantName: String,
+        occupationPeriod: String,
+        escalation: String,
+
+        // Images
+        imageUris: List<Uri>
     ) {
+        // ⚡ COROUTINE SCOPE: Launching background work
         viewModelScope.launch {
             _propertyUploadState.value = UiState.Loading
 
             try {
-                var finalImageUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab"
+                val uploadedImageUrls = mutableListOf<String>()
 
-                // 1. Upload Image
-                if (imageUri != null) {
-                    val file = getFileFromUri(imageUri)
-                    if (file != null) {
-                        val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
-                        val body = MultipartBody.Part.createFormData("source", file.name, requestFile)
-                        val key = "6d207e02198a847aa98d0a2a901485a5".toRequestBody("text/plain".toMediaTypeOrNull())
-                        val format = "json".toRequestBody("text/plain".toMediaTypeOrNull())
-
-                        val response = api.uploadImage(key, body, format)
-                        if (response.status_code == 200) {
-                            finalImageUrl = response.image.url
-                        }
+                // ⚡ PARALLEL IMAGE UPLOAD
+                if (imageUris.isNotEmpty()) {
+                    val uploadJobs = imageUris.map { uri ->
+                        async { uploadSingleImage(uri) }
                     }
+                    uploadedImageUrls.addAll(uploadJobs.awaitAll().filterNotNull())
                 }
 
-                // 2. Create Updated Model
+                // Fallback image
+                if (uploadedImageUrls.isEmpty()) {
+                    uploadedImageUrls.add("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab")
+                }
+
                 val newProperty = PropertyModel(
                     id = UUID.randomUUID().toString(),
                     title = title,
-                    location = "$city, $state", // Auto-generate location string
-                    minInvest = minInvest,
-                    roi = roi,
-                    fundedPercent = 0,
-                    imageUrls = listOf(finalImageUrl),
-                    status = status,
-                    // New Fields mapped here
                     description = description,
-                    totalValuation = totalValuation,
-                    rentReturn = rentReturn,
+                    type = type,
+                    status = status,
+
+                    // Location
                     address = address,
                     city = city,
                     state = state,
-                    country = country
+                    location = "$city, $state",
+
+                    // Specs
+                    age = age,
+                    area = area,
+                    floor = floor,
+                    carPark = carPark,
+
+                    // Financials
+                    totalValuation = totalValuation,
+                    minInvest = minInvest,
+                    roi = roi,
+                    fundedPercent = fundedPercent,
+                    monthlyRent = monthlyRent,
+                    grossAnnualRent = grossAnnualRent,
+                    annualPropertyTax = annualPropertyTax,
+
+                    // Lease
+                    tenantName = tenantName,
+                    occupationPeriod = occupationPeriod,
+                    escalation = escalation,
+
+                    imageUrls = uploadedImageUrls
                 )
 
-                // 3. Save to Firestore
+                // Save to DB
                 val result = propertyRepository.addProperty(newProperty)
                 if (result is UiState.Success) {
                     _propertyUploadState.value = UiState.Success("Property Listed Successfully!")
+                    fetchProperties()
                 } else {
                     _propertyUploadState.value = UiState.Failure("Failed to save to DB")
                 }
 
             } catch (e: Exception) {
-                _propertyUploadState.value = UiState.Failure("Upload Error: ${e.message}")
+                _propertyUploadState.value = UiState.Failure("Error: ${e.message}")
             }
+        }
+    }
+
+    private suspend fun uploadSingleImage(uri: Uri): String? {
+        return try {
+            val file = getFileFromUri(uri) ?: return null
+            val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData("source", file.name, requestFile)
+            val key = "6d207e02198a847aa98d0a2a901485a5".toRequestBody("text/plain".toMediaTypeOrNull())
+            val format = "json".toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val response = api.uploadImage(key, body, format)
+            if (response.status_code == 200) response.image.url else null
+        } catch (e: Exception) {
+            null
         }
     }
 
     private fun getFileFromUri(uri: Uri): File? {
         return try {
             val inputStream = context.contentResolver.openInputStream(uri)
-            val file = File(context.cacheDir, "prop_upload_${System.currentTimeMillis()}.jpg")
+            val file = File(context.cacheDir, "upload_${UUID.randomUUID()}.jpg")
             val outputStream = FileOutputStream(file)
             inputStream?.copyTo(outputStream)
             outputStream.close()
