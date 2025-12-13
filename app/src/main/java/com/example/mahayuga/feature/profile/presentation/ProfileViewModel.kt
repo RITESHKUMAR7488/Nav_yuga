@@ -33,21 +33,18 @@ class ProfileViewModel @Inject constructor(
     private val _allProperties = propertyRepository.getAllProperties()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
 
-    // Owned Properties Logic
     val ownedProperties: StateFlow<List<PropertyModel>> = combine(
         _currentUser,
         _allProperties
     ) { userState, propsState ->
         if (userState is UiState.Success && propsState is UiState.Success) {
-            // Placeholder: When backend has 'ownerId', filter here.
-            // Currently returning empty as requested.
+            // Placeholder logic for ownership
             emptyList<PropertyModel>()
         } else {
             emptyList()
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Liked Properties Logic (Maps 'isLiked' = true)
     val likedProperties: StateFlow<List<PropertyModel>> = combine(
         _currentUser,
         _allProperties
@@ -56,7 +53,7 @@ class ProfileViewModel @Inject constructor(
             val likedIds = userState.data.likedProperties
             propsState.data
                 .filter { it.id in likedIds }
-                .map { it.copy(isLiked = true) } // Force Red Heart
+                .map { it.copy(isLiked = true) }
         } else {
             emptyList()
         }
@@ -70,6 +67,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun calculateStats() {
+        // COROUTINE USAGE: Launching a coroutine to observe data streams
         viewModelScope.launch {
             combine(_currentUser, ownedProperties) { userState, owned ->
                 if (userState is UiState.Success) {
@@ -77,36 +75,31 @@ class ProfileViewModel @Inject constructor(
                     val totalInv = user.totalInvestment.toDouble()
                     val currentVal = user.currentValue.toDouble()
 
-                    // 1. Properties
                     val count = owned.size
-                    // ⚡ Dynamic Progress: 1 property = 20% fill, max at 5 properties
                     val propProgress = if (count > 0) (count / 5f).coerceIn(0f, 1f) else 0f
 
-                    // 2. ROI
                     val roiVal = if (totalInv > 0) ((currentVal - totalInv) / totalInv) * 100 else 0.0
                     val roiDisplay = String.format("%.1f%%", roiVal)
-                    // ⚡ Dynamic Progress: 20% ROI = 100% fill
                     val roiProgress = if (roiVal > 0) (roiVal / 20f).toFloat().coerceIn(0f, 1f) else 0f
 
-                    // 3. Rent (Placeholder)
-                    val rentProgress = 0f
-
-                    // 4. Area (Placeholder)
-                    val areaProgress = 0f
-
+                    // 6 Stats for the 3x2 Grid
                     listOf(
                         ProfileStat("Properties", count.toString(), propProgress, 0xFF2979FF),
                         ProfileStat("Total ROI", roiDisplay, roiProgress, 0xFF2979FF),
-                        ProfileStat("Total Rent", "₹0", rentProgress, 0xFF2979FF),
-                        ProfileStat("Total Area", "0 Sqft", areaProgress, 0xFF2979FF)
+                        ProfileStat("Total Rent", "₹0", 0f, 0xFF2979FF),
+                        ProfileStat("Total Area", "0 Sqft", 0f, 0xFF2979FF),
+                        // Placeholders
+                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888),
+                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888)
                     )
                 } else {
-                    // Default Zero State
                     listOf(
                         ProfileStat("Properties", "0", 0f, 0xFF2979FF),
                         ProfileStat("Total ROI", "0%", 0f, 0xFF2979FF),
                         ProfileStat("Total Rent", "₹0", 0f, 0xFF2979FF),
-                        ProfileStat("Total Area", "0 Sqft", 0f, 0xFF2979FF)
+                        ProfileStat("Total Area", "0 Sqft", 0f, 0xFF2979FF),
+                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888),
+                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888)
                     )
                 }
             }.collect { newStats ->
