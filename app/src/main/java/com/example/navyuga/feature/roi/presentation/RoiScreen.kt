@@ -46,8 +46,6 @@ fun RoiScreen(
 
     // [COROUTINE EXPLANATION]
     // We create a CoroutineScope bound to this Composable's lifecycle.
-    // This allows us to launch background tasks (like PDF generation)
-    // without blocking the main UI thread.
     val scope = rememberCoroutineScope()
 
     val pdfGenerator = remember { RoiPdfGenerator(context) }
@@ -67,10 +65,12 @@ fun RoiScreen(
             )
         }
     ) { padding ->
+        // ⚡ FIX: Added imePadding() to handle keyboard overlap
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding() // <--- This ensures the view shrinks when keyboard opens
                 .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
@@ -102,16 +102,11 @@ fun RoiScreen(
                         state = state,
                         vm = viewModel,
                         onShare = {
-                            // [COROUTINE EXPLANATION]
-                            // scope.launch starts a new coroutine on the Main thread.
-                            // Inside generateAndSharePdf, we will switch to the IO dispatcher
-                            // to handle the heavy file operations, ensuring the app doesn't freeze.
                             scope.launch {
                                 pdfGenerator.generateAndSharePdf(state, PdfMode.REPORT)
                             }
                         },
                         onGenerateCounterPdf = {
-                            // Same here: Launching a coroutine for the Counter Offer PDF
                             scope.launch {
                                 pdfGenerator.generateAndSharePdf(state, PdfMode.COUNTER_OFFER)
                             }
@@ -134,6 +129,9 @@ fun RoiScreen(
                     Icon(Icons.Default.ArrowForward, contentDescription = null)
                 }
             }
+
+            // Extra spacer at bottom to ensure scrolling past the button
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -193,6 +191,9 @@ fun ModeCard(title: String, subtitle: String, icon: androidx.compose.ui.graphics
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Step1Property(state: RoiState, vm: RoiViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf("Retail", "Office", "Warehouse")
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader("Property Information")
         RoiInput("Property Name (Optional)", state.propertyName) { vm.updatePropertyInfo(name = it) }
@@ -203,14 +204,46 @@ fun Step1Property(state: RoiState, vm: RoiViewModel) {
             RoiInput("Saleable Area (Sq Ft)*", state.saleableArea, Modifier.weight(1f), isNumber = true) { vm.updatePropertyInfo(area = it) }
         }
 
-        Text("Property Type", style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Retail", "Office", "Warehouse").forEach { type ->
-                FilterChip(
-                    selected = state.propertyType == type,
-                    onClick = { vm.updatePropertyInfo(type = type) },
-                    label = { Text(type) }
-                )
+        // ⚡ FIX: Replaced FilterChip with Full-Width ExposedDropdownMenu
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(), // This makes the whole field the anchor/trigger
+                readOnly = true,
+                value = state.propertyType.ifEmpty { "Select Property Type" },
+                onValueChange = {},
+                label = { Text("Property Type") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                shape = RoundedCornerShape(12.dp)
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                options.forEach { selectionOption ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                selectionOption,
+                                style = MaterialTheme.typography.bodyLarge, // Big word
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        },
+                        onClick = {
+                            vm.updatePropertyInfo(type = selectionOption)
+                            expanded = false
+                        },
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
             }
         }
 
