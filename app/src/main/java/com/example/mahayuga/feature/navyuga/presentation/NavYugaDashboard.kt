@@ -13,11 +13,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.mahayuga.feature.navyuga.presentation.home.HomeScreen
+import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.navigation.PlaceholderScreen
@@ -62,7 +65,9 @@ fun NavYugaDashboard(
                     val currentRoute = navBackStackEntry?.destination?.route
 
                     items.forEach { item ->
-                        val isSelected = currentRoute == item.route
+                        // Check if the current route matches the item route OR if it's a sub-route (like search results)
+                        val isSelected = currentRoute == item.route ||
+                                (item.route == "ay_search" && currentRoute?.startsWith("search_results") == true)
 
                         NavigationBarItem(
                             icon = {
@@ -82,12 +87,22 @@ fun NavYugaDashboard(
                                 unselectedTextColor = UnselectedIconColor
                             ),
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (isSelected) {
+                                    // ⚡ RESET LOGIC: If clicking the active tab again...
+                                    // And we are NOT at the root of that tab (e.g. on search_results)
+                                    // Then pop back to the root (ay_search)
+                                    if (currentRoute != item.route) {
+                                        navController.popBackStack(item.route, inclusive = false)
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                } else {
+                                    // Normal Navigation
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             }
                         )
@@ -109,15 +124,39 @@ fun NavYugaDashboard(
                     onNavigateBack = {
                         rootNavController.popBackStack()
                     },
-                    // WIRED UP ROI BUTTON
                     onRoiClick = {
                         rootNavController.navigate("roi_calculator")
                     }
                 )
             }
+
             composable("ay_search") {
-                SearchScreen(navController = rootNavController)
+                SearchScreen(navController = navController)
             }
+
+            // Search Results Route
+            composable(
+                route = "search_results/{country}/{city}",
+                arguments = listOf(
+                    navArgument("country") { type = NavType.StringType },
+                    navArgument("city") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val country = entry.arguments?.getString("country") ?: "India"
+                val city = entry.arguments?.getString("city") ?: "All Cities"
+
+                SearchResultsScreen(
+                    country = country,
+                    city = city,
+                    onNavigateBack = {
+                        navController.popBackStack() // Pops back to search input
+                    },
+                    onNavigateToDetail = { id ->
+                        rootNavController.navigate("property_detail/$id") // Details go full screen
+                    }
+                )
+            }
+
             composable("ay_invest") { PlaceholderScreen("Invest (Coming Soon)") }
             composable("ay_reels") { PlaceholderScreen("Reels (Coming Soon)") }
             composable("ay_profile") {

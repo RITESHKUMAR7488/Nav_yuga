@@ -92,20 +92,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Greeting & Welcome Message
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        Text(
-                            text = "Hello ${uiState.userName}",
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = Color.White)
-                        )
-                        Text(
-                            text = "Welcome to Navyuga",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.7f)),
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
+                // REMOVED: Greeting & Welcome Message
 
                 // Stories
                 item {
@@ -206,16 +193,28 @@ fun HomeTopBar(
     onBackClick: () -> Unit,
     onNotificationClick: () -> Unit
 ) {
-    Row(
+    // ⚡ CHANGED: Using Box to center title absolutely while keeping buttons on edges
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
+        // Centered Title
+        Text(
+            text = "Navyuga",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            ),
+            modifier = Modifier.align(Alignment.Center)
+        )
+
+        // Back Button (Left)
         IconButton(
             onClick = onBackClick,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterStart)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -224,9 +223,12 @@ fun HomeTopBar(
             )
         }
 
+        // Notification Button (Right)
         IconButton(
             onClick = onNotificationClick,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterEnd)
         ) {
             Icon(
                 imageVector = Icons.Default.Notifications,
