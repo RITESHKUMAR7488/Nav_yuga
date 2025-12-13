@@ -11,11 +11,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.navyuga"
+    namespace = "com.example.mahayuga"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.navyuga"
+        applicationId = "com.example.mahayuga"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
