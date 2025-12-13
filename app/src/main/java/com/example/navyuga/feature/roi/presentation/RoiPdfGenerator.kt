@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.text.NumberFormat
+import java.util.Locale
 
 enum class PdfMode {
     REPORT,
@@ -26,7 +28,6 @@ class RoiPdfGenerator(private val context: Context) {
     private val BOTTOM_LIMIT = PAGE_HEIGHT - MARGIN
 
     // COLORS
-    // ⚡ FIX: Updated to Navy Blue (#0F172A)
     private val BRAND_BLUE = Color.parseColor("#0F172A")
 
     suspend fun generateAndSharePdf(state: RoiState, mode: PdfMode) {
@@ -122,10 +123,13 @@ class RoiPdfGenerator(private val context: Context) {
             y += 30f
         }
 
+        // ⚡ UPDATED: Indian Number Format
         fun formatCurrency(amount: Any?): String {
             val d = amount.toString().toDoubleOrNull() ?: 0.0
             if (d == 0.0) return "-"
-            return "₹ ${String.format("%,.0f", d)}"
+            val formatter = NumberFormat.getInstance(Locale("en", "IN"))
+            formatter.maximumFractionDigits = 0
+            return "₹ ${formatter.format(d)}"
         }
 
         // ============================

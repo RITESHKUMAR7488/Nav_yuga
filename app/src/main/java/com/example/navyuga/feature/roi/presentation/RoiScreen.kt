@@ -33,6 +33,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.navyuga.ui.theme.BrandBlue
 import com.example.navyuga.ui.theme.SuccessGreen
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
+
+// ⚡ HELPER: Indian Number Formatting (e.g., 5,00,000)
+fun formatIndian(amount: Double): String {
+    return try {
+        val formatter = NumberFormat.getInstance(Locale("en", "IN"))
+        formatter.maximumFractionDigits = 0
+        formatter.format(amount)
+    } catch (e: Exception) {
+        String.format("%.0f", amount)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -379,8 +392,9 @@ fun Step5Result(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("NET ANNUAL INCOME", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = BrandBlue)
+                // ⚡ UPDATED: Indian Format
                 Text(
-                    text = "₹${String.format("%,.0f", state.netAnnualIncome)}",
+                    text = "₹${formatIndian(state.netAnnualIncome)}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = BrandBlue
@@ -514,7 +528,7 @@ fun CounterOfferResultScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // ⚡ UPDATED: White Text, Blue Border, Blue Tint
+        // Result Box: Blue Theme + White Text
         Card(
             colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.1f)),
             border = androidx.compose.foundation.BorderStroke(1.dp, BrandBlue),
@@ -527,8 +541,9 @@ fun CounterOfferResultScreen(
             ) {
                 Text("PROPOSED OFFER PRICE", style = MaterialTheme.typography.labelMedium, color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
+                // ⚡ UPDATED: Indian Format
                 Text(
-                    "₹${String.format("%,.0f", counterPrice)}",
+                    "₹${formatIndian(counterPrice)}",
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -558,7 +573,6 @@ fun CounterOfferResultScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // ⚡ UPDATED: Button Color to Blue
         Button(
             onClick = onSharePdf,
             modifier = Modifier.fillMaxWidth().height(54.dp),
@@ -738,13 +752,15 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(row.year.toString(), modifier = Modifier.weight(0.5f))
+                        // ⚡ UPDATED: Indian Format
                         Text(
-                            "₹${String.format("%,.0f", row.annualRent)}",
+                            "₹${formatIndian(row.annualRent)}",
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.End
                         )
+                        // ⚡ UPDATED: Indian Format + White Color
                         Text(
-                            "₹${String.format("%,.0f", row.netIncome)}",
+                            "₹${formatIndian(row.netIncome)}",
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.End,
                             color = Color.White,
@@ -758,7 +774,7 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ⚡ UPDATED: Removed Green, Added Blue Tint and White Text
+        // ⚡ UPDATED: Blue Tint, White Text, Indian Format
         Card(
             colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.15f)),
             shape = RoundedCornerShape(12.dp),
@@ -778,7 +794,7 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    "₹${String.format("%,.0f", totalIncome)}",
+                    "₹${formatIndian(totalIncome)}",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     fontWeight = FontWeight.ExtraBold
@@ -822,8 +838,9 @@ fun ResultRow(label: String, amount: Double, isNegative: Boolean = false, isBold
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = if(isBold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium, fontWeight = if(isBold) FontWeight.Bold else FontWeight.Normal)
+        // ⚡ UPDATED: Indian Format
         Text(
-            text = "${if(isNegative) "- " else ""}₹${String.format("%,.0f", kotlin.math.abs(amount))}",
+            text = "${if(isNegative) "- " else ""}₹${formatIndian(kotlin.math.abs(amount))}",
             style = if(isBold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
             fontWeight = if(isBold) FontWeight.Bold else FontWeight.Normal,
             color = if (isNegative) Color.Red else MaterialTheme.colorScheme.onSurface
