@@ -49,8 +49,17 @@ fun AppNavigation(
         }
         composable("register") { RegisterScreen(navController) }
 
-        // Hub
-        composable("super_app_hub") { HubScreen(navController) }
+        // Hub (Super App Entry) - ⚡ FIXED: Added missing params
+        composable("super_app_hub") {
+            HubScreen(
+                navController = navController,
+                onLogout = {
+                    navController.navigate("login") { popUpTo(0) { inclusive = true } }
+                },
+                isDarkTheme = isDarkTheme,
+                onThemeToggle = onThemeToggle
+            )
+        }
 
         // ArthYuga User Dashboard
         composable("navyuga_dashboard") {
@@ -105,6 +114,7 @@ fun AppNavigation(
 
             val isAdmin = (currentUserState as? UiState.Success<UserModel>)?.data?.role == "admin"
 
+            // Optional: Auto-redirect if not admin (Commented out to prevent lockout during dev)
             LaunchedEffect(currentUserState) {
                 if (currentUserState is UiState.Success && !isAdmin) {
                     // navController.navigate("login") { popUpTo(0) { inclusive = true } }

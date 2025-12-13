@@ -1,181 +1,256 @@
 package com.example.mahayuga.feature.hub.presentation
 
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.hub.data.model.SuperAppModule
-import com.example.mahayuga.ui.theme.*
+import com.example.mahayuga.R
+import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 
 @Composable
 fun HubScreen(
     navController: NavController,
-    viewModel: HubViewModel = hiltViewModel()
+    onLogout: () -> Unit,
+    isDarkTheme: Boolean,
+    onThemeToggle: () -> Unit
 ) {
-    val modulesState by viewModel.modules.collectAsState()
+    var selectedTab by remember { mutableStateOf("Yuga") }
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
-
-        Column(
+        containerColor = Color.Black,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        bottomBar = {
+            HubBottomBar(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
+        }
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
-                .padding(innerPadding)
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(paddingValues)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Navyuga Hub",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Select your universe",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                IconButton(onClick = {
-                    navController.navigate("login") { popUpTo(0) }
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = "Logout",
-                        tint = ErrorRed
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Grid
-            when (val state = modulesState) {
-                is UiState.Success -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(state.data) { module ->
-                            ModuleCard(module) {
-                                if (module.isEnabled) {
-                                    if (module.id == "navyuga") {
-                                        navController.navigate("navyuga_dashboard")
-                                    } else {
-                                        Toast.makeText(context, "Navigating to ${module.title}", Toast.LENGTH_SHORT).show()
-                                    }
-                                } else {
-                                    Toast.makeText(context, "Coming Soon", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
+            if (selectedTab == "Yuga") {
+                YugaContent(
+                    onNavyugaClick = { navController.navigate("navyuga_dashboard") },
+                    onOtherClick = { name ->
+                        Toast.makeText(context, "$name is Coming Soon!", Toast.LENGTH_SHORT).show()
                     }
-                }
-                is UiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
-                    }
-                }
-                else -> {}
+                )
+            } else {
+                ProfileScreen(
+                    isDarkTheme = isDarkTheme,
+                    onThemeToggle = onThemeToggle,
+                    onLogout = onLogout
+                )
             }
         }
     }
 }
 
 @Composable
-fun ModuleCard(
-    module: SuperAppModule,
-    onClick: () -> Unit
+fun YugaContent(
+    onNavyugaClick: () -> Unit,
+    onOtherClick: (String) -> Unit
 ) {
-    val cardAlpha = if (module.isEnabled) 1f else 0.5f
-    val containerColor = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-
-    val borderModifier = if (module.isEnabled) {
-        Modifier.border(1.dp, Brush.linearGradient(listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)), RoundedCornerShape(16.dp))
-    } else {
-        Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
-    }
-
-    Card(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .then(borderModifier)
-            .clickable(enabled = module.isEnabled, onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(8.dp)
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // ⚡ CHANGED: Updated Header Text
+        Text(
+            text = "Welcome to Mahayuga",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                letterSpacing = 1.sp
+            ),
+            modifier = Modifier.padding(top = 32.dp, bottom = 48.dp)
+        )
+
+        // Custom Grid Layout
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(32.dp) // Increased spacing for cleaner look
         ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
+            // Row 1: The 3 Main Yugas (Navyuga, Arthyuga, Grihiyuga)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    imageVector = module.icon,
-                    contentDescription = null,
-                    tint = if (module.isEnabled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(32.dp)
+                // ⚡ NAVYUGA
+                YugaIcon(
+                    name = "Navyuga",
+                    iconRes = R.drawable.blue,
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavyugaClick
+                )
+
+                // ⚡ ARTHYUGA
+                YugaIcon(
+                    name = "Arthyuga",
+                    iconRes = R.drawable.gold,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onOtherClick("Arthyuga") }
+                )
+
+                // ⚡ GRIHIYUGA
+                YugaIcon(
+                    name = "Grihiyuga",
+                    iconRes = R.drawable.white,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onOtherClick("Grihiyuga") }
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Row 2: 3 Coming Soon Items
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                repeat(3) {
+                    PlaceholderIcon(Modifier.weight(1f)) { onOtherClick("Module ${it + 4}") }
+                }
+            }
 
-            Text(
-                text = module.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = module.description,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
+            // Row 3: 2 Coming Soon Items (Centered)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth(0.66f)
+                ) {
+                    repeat(2) {
+                        PlaceholderIcon(Modifier.weight(1f)) { onOtherClick("Module ${it + 7}") }
+                    }
+                }
+            }
         }
+    }
+}
+
+// ⚡ CHANGED: Renamed to YugaIcon and removed Card/Border styling
+@Composable
+fun YugaIcon(
+    name: String,
+    @DrawableRes iconRes: Int,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        // Just the Icon, no Box/Background
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = name,
+            tint = Color.Unspecified, // Keeps the original drawable colors
+            modifier = Modifier.size(100.dp) // ⚡ CHANGED: Bigger Icon Size
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = Color.White // Always white on black background
+        )
+    }
+}
+
+@Composable
+fun PlaceholderIcon(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        // Simple Lock/Placeholder icon for coming soon
+        Icon(
+            imageVector = Icons.Default.Lock,
+            contentDescription = "Coming Soon",
+            tint = Color.Gray.copy(alpha = 0.5f),
+            modifier = Modifier.size(60.dp) // Slightly smaller than main icons
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "Soon",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray
+        )
+    }
+}
+
+@Composable
+fun HubBottomBar(
+    selectedTab: String,
+    onTabSelected: (String) -> Unit
+) {
+    NavigationBar(
+        containerColor = Color.Black,
+        contentColor = Color.White,
+        tonalElevation = 0.dp
+    ) {
+        NavigationBarItem(
+            selected = selectedTab == "Yuga",
+            onClick = { onTabSelected("Yuga") },
+            icon = {
+                Icon(
+                    imageVector = if (selectedTab == "Yuga") Icons.Filled.Apps else Icons.Outlined.Apps,
+                    contentDescription = "Yuga"
+                )
+            },
+            label = { Text("Yuga") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.White,
+                selectedTextColor = Color.White,
+                indicatorColor = Color.White.copy(alpha = 0.1f),
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray
+            )
+        )
+        NavigationBarItem(
+            selected = selectedTab == "Profile",
+            onClick = { onTabSelected("Profile") },
+            icon = {
+                Icon(
+                    imageVector = if (selectedTab == "Profile") Icons.Filled.Person else Icons.Outlined.Person,
+                    contentDescription = "Profile"
+                )
+            },
+            label = { Text("Profile") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.White,
+                selectedTextColor = Color.White,
+                indicatorColor = Color.White.copy(alpha = 0.1f),
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray
+            )
+        )
     }
 }
