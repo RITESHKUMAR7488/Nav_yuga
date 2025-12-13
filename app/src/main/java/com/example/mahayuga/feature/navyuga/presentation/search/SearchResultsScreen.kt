@@ -95,7 +95,7 @@ fun SearchResultsScreen(
                         // 1. Title
                         item {
                             Text(
-                                "Trending properties in $city",
+                                "Trending in $city",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color.White.copy(0.9f)

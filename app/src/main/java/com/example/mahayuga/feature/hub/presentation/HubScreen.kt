@@ -92,8 +92,8 @@ fun HubScreen(
                         items(state.data) { module ->
                             ModuleCard(module) {
                                 if (module.isEnabled) {
-                                    if (module.id == "arthyuga") {
-                                        navController.navigate("arthyuga_dashboard")
+                                    if (module.id == "navyuga") {
+                                        navController.navigate("navyuga_dashboard")
                                     } else {
                                         Toast.makeText(context, "Navigating to ${module.title}", Toast.LENGTH_SHORT).show()
                                     }

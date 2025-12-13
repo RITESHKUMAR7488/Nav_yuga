@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.mahayuga.ui.theme.BrandBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +41,6 @@ fun SearchScreen(
                 modifier = Modifier.padding(bottom = 24.dp, top = 16.dp)
             )
 
-            // --- UPDATED DROPDOWNS (RoiScreen Style) ---
             NavyugaExposedDropdown("Country", viewModel.countries, selectedCountry) { selectedCountry = it }
             Spacer(modifier = Modifier.height(16.dp))
             NavyugaExposedDropdown("City", viewModel.cities, selectedCity) { selectedCity = it }
@@ -58,7 +58,7 @@ fun SearchScreen(
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF60A5FA), // Lighter Blue
+                    containerColor = BrandBlue, // Lighter Blue
                     contentColor = Color.White
                 )
             ) {

@@ -23,9 +23,8 @@ import com.example.mahayuga.feature.admin.presentation.AdminDashboardScreen
 import com.example.mahayuga.feature.admin.presentation.CreateUserScreen
 import com.example.mahayuga.feature.admin.presentation.ManagePropertiesScreen
 import com.example.mahayuga.feature.admin.presentation.ManageUsersScreen
-import com.example.mahayuga.feature.navyuga.presentation.ArthYugaDashboard
 import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen // Import new screen
+import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.auth.presentation.LoginScreen
@@ -55,7 +54,7 @@ fun AppNavigation(
 
         // ArthYuga User Dashboard
         composable("navyuga_dashboard") {
-            NavYugaDashboard { }(
+            NavYugaDashboard(
                 rootNavController = navController,
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
@@ -80,7 +79,6 @@ fun AppNavigation(
             RoiScreen(onBackClick = { navController.popBackStack() })
         }
 
-        // ⚡ NEW: Search Results Route
         composable(
             "search_results/{country}/{city}",
             arguments = listOf(
