@@ -21,9 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +37,100 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.navyuga.ui.theme.BrandBlue
 import com.example.navyuga.ui.theme.SuccessGreen
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
+
+// ⚡ HELPER: Smart Indian Formatting (Integers vs Decimals)
+fun formatIndian(amount: Double): String {
+    return try {
+        val formatter = NumberFormat.getInstance(Locale("en", "IN"))
+        if (amount % 1.0 == 0.0) {
+            formatter.maximumFractionDigits = 0 // "5,00,000"
+        } else {
+            formatter.maximumFractionDigits = 2 // "8.5" or "10.25"
+        }
+        formatter.format(amount)
+    } catch (e: Exception) {
+        String.format("%.0f", amount)
+    }
+}
+
+// ⚡ VISUAL TRANSFORMATION: Adds Indian Commas AS YOU TYPE
+class IndianNumberVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val original = text.text
+        if (original.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
+
+        // Split integer and decimal parts
+        val parts = original.split(".")
+        val integerPart = parts[0]
+        val decimalPart = if (parts.size > 1) "." + parts[1] else ""
+
+        // Format integer part with Indian commas
+        val formattedInteger = formatIndianInteger(integerPart)
+        val formatted = formattedInteger + decimalPart
+
+        // Map offsets between original and formatted text
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                // Calculate how many commas are inserted before this offset
+                if (offset <= 0) return 0
+
+                // Count characters in original integer part up to offset
+                val separatorIndex = original.indexOf('.')
+                val offsetInInteger = if (separatorIndex == -1 || offset <= separatorIndex) offset else separatorIndex
+
+                val commasAdded = countCommasAdded(integerPart.take(offsetInInteger))
+
+                return if (separatorIndex != -1 && offset > separatorIndex) {
+                    // Offset is in decimal part
+                    offsetInInteger + commasAdded + (offset - separatorIndex)
+                } else {
+                    offset + commasAdded
+                }
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                // Remove commas from formatted text up to offset to find original index
+                if (offset <= 0) return 0
+                val cleanTextUpToOffset = formatted.take(offset).replace(",", "")
+                return min(cleanTextUpToOffset.length, original.length)
+            }
+        }
+
+        return TransformedText(AnnotatedString(formatted), offsetMapping)
+    }
+
+    private fun formatIndianInteger(number: String): String {
+        if (number.isEmpty()) return ""
+        val sb = StringBuilder(number)
+        val len = sb.length
+        if (len <= 3) return sb.toString()
+
+        // Indian system: 3 digits, then 2, then 2...
+        // 1234567 -> 12,34,567
+        // Commas at: len-3, len-5, len-7...
+
+        var i = len - 3
+        while (i > 0) {
+            sb.insert(i, ",")
+            i -= 2
+        }
+        return sb.toString()
+    }
+
+    private fun countCommasAdded(subString: String): Int {
+        if (subString.length <= 3) return 0
+        // First comma at 3 from right, then every 2
+        // Example: 1234 (len 4) -> 1 comma (1,234)
+        // 12345 (len 5) -> 1 comma (12,345)
+        // 123456 (len 6) -> 2 commas (1,23,456)
+        val chunks = (subString.length - 3)
+        return 1 + (chunks - 1) / 2
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,20 +141,33 @@ fun RoiScreen(
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
-
-    // [COROUTINE EXPLANATION]
-    // We create a CoroutineScope bound to this Composable's lifecycle.
     val scope = rememberCoroutineScope()
-
     val pdfGenerator = remember { RoiPdfGenerator(context) }
+
+    // State: Manage Counter Result Page Navigation
+    var showCounterResultPage by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if(state.currentStep == 5) "ROI Calculation" else "ROI Calculator") },
+                title = {
+                    Text(
+                        when {
+                            showCounterResultPage -> "Counter Offer Analysis"
+                            state.currentStep == 5 -> "ROI Calculation"
+                            else -> "ROI Calculator"
+                        }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
-                        if (state.currentStep > 0) viewModel.previousStep() else onBackClick()
+                        if (showCounterResultPage) {
+                            showCounterResultPage = false
+                        } else if (state.currentStep > 0) {
+                            viewModel.previousStep()
+                        } else {
+                            onBackClick()
+                        }
                     }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
@@ -65,72 +176,69 @@ fun RoiScreen(
             )
         }
     ) { padding ->
-        // ⚡ FIX: Added imePadding() to handle keyboard overlap
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .imePadding() // <--- This ensures the view shrinks when keyboard opens
+                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
-            if (state.currentStep in 1..4) {
-                RoiProgressBar(currentStep = state.currentStep, totalSteps = 4)
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+            if (showCounterResultPage) {
+                // Counter Offer Full Page
+                CounterOfferResultScreen(
+                    state = state,
+                    onSharePdf = {
+                        scope.launch { pdfGenerator.generateAndSharePdf(state, PdfMode.COUNTER_OFFER) }
+                    },
+                    onBack = { showCounterResultPage = false }
+                )
+            } else {
+                // STANDARD FLOW
+                if (state.currentStep in 1..4) {
+                    RoiProgressBar(currentStep = state.currentStep, totalSteps = 4)
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
 
-            AnimatedContent(
-                targetState = state.currentStep,
-                label = "roi_steps",
-                transitionSpec = {
-                    if (targetState > initialState) {
-                        slideInHorizontally { width -> width } + fadeIn() togetherWith
-                                slideOutHorizontally { width -> -width } + fadeOut()
-                    } else {
-                        slideInHorizontally { width -> -width } + fadeIn() togetherWith
-                                slideOutHorizontally { width -> width } + fadeOut()
+                AnimatedContent(
+                    targetState = state.currentStep,
+                    label = "roi_steps"
+                ) { step ->
+                    when (step) {
+                        0 -> ModeSelectionScreen(viewModel)
+                        1 -> Step1Property(state, viewModel)
+                        2 -> Step2Lease(state, viewModel)
+                        3 -> Step3Expenses(state, viewModel)
+                        4 -> Step4Financials(state, viewModel)
+                        5 -> Step5Result(
+                            state = state,
+                            vm = viewModel,
+                            onShare = {
+                                scope.launch { pdfGenerator.generateAndSharePdf(state, PdfMode.REPORT) }
+                            },
+                            onShowCounterDetails = {
+                                showCounterResultPage = true
+                            }
+                        )
                     }
                 }
-            ) { step ->
-                when (step) {
-                    0 -> ModeSelectionScreen(viewModel)
-                    1 -> Step1Property(state, viewModel)
-                    2 -> Step2Lease(state, viewModel)
-                    3 -> Step3Expenses(state, viewModel)
-                    4 -> Step4Financials(state, viewModel)
-                    5 -> Step5Result(
-                        state = state,
-                        vm = viewModel,
-                        onShare = {
-                            scope.launch {
-                                pdfGenerator.generateAndSharePdf(state, PdfMode.REPORT)
-                            }
-                        },
-                        onGenerateCounterPdf = {
-                            scope.launch {
-                                pdfGenerator.generateAndSharePdf(state, PdfMode.COUNTER_OFFER)
-                            }
-                        }
-                    )
+
+                if (state.currentStep in 1..4) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Button(
+                        onClick = { viewModel.nextStep() },
+                        enabled = viewModel.canProceed(state),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                    ) {
+                        Text(if (state.currentStep == 4) "Calculate" else "Next Step")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.ArrowForward, contentDescription = null)
+                    }
                 }
             }
 
-            if (state.currentStep in 1..4) {
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(
-                    onClick = { viewModel.nextStep() },
-                    enabled = viewModel.canProceed(state),
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
-                ) {
-                    Text(if (state.currentStep == 4) "Calculate" else "Next Step")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(Icons.Default.ArrowForward, contentDescription = null)
-                }
-            }
-
-            // Extra spacer at bottom to ensure scrolling past the button
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
@@ -204,7 +312,6 @@ fun Step1Property(state: RoiState, vm: RoiViewModel) {
             RoiInput("Saleable Area (Sq Ft)*", state.saleableArea, Modifier.weight(1f), isNumber = true) { vm.updatePropertyInfo(area = it) }
         }
 
-        // ⚡ FIX: Replaced FilterChip with Full-Width ExposedDropdownMenu
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded },
@@ -213,7 +320,7 @@ fun Step1Property(state: RoiState, vm: RoiViewModel) {
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(), // This makes the whole field the anchor/trigger
+                    .menuAnchor(),
                 readOnly = true,
                 value = state.propertyType.ifEmpty { "Select Property Type" },
                 onValueChange = {},
@@ -232,7 +339,7 @@ fun Step1Property(state: RoiState, vm: RoiViewModel) {
                         text = {
                             Text(
                                 selectionOption,
-                                style = MaterialTheme.typography.bodyLarge, // Big word
+                                style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
@@ -339,7 +446,7 @@ fun Step5Result(
     state: RoiState,
     vm: RoiViewModel,
     onShare: () -> Unit,
-    onGenerateCounterPdf: () -> Unit
+    onShowCounterDetails: () -> Unit
 ) {
     var showCounterDialog by remember { mutableStateOf(false) }
     var showCashFlowSheet by remember { mutableStateOf(false) }
@@ -371,7 +478,7 @@ fun Step5Result(
             ) {
                 Text("NET ANNUAL INCOME", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = BrandBlue)
                 Text(
-                    text = "₹${String.format("%,.0f", state.netAnnualIncome)}",
+                    text = "₹${formatIndian(state.netAnnualIncome)}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = BrandBlue
@@ -472,9 +579,9 @@ fun Step5Result(
             onDismiss = { showCounterDialog = false },
             onCalculate = { targetRoi -> vm.calculateCounterOffer(targetRoi) },
             resultPrice = state.counterOfferPrice,
-            onGeneratePdf = {
-                onGenerateCounterPdf()
+            onViewDetails = {
                 showCounterDialog = false
+                onShowCounterDetails()
             }
         )
     }
@@ -486,16 +593,100 @@ fun Step5Result(
     }
 }
 
+// Counter Offer Full Detail Screen
+@Composable
+fun CounterOfferResultScreen(
+    state: RoiState,
+    onSharePdf: () -> Unit,
+    onBack: () -> Unit
+) {
+    val counterPrice = state.counterOfferPrice ?: 0.0
+    val registry = counterPrice * 0.08
+    val totalInvest = counterPrice + registry + state.totalOtherCharges
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+        Text(
+            "Based on your Target ROI of ${String.format("%.2f%%", state.counterOfferRoi ?: 0.0)}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // Result Box: Blue Theme + White Text
+        Card(
+            colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.1f)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BrandBlue),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("PROPOSED OFFER PRICE", style = MaterialTheme.typography.labelMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "₹${formatIndian(counterPrice)}",
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
+
+        // Breakdown
+        Text("Projected Financials", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                ResultRow("Offer Price (Base)", counterPrice)
+                ResultRow("Registry (8%)", registry)
+                ResultRow("Legal & Others", state.totalOtherCharges)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                ResultRow("TOTAL INVESTMENT", totalInvest, isBold = true)
+            }
+        }
+
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                ResultRow("Net Annual Income", state.netAnnualIncome)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                ResultRow("Yielding ROI", state.counterOfferRoi ?: 0.0, isBold = true)
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = onSharePdf,
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.Share, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Share Counter Proposal", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+
 @Composable
 fun CounterRoiDialog(
     currentRoi: Double,
     onDismiss: () -> Unit,
     onCalculate: (Double) -> Unit,
     resultPrice: Double?,
-    onGeneratePdf: () -> Unit
+    onViewDetails: () -> Unit
 ) {
     var targetRoiStr by remember { mutableStateOf("") }
-    var hasCalculated by remember { mutableStateOf(false) } // Track if user clicked calculate
+    var hasCalculated by remember { mutableStateOf(false) }
+
+    LaunchedEffect(resultPrice, hasCalculated) {
+        if (hasCalculated && resultPrice != null && resultPrice > 0) {
+            hasCalculated = false
+            onViewDetails()
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -505,7 +696,7 @@ fun CounterRoiDialog(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(0.95f)
-                .animateContentSize(), // Smooth animation when result appears
+                .animateContentSize(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(12.dp)
@@ -514,11 +705,8 @@ fun CounterRoiDialog(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header
                 Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(BrandBlue.copy(alpha = 0.1f), CircleShape),
+                    modifier = Modifier.size(56.dp).background(BrandBlue.copy(alpha = 0.1f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Calculate, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(32.dp))
@@ -526,138 +714,61 @@ fun CounterRoiDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    "Counter Offer Calculator",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = BrandBlue,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    "Find the right price for your target ROI",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("Counter Offer Calculator", style = MaterialTheme.typography.headlineSmall, color = BrandBlue, fontWeight = FontWeight.Bold)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Input Section
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Current ROI", style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                String.format("%.2f%%", currentRoi),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text(String.format("%.2f%%", currentRoi), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         }
-
                         Spacer(modifier = Modifier.height(12.dp))
-
+                        // ⚡ UPDATED: RoiInput logic used here too for consistent behavior?
+                        // Actually Counter Dialog is separate. Let's keep it simple or use RoiInput logic.
+                        // Standard OutlinedTextField is fine here as it's small input (8.5%).
                         OutlinedTextField(
                             value = targetRoiStr,
-                            onValueChange = {
-                                targetRoiStr = it
-                                hasCalculated = false // Reset state on edit
-                            },
+                            onValueChange = { targetRoiStr = it; hasCalculated = false },
                             label = { Text("Enter Target ROI (%)") },
                             placeholder = { Text("e.g. 8.5") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BrandBlue,
-                                focusedLabelColor = BrandBlue
-                            )
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BrandBlue, focusedLabelColor = BrandBlue)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- RESULT SECTION ---
-                AnimatedVisibility(visible = hasCalculated) {
-                    if (resultPrice != null && resultPrice > 0) {
-                        // SUCCESS CASE
-                        Column {
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.1f)),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, SuccessGreen),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(20.dp).fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text("PROPOSED OFFER PRICE", style = MaterialTheme.typography.labelSmall, color = SuccessGreen, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        "₹${String.format("%,.0f", resultPrice)}",
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = SuccessGreen
-                                    )
-                                    Text(
-                                        "(Includes reverse calculation of taxes)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = SuccessGreen.copy(alpha = 0.8f)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = onGeneratePdf,
-                                modifier = Modifier.fillMaxWidth().height(50.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Generate Proposal PDF")
-                            }
-                        }
-                    } else {
-                        // ERROR CASE (Negative Result)
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    "This ROI is unachievable given the current rental income. Please lower your target.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
+                AnimatedVisibility(visible = hasCalculated && (resultPrice == null || resultPrice <= 0)) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "ROI unachievable. Please lower target.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Action Buttons
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Cancel")
-                    }
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) { Text("Cancel") }
                     Button(
                         onClick = {
                             val target = targetRoiStr.toDoubleOrNull() ?: 0.0
@@ -728,15 +839,15 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
                     ) {
                         Text(row.year.toString(), modifier = Modifier.weight(0.5f))
                         Text(
-                            "₹${String.format("%,.0f", row.annualRent)}",
+                            "₹${formatIndian(row.annualRent)}",
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.End
                         )
                         Text(
-                            "₹${String.format("%,.0f", row.netIncome)}",
+                            "₹${formatIndian(row.netIncome)}",
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.End,
-                            color = SuccessGreen,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -746,8 +857,9 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
         Card(
-            colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.15f)),
+            colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.15f)),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -761,13 +873,13 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
                 Text(
                     "TOTAL PROJECTED INCOME",
                     style = MaterialTheme.typography.labelLarge,
-                    color = SuccessGreen,
+                    color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    "₹${String.format("%,.0f", totalIncome)}",
+                    "₹${formatIndian(totalIncome)}",
                     style = MaterialTheme.typography.titleLarge,
-                    color = SuccessGreen,
+                    color = Color.White,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -776,18 +888,28 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
     }
 }
 
-// --- Common Components ---
-
+// ⚡ UPDATED: Input with Visual Transformation
 @Composable
 fun RoiInput(label: String, value: String, modifier: Modifier = Modifier, isNumber: Boolean = false, onValueChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { input ->
+            if (isNumber) {
+                // Allow digits and at most one dot
+                val filtered = input.filter { it.isDigit() || it == '.' }
+                if (filtered.count { it == '.' } <= 1) {
+                    onValueChange(filtered)
+                }
+            } else {
+                onValueChange(input)
+            }
+        },
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next) else KeyboardOptions.Default,
-        singleLine = true
+        singleLine = true,
+        visualTransformation = if (isNumber) IndianNumberVisualTransformation() else VisualTransformation.None
     )
 }
 
@@ -810,7 +932,7 @@ fun ResultRow(label: String, amount: Double, isNegative: Boolean = false, isBold
     ) {
         Text(label, style = if(isBold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium, fontWeight = if(isBold) FontWeight.Bold else FontWeight.Normal)
         Text(
-            text = "${if(isNegative) "- " else ""}₹${String.format("%,.0f", kotlin.math.abs(amount))}",
+            text = "${if(isNegative) "- " else ""}₹${formatIndian(kotlin.math.abs(amount))}",
             style = if(isBold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
             fontWeight = if(isBold) FontWeight.Bold else FontWeight.Normal,
             color = if (isNegative) Color.Red else MaterialTheme.colorScheme.onSurface
