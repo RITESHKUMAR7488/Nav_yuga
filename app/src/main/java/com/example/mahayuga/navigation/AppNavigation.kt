@@ -69,10 +69,11 @@ fun AppNavigation(
             )
         }
 
-        // ⚡ NEW: Route for Liked Properties
+        // ⚡ UPDATED: Route for Liked Properties with Navigation Callback
         composable("liked_properties") {
             LikedPropertiesScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { id -> navController.navigate("property_detail/$id") }
             )
         }
 

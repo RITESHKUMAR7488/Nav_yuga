@@ -9,6 +9,9 @@ import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepository
 import com.example.mahayuga.feature.profile.data.model.ProfileStat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,7 +26,8 @@ class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val propertyRepository: PropertyRepository,
     private val preferenceManager: PreferenceManager,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val firestore: FirebaseFirestore // ⚡ ADDED: Required for database updates
 ) : ViewModel() {
 
     private val _currentUser = authRepository.getCurrentUser()
@@ -67,7 +71,9 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun calculateStats() {
-        // COROUTINE USAGE: Launching a coroutine to observe data streams
+        // ⚡ COROUTINE USAGE: Launching a coroutine to collect flow updates.
+        // This is good code because it reacts to changes in user or property data
+        // in real-time without blocking the UI thread.
         viewModelScope.launch {
             combine(_currentUser, ownedProperties) { userState, owned ->
                 if (userState is UiState.Success) {
@@ -105,6 +111,23 @@ class ProfileViewModel @Inject constructor(
             }.collect { newStats ->
                 _stats.value = newStats
             }
+        }
+    }
+
+    // ⚡ ADDED: Function to handle Like/Unlike logic
+    fun toggleLike(propertyId: String, currentLikeState: Boolean) {
+        val userId = auth.currentUser?.uid ?: return
+        val userRef = firestore.collection("users").document(userId)
+
+        if (currentLikeState) {
+            // Remove from liked
+            userRef.update("likedProperties", FieldValue.arrayRemove(propertyId))
+        } else {
+            // Add to liked
+            userRef.set(
+                mapOf("likedProperties" to FieldValue.arrayUnion(propertyId)),
+                SetOptions.merge()
+            )
         }
     }
 
