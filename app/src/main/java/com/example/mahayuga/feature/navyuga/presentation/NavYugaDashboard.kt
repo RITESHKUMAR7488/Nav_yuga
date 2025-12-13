@@ -161,8 +161,7 @@ fun NavYugaDashboard(
             composable("ay_reels") { PlaceholderScreen("Reels (Coming Soon)") }
             composable("ay_profile") {
                 ProfileScreen(
-                    isDarkTheme = isDarkTheme,
-                    onThemeToggle = onThemeToggle,
+                    onNavigateToLiked = { rootNavController.navigate("liked_properties") },
                     onLogout = onLogout
                 )
             }

@@ -58,9 +58,9 @@ fun HubScreen(
                     }
                 )
             } else {
+                // ⚡ FIXED: Updated parameters to match the new ProfileScreen signature
                 ProfileScreen(
-                    isDarkTheme = isDarkTheme,
-                    onThemeToggle = onThemeToggle,
+                    onNavigateToLiked = { navController.navigate("liked_properties") },
                     onLogout = onLogout
                 )
             }
@@ -79,7 +79,6 @@ fun YugaContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ⚡ CHANGED: Updated Header Text
         Text(
             text = "Welcome to Mahayuga",
             style = MaterialTheme.typography.headlineMedium.copy(
@@ -93,30 +92,25 @@ fun YugaContent(
         // Custom Grid Layout
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(32.dp) // Increased spacing for cleaner look
+            verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            // Row 1: The 3 Main Yugas (Navyuga, Arthyuga, Grihiyuga)
+            // Row 1: The 3 Main Yugas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // ⚡ NAVYUGA
                 YugaIcon(
                     name = "Navyuga",
                     iconRes = R.drawable.blue,
                     modifier = Modifier.weight(1f),
                     onClick = onNavyugaClick
                 )
-
-                // ⚡ ARTHYUGA
                 YugaIcon(
                     name = "Arthyuga",
                     iconRes = R.drawable.gold,
                     modifier = Modifier.weight(1f),
                     onClick = { onOtherClick("Arthyuga") }
                 )
-
-                // ⚡ GRIHIYUGA
                 YugaIcon(
                     name = "Grihiyuga",
                     iconRes = R.drawable.white,
@@ -153,7 +147,6 @@ fun YugaContent(
     }
 }
 
-// ⚡ CHANGED: Renamed to YugaIcon and removed Card/Border styling
 @Composable
 fun YugaIcon(
     name: String,
@@ -165,18 +158,17 @@ fun YugaIcon(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.clickable { onClick() }
     ) {
-        // Just the Icon, no Box/Background
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = name,
-            tint = Color.Unspecified, // Keeps the original drawable colors
-            modifier = Modifier.size(100.dp) // ⚡ CHANGED: Bigger Icon Size
+            tint = Color.Unspecified,
+            modifier = Modifier.size(100.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = name,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = Color.White // Always white on black background
+            color = Color.White
         )
     }
 }
@@ -190,12 +182,11 @@ fun PlaceholderIcon(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.clickable { onClick() }
     ) {
-        // Simple Lock/Placeholder icon for coming soon
         Icon(
             imageVector = Icons.Default.Lock,
             contentDescription = "Coming Soon",
             tint = Color.Gray.copy(alpha = 0.5f),
-            modifier = Modifier.size(60.dp) // Slightly smaller than main icons
+            modifier = Modifier.size(60.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(

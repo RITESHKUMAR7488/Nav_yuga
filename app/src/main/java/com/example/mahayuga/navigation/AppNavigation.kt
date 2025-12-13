@@ -18,19 +18,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.admin.presentation.AddPropertyScreen
-import com.example.mahayuga.feature.admin.presentation.AdminDashboardScreen
-import com.example.mahayuga.feature.admin.presentation.CreateUserScreen
-import com.example.mahayuga.feature.admin.presentation.ManagePropertiesScreen
-import com.example.mahayuga.feature.admin.presentation.ManageUsersScreen
-import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
+import com.example.mahayuga.feature.admin.presentation.*
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.auth.presentation.LoginScreen
 import com.example.mahayuga.feature.auth.presentation.RegisterScreen
 import com.example.mahayuga.feature.hub.presentation.HubScreen
 import com.example.mahayuga.feature.navyuga.presentation.NavYugaDashboard
+import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
+import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
+import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
 
 @Composable
@@ -43,19 +40,18 @@ fun AppNavigation(
 
     NavHost(navController = navController, startDestination = startDestination) {
 
+        // ... [Existing Auth & Hub routes remain unchanged] ...
+
         // Auth Module
         composable("login") {
             LoginScreen(navController = navController, isDarkTheme = isDarkTheme, onThemeToggle = onThemeToggle)
         }
         composable("register") { RegisterScreen(navController) }
 
-        // Hub (Super App Entry) - ⚡ FIXED: Added missing params
         composable("super_app_hub") {
             HubScreen(
                 navController = navController,
-                onLogout = {
-                    navController.navigate("login") { popUpTo(0) { inclusive = true } }
-                },
+                onLogout = { navController.navigate("login") { popUpTo(0) { inclusive = true } } },
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle
             )
@@ -72,6 +68,16 @@ fun AppNavigation(
                 }
             )
         }
+
+        // ⚡ UPDATED: Route for Liked Properties with Navigation Callback
+        composable("liked_properties") {
+            LikedPropertiesScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { id -> navController.navigate("property_detail/$id") }
+            )
+        }
+
+        // ... [Rest of the existing routes remain unchanged] ...
 
         composable(
             "property_detail/{propertyId}",
@@ -107,26 +113,15 @@ fun AppNavigation(
         }
 
         // --- ADMIN MODULE (SECURED) ---
-
         composable("admin_dashboard") {
             val authViewModel: AuthViewModel = hiltViewModel()
             val currentUserState by authViewModel.currentUser.collectAsState()
-
             val isAdmin = (currentUserState as? UiState.Success<UserModel>)?.data?.role == "admin"
-
-            // Optional: Auto-redirect if not admin (Commented out to prevent lockout during dev)
-            LaunchedEffect(currentUserState) {
-                if (currentUserState is UiState.Success && !isAdmin) {
-                    // navController.navigate("login") { popUpTo(0) { inclusive = true } }
-                }
-            }
 
             if (isAdmin) {
                 AdminDashboardScreen(
                     navController = navController,
-                    onLogout = {
-                        navController.navigate("login") { popUpTo(0) { inclusive = true } }
-                    }
+                    onLogout = { navController.navigate("login") { popUpTo(0) { inclusive = true } } }
                 )
             } else {
                 PlaceholderScreen("Verifying Admin Privileges...")
