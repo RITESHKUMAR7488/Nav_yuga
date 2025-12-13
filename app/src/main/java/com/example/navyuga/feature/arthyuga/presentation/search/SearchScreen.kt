@@ -14,11 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.navyuga.core.common.UiState
-import com.example.navyuga.feature.arthyuga.presentation.home.PropertyCard // Uses the fixed PropertyCard from above
+import com.example.navyuga.feature.arthyuga.presentation.home.InstagramStylePropertyCard
 import com.example.navyuga.feature.auth.presentation.components.NavyugaGradientButton
-import com.example.navyuga.ui.theme.*
 
 @Composable
 fun SearchScreen(
@@ -27,9 +27,8 @@ fun SearchScreen(
 ) {
     var selectedCountry by remember { mutableStateOf("India") }
     var selectedCity by remember { mutableStateOf("All Cities") }
-    var selectedCurrency by remember { mutableStateOf("INR") }
 
-    val searchState by viewModel.searchResults.collectAsState()
+    val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -44,18 +43,16 @@ fun SearchScreen(
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
-        // --- 3 SMART DROPDOWNS ---
+        // --- DROPDOWNS ---
         NavyugaDropdown("Country", viewModel.countries, selectedCountry) { selectedCountry = it }
         Spacer(modifier = Modifier.height(12.dp))
         NavyugaDropdown("City", viewModel.cities, selectedCity) { selectedCity = it }
-        Spacer(modifier = Modifier.height(12.dp))
-        NavyugaDropdown("Currency", viewModel.currencies, selectedCurrency) { selectedCurrency = it }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         NavyugaGradientButton(
             text = "Search",
-            onClick = { viewModel.performSearch(selectedCountry, selectedCity, selectedCurrency) }
+            onClick = { viewModel.performSearch(selectedCountry, selectedCity) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -70,18 +67,25 @@ fun SearchScreen(
             is UiState.Success -> {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(state.data) { property ->
-                        PropertyCard(property, onClick = {
-                            navController.navigate("property_detail/${property.id}")
-                        })
+                        InstagramStylePropertyCard(
+                            property = property,
+                            onItemClick = { navController.navigate("property_detail/${property.id}") },
+                            onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
+                            onShareClick = { /* Handle Share */ },
+                            // ⚡ Uses default padding or fill width (parent has padding)
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
             is UiState.Failure -> {
-                Text(
-                    text = state.message,
-                    color = ErrorRed,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
             else -> {}
         }
@@ -112,7 +116,9 @@ fun NavyugaDropdown(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
             ),
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true },
             shape = RoundedCornerShape(12.dp)
         )
         DropdownMenu(

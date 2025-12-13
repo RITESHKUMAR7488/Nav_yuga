@@ -4,8 +4,10 @@ data class UserModel(
     val uid: String = "",
     val email: String = "",
     val name: String = "",
-    val role: String = "user", // "user" or "admin"
+    val role: String = "user",
     val totalInvestment: Long = 0,
     val currentValue: Long = 0,
-    val isActive: Boolean = true // ⚡ Added for Block/Unblock status
+    val isActive: Boolean = true,
+    // ⚡ ADDED: This matches your Firestore data now
+    val likedProperties: List<String> = emptyList()
 )

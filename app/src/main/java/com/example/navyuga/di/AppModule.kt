@@ -6,7 +6,7 @@ import com.example.navyuga.feature.admin.data.repository.AdminRepositoryImpl
 import com.example.navyuga.feature.admin.domain.repository.AdminRepository
 import com.example.navyuga.feature.arthyuga.data.repository.PropertyRepositoryImpl
 import com.example.navyuga.feature.arthyuga.domain.repository.PropertyRepository
-import com.example.navyuga.feature.auth.data.repository.AuthRepositoryImpl
+import com.example.navyuga.feature.auth.domain.repository.AuthRepositoryImpl
 import com.example.navyuga.feature.auth.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

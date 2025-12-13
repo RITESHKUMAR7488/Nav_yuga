@@ -8,7 +8,9 @@ import com.example.navyuga.feature.auth.data.model.UserModel
 import com.example.navyuga.feature.auth.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,6 +25,14 @@ class AuthViewModel @Inject constructor(
 
     private val _registerState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val registerState: StateFlow<UiState<String>> = _registerState
+
+    // ⚡ NEW: Expose Current User for Navigation Guard
+    val currentUser: StateFlow<UiState<UserModel>> = repository.getCurrentUser()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = UiState.Loading
+        )
 
     fun login(email: String, pass: String) {
         viewModelScope.launch {

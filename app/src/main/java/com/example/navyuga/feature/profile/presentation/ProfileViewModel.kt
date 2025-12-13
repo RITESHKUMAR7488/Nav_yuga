@@ -1,113 +1,124 @@
 package com.example.navyuga.feature.profile.presentation
 
-import android.content.Context
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.navyuga.core.common.UiState
 import com.example.navyuga.core.data.local.PreferenceManager
-import com.example.navyuga.feature.profile.data.model.DocumentModel
+import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
+import com.example.navyuga.feature.arthyuga.domain.repository.PropertyRepository
+import com.example.navyuga.feature.auth.data.model.UserModel
+import com.example.navyuga.feature.auth.domain.repository.AuthRepository
 import com.example.navyuga.feature.profile.data.model.ProfileStat
-import com.example.navyuga.feature.profile.data.remote.ImageUploadApi
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.File
-import java.io.FileOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val api: ImageUploadApi,
+    private val authRepository: AuthRepository,
+    private val propertyRepository: PropertyRepository,
     private val preferenceManager: PreferenceManager,
-    private val auth: FirebaseAuth,
-    @ApplicationContext private val context: Context
+    private val auth: FirebaseAuth
 ) : ViewModel() {
+
+    private val _currentUser = authRepository.getCurrentUser()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
+    val currentUser = _currentUser
+
+    private val _allProperties = propertyRepository.getAllProperties()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
+
+    // Owned Properties Logic
+    val ownedProperties: StateFlow<List<PropertyModel>> = combine(
+        _currentUser,
+        _allProperties
+    ) { userState, propsState ->
+        if (userState is UiState.Success && propsState is UiState.Success) {
+            // Placeholder: When backend has 'ownerId', filter here.
+            // Currently returning empty as requested.
+            emptyList<PropertyModel>()
+        } else {
+            emptyList()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Liked Properties Logic (Maps 'isLiked' = true)
+    val likedProperties: StateFlow<List<PropertyModel>> = combine(
+        _currentUser,
+        _allProperties
+    ) { userState, propsState ->
+        if (userState is UiState.Success && propsState is UiState.Success) {
+            val likedIds = userState.data.likedProperties
+            propsState.data
+                .filter { it.id in likedIds }
+                .map { it.copy(isLiked = true) } // Force Red Heart
+        } else {
+            emptyList()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _stats = MutableStateFlow<List<ProfileStat>>(emptyList())
     val stats: StateFlow<List<ProfileStat>> = _stats
 
-    private val _documents = MutableStateFlow<List<DocumentModel>>(emptyList())
-    val documents: StateFlow<List<DocumentModel>> = _documents
-
-    private val _uploadState = MutableStateFlow<UiState<String>>(UiState.Idle)
-    val uploadState: StateFlow<UiState<String>> = _uploadState
-
     init {
-        loadData()
+        calculateStats()
     }
 
-    private fun loadData() {
-        // ⚡ EXACT 5 CARDS REQUESTED
-        _stats.value = listOf(
-            ProfileStat("My Properties", "12", 0.65f, 0xFF00E5FF),       // Cyan
-            ProfileStat("Annual Rent", "₹8.5L", 0.85f, 0xFF2979FF),      // Blue
-            ProfileStat("Total Sqft", "12,500", 0.50f, 0xFFAA00FF),      // Purple
-            ProfileStat("Total P/L", "+₹12.4L", 0.92f, 0xFF00E676),      // Green
-            ProfileStat("Avg ROI", "11.5%", 0.75f, 0xFFFF9800)           // Orange
-        )
-
-        _documents.value = listOf(
-            DocumentModel("1", "PAN Card", "Verified"),
-            DocumentModel("2", "Aadhaar Front", "Pending"),
-            DocumentModel("3", "Bank Proof", "Rejected"),
-            DocumentModel("4", "Voter ID", "Pending")
-        )
-    }
-
-    // Logout Logic
-    fun logout() {
-        auth.signOut()
-        preferenceManager.saveLoginState(false)
-    }
-
-    // Image Upload Logic
-    fun uploadDocument(uri: Uri, docId: String) {
+    private fun calculateStats() {
         viewModelScope.launch {
-            _uploadState.value = UiState.Loading
-            try {
-                val file = getFileFromUri(uri) ?: throw Exception("File error")
+            combine(_currentUser, ownedProperties) { userState, owned ->
+                if (userState is UiState.Success) {
+                    val user = userState.data
+                    val totalInv = user.totalInvestment.toDouble()
+                    val currentVal = user.currentValue.toDouble()
 
-                val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
-                val body = MultipartBody.Part.createFormData("source", file.name, requestFile)
-                val key = "6d207e02198a847aa98d0a2a901485a5".toRequestBody("text/plain".toMediaTypeOrNull())
-                val format = "json".toRequestBody("text/plain".toMediaTypeOrNull())
+                    // 1. Properties
+                    val count = owned.size
+                    // ⚡ Dynamic Progress: 1 property = 20% fill, max at 5 properties
+                    val propProgress = if (count > 0) (count / 5f).coerceIn(0f, 1f) else 0f
 
-                val response = api.uploadImage(key, body, format)
+                    // 2. ROI
+                    val roiVal = if (totalInv > 0) ((currentVal - totalInv) / totalInv) * 100 else 0.0
+                    val roiDisplay = String.format("%.1f%%", roiVal)
+                    // ⚡ Dynamic Progress: 20% ROI = 100% fill
+                    val roiProgress = if (roiVal > 0) (roiVal / 20f).toFloat().coerceIn(0f, 1f) else 0f
 
-                if (response.status_code == 200) {
-                    _uploadState.value = UiState.Success("Uploaded: ${response.image.url}")
-                    val updatedList = _documents.value.map {
-                        if (it.id == docId) it.copy(status = "Verified", imageUrl = response.image.url) else it
-                    }
-                    _documents.value = updatedList
+                    // 3. Rent (Placeholder)
+                    val rentProgress = 0f
+
+                    // 4. Area (Placeholder)
+                    val areaProgress = 0f
+
+                    listOf(
+                        ProfileStat("Properties", count.toString(), propProgress, 0xFF2979FF),
+                        ProfileStat("Total ROI", roiDisplay, roiProgress, 0xFF2979FF),
+                        ProfileStat("Total Rent", "₹0", rentProgress, 0xFF2979FF),
+                        ProfileStat("Total Area", "0 Sqft", areaProgress, 0xFF2979FF)
+                    )
                 } else {
-                    _uploadState.value = UiState.Failure("Upload Failed")
+                    // Default Zero State
+                    listOf(
+                        ProfileStat("Properties", "0", 0f, 0xFF2979FF),
+                        ProfileStat("Total ROI", "0%", 0f, 0xFF2979FF),
+                        ProfileStat("Total Rent", "₹0", 0f, 0xFF2979FF),
+                        ProfileStat("Total Area", "0 Sqft", 0f, 0xFF2979FF)
+                    )
                 }
-            } catch (e: Exception) {
-                _uploadState.value = UiState.Failure(e.message ?: "Error")
+            }.collect { newStats ->
+                _stats.value = newStats
             }
         }
     }
 
-    private fun getFileFromUri(uri: Uri): File? {
-        return try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val file = File(context.cacheDir, "temp_upload.jpg")
-            val outputStream = FileOutputStream(file)
-            inputStream?.copyTo(outputStream)
-            outputStream.close()
-            inputStream?.close()
-            file
-        } catch (e: Exception) {
-            null
-        }
+    fun logout() {
+        auth.signOut()
+        preferenceManager.saveLoginState(false)
     }
 }
