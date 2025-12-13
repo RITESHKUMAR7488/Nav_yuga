@@ -29,8 +29,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -52,7 +54,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = DeepDarkBlue,
+        containerColor = Color.Black,
         topBar = {
             HomeTopBar(
                 onBackClick = onNavigateBack,
@@ -64,9 +66,21 @@ fun HomeScreen(
                 onClick = onRoiClick,
                 containerColor = FabColor,
                 contentColor = Color.White,
-                shape = CircleShape
+                // 1. Changed shape to Rounded Rect
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.size(80.dp)
             ) {
-                Icon(Icons.Default.Calculate, "Calculate ROI")
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(28.dp))
+                    Text(
+                        "ROI\nCalculator",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 12.sp),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -79,13 +93,20 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Greeting
+                // Greeting & Welcome Message
                 item {
-                    Text(
-                        text = "Hello ${uiState.userName}",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = Color.White),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        Text(
+                            text = "Hello ${uiState.userName}",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = Color.White)
+                        )
+                        // 3. Added Welcome Text
+                        Text(
+                            text = "Welcome to Navyuga",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.7f)),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
 
                 // Stories
@@ -110,30 +131,30 @@ fun HomeScreen(
                     }
                 }
 
-                // --- UPDATED: Filter Buttons ---
+                // Filter Buttons
                 item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp) // Space between buttons
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         FilterButton(
                             text = "Funding",
                             isSelected = uiState.selectedFilter == "Funding",
-                            modifier = Modifier.weight(1f), // Equal width
+                            modifier = Modifier.weight(1f),
                             onClick = { viewModel.updateFilter("Funding") }
                         )
                         FilterButton(
                             text = "Funded",
                             isSelected = uiState.selectedFilter == "Funded",
-                            modifier = Modifier.weight(1f), // Equal width
+                            modifier = Modifier.weight(1f),
                             onClick = { viewModel.updateFilter("Funded") }
                         )
                         FilterButton(
                             text = "Exited",
                             isSelected = uiState.selectedFilter == "Exited",
-                            modifier = Modifier.weight(1f), // Equal width
+                            modifier = Modifier.weight(1f),
                             onClick = { viewModel.updateFilter("Exited") }
                         )
                     }
@@ -171,10 +192,8 @@ fun FilterButton(
             containerColor = if (isSelected) FabColor else Color.White.copy(0.1f),
             contentColor = Color.White
         ),
-        // ⚡ UPDATED: Rectangular with rounded corners
         shape = RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(0.dp), // Reduce padding to prevent text truncation on small screens
-        // ⚡ UPDATED: "Little big" (taller height)
+        contentPadding = PaddingValues(0.dp),
         modifier = modifier.height(50.dp)
     ) {
         Text(
@@ -196,11 +215,10 @@ fun HomeTopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 2. Removed background shadow/circle
         IconButton(
             onClick = onBackClick,
-            modifier = Modifier
-                .background(Color.White.copy(alpha = 0.1f), CircleShape)
-                .size(40.dp)
+            modifier = Modifier.size(40.dp)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -209,11 +227,10 @@ fun HomeTopBar(
             )
         }
 
+        // 2. Removed background shadow/circle
         IconButton(
             onClick = onNotificationClick,
-            modifier = Modifier
-                .background(Color.White.copy(alpha = 0.1f), CircleShape)
-                .size(40.dp)
+            modifier = Modifier.size(40.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Notifications,
@@ -269,7 +286,7 @@ fun StoryCircle(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.width(70.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -318,11 +335,20 @@ fun InstagramStylePropertyCard(
                 )
             }
 
-            Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp, start = 16.dp, end = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 12.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 PropertyStat("Price", "₹${property.minInvest}")
+                Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
 
                 val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else property.rentReturn
                 PropertyStat("Rent", displayRent)
+
+                Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
 
                 PropertyStat("ROI", "${property.roi}%", true)
             }
@@ -347,7 +373,15 @@ fun InstagramStylePropertyCard(
 @Composable
 fun PropertyStat(label: String, value: String, isHighlight: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = if (isHighlight) Color(0xFF4ADE80) else MaterialTheme.colorScheme.onSurface)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color.White
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
