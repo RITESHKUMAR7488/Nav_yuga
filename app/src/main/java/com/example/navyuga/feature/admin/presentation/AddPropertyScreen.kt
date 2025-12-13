@@ -26,7 +26,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.navyuga.core.common.UiState
-import com.example.navyuga.feature.arthyuga.presentation.search.NavyugaDropdown
 import com.example.navyuga.feature.auth.presentation.components.NavyugaGradientButton
 import com.example.navyuga.feature.auth.presentation.components.NavyugaTextField
 
@@ -42,7 +41,7 @@ fun AddPropertyScreen(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Office") }
-    // ⚡ UPDATE: Default status and replaced with dropdown below
+    // Default to "Funding" as per your previous requirements
     var status by remember { mutableStateOf("Funding") }
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
@@ -58,7 +57,7 @@ fun AddPropertyScreen(
     var tenantName by remember { mutableStateOf("") }
     var occupationPeriod by remember { mutableStateOf("") }
 
-    // ⚡ NEW: Split Escalation into two fields
+    // Split Escalation into two fields
     var escalationPercent by remember { mutableStateOf("") }
     var escalationYears by remember { mutableStateOf("") }
 
@@ -150,6 +149,8 @@ fun AddPropertyScreen(
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = state, onValueChange = { state = it }, label = "State", icon = Icons.Default.Map) }
             }
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Asset Type Dropdown
             NavyugaDropdown(
                 label = "Asset Type",
                 options = listOf("Office", "Retail", "Warehouse", "Industrial"),
@@ -158,7 +159,7 @@ fun AddPropertyScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⚡ NEW: Status Dropdown
+            // Status Dropdown
             NavyugaDropdown(
                 label = "Status",
                 options = listOf("Funding", "Funded", "Exited"),
@@ -189,7 +190,6 @@ fun AddPropertyScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⚡ UPDATED: Two fields for Escalation
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) {
                     NavyugaTextField(value = escalationPercent, onValueChange = { escalationPercent = it }, label = "Escalation %", icon = Icons.Default.TrendingUp)
@@ -237,9 +237,6 @@ fun AddPropertyScreen(
                 isLoading = uploadState is UiState.Loading,
                 onClick = {
                     if (title.isNotEmpty() && totalValuation.isNotEmpty()) {
-
-                        // ⚡ LOGIC: Combine the two inputs into one string for storage
-                        // Result: "5% (Every 3 Years)"
                         val finalEscalation = if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
 
                         viewModel.listNewProperty(
@@ -249,7 +246,7 @@ fun AddPropertyScreen(
                             totalValuation = totalValuation, minInvest = minInvest, roi = roi.toDoubleOrNull() ?: 0.0, fundedPercent = fundedPercent.toIntOrNull() ?: 0,
                             monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
                             tenantName = tenantName, occupationPeriod = occupationPeriod,
-                            escalation = finalEscalation, // <--- Passing combined string
+                            escalation = finalEscalation,
                             imageUris = selectedImageUris
                         )
                     } else {
@@ -272,4 +269,51 @@ fun SectionHeader(title: String) {
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(bottom = 8.dp)
     )
+}
+
+// ⚡ ADDED: Local Dropdown Component
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NavyugaDropdown(
+    label: String,
+    options: List<String>,
+    selected: String,
+    onSelectionChange: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            readOnly = true,
+            value = selected,
+            onValueChange = {},
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onSelectionChange(option)
+                        expanded = false
+                    },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+        }
+    }
 }

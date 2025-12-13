@@ -3,23 +3,17 @@ package com.example.navyuga.feature.arthyuga.presentation.search
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.example.navyuga.core.common.UiState
-import com.example.navyuga.feature.arthyuga.presentation.home.InstagramStylePropertyCard
-import com.example.navyuga.feature.auth.presentation.components.NavyugaGradientButton
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     navController: NavController,
@@ -28,72 +22,59 @@ fun SearchScreen(
     var selectedCountry by remember { mutableStateOf("India") }
     var selectedCity by remember { mutableStateOf("All Cities") }
 
-    val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
+    Scaffold(
+        containerColor = Color.Black, // Consistent Black Background
+        topBar = {
+            // Simple title or TopBar can be added here if needed
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Find Properties",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 24.dp, top = 16.dp)
+            )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Find Properties",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+            // --- UPDATED DROPDOWNS (RoiScreen Style) ---
+            NavyugaExposedDropdown("Country", viewModel.countries, selectedCountry) { selectedCountry = it }
+            Spacer(modifier = Modifier.height(16.dp))
+            NavyugaExposedDropdown("City", viewModel.cities, selectedCity) { selectedCity = it }
 
-        // --- DROPDOWNS ---
-        NavyugaDropdown("Country", viewModel.countries, selectedCountry) { selectedCountry = it }
-        Spacer(modifier = Modifier.height(12.dp))
-        NavyugaDropdown("City", viewModel.cities, selectedCity) { selectedCity = it }
+            Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        NavyugaGradientButton(
-            text = "Search",
-            onClick = { viewModel.performSearch(selectedCountry, selectedCity) }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // --- RESULTS ---
-        when (val state = searchState) {
-            is UiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+            // --- SEARCH BUTTON (Lighter Blue) ---
+            Button(
+                onClick = {
+                    // Navigate to the new Results Page
+                    navController.navigate("search_results/$selectedCountry/$selectedCity")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF60A5FA), // Lighter Blue
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    "Search",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
             }
-            is UiState.Success -> {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(state.data) { property ->
-                        InstagramStylePropertyCard(
-                            property = property,
-                            onItemClick = { navController.navigate("property_detail/${property.id}") },
-                            onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
-                            onShareClick = { /* Handle Share */ },
-                            // ⚡ Uses default padding or fill width (parent has padding)
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-            is UiState.Failure -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-            else -> {}
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavyugaDropdown(
+fun NavyugaExposedDropdown(
     label: String,
     options: List<String>,
     selected: String,
@@ -101,38 +82,53 @@ fun NavyugaDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier.fillMaxWidth()
+    ) {
         OutlinedTextField(
-            value = selected,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = {
-                Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expanded = true })
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            ),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = true },
-            shape = RoundedCornerShape(12.dp)
+                .menuAnchor(), // Makes the whole field clickable
+            readOnly = true,
+            value = selected,
+            onValueChange = {},
+            label = { Text(label, color = Color.White.copy(0.7f)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedContainerColor = Color(0xFF1E293B), // Dark surface
+                unfocusedContainerColor = Color(0xFF1E293B),
+                focusedBorderColor = Color(0xFF60A5FA),
+                unfocusedBorderColor = Color.White.copy(0.2f)
+            ),
+            shape = RoundedCornerShape(12.dp),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium) // Big word
         )
-        DropdownMenu(
+        ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            modifier = Modifier
+                .background(Color(0xFF1E293B)) // Match dropdown background
+                .fillMaxWidth()
         ) {
-            options.forEach { option ->
+            options.forEach { selectionOption ->
                 DropdownMenuItem(
-                    text = { Text(option, color = MaterialTheme.colorScheme.onSurface) },
+                    text = {
+                        Text(
+                            selectionOption,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    },
                     onClick = {
-                        onSelectionChange(option)
+                        onSelectionChange(selectionOption)
                         expanded = false
-                    }
+                    },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
         }

@@ -8,7 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue // ⚡ FIXED: Necessary for 'by' delegation
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,7 +25,8 @@ import com.example.navyuga.feature.admin.presentation.ManagePropertiesScreen
 import com.example.navyuga.feature.admin.presentation.ManageUsersScreen
 import com.example.navyuga.feature.arthyuga.presentation.ArthYugaDashboard
 import com.example.navyuga.feature.arthyuga.presentation.detail.PropertyDetailScreen
-import com.example.navyuga.feature.auth.data.model.UserModel // ⚡ FIXED: Import needed for casting
+import com.example.navyuga.feature.arthyuga.presentation.search.SearchResultsScreen // Import new screen
+import com.example.navyuga.feature.auth.data.model.UserModel
 import com.example.navyuga.feature.auth.presentation.AuthViewModel
 import com.example.navyuga.feature.auth.presentation.LoginScreen
 import com.example.navyuga.feature.auth.presentation.RegisterScreen
@@ -78,20 +79,35 @@ fun AppNavigation(
             RoiScreen(onBackClick = { navController.popBackStack() })
         }
 
+        // ⚡ NEW: Search Results Route
+        composable(
+            "search_results/{country}/{city}",
+            arguments = listOf(
+                navArgument("country") { type = NavType.StringType },
+                navArgument("city") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val country = backStackEntry.arguments?.getString("country") ?: "India"
+            val city = backStackEntry.arguments?.getString("city") ?: "All Cities"
+
+            SearchResultsScreen(
+                country = country,
+                city = city,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { id -> navController.navigate("property_detail/$id") }
+            )
+        }
+
         // --- ADMIN MODULE (SECURED) ---
 
         composable("admin_dashboard") {
             val authViewModel: AuthViewModel = hiltViewModel()
             val currentUserState by authViewModel.currentUser.collectAsState()
 
-            // ⚡ FIXED: Safe Casting with Generics
-            // We specifically cast to UiState.Success<UserModel> so Kotlin knows 'data' is a UserModel
             val isAdmin = (currentUserState as? UiState.Success<UserModel>)?.data?.role == "admin"
 
-            // Security Check
             LaunchedEffect(currentUserState) {
                 if (currentUserState is UiState.Success && !isAdmin) {
-                    // Uncomment to activate security:
                     // navController.navigate("login") { popUpTo(0) { inclusive = true } }
                 }
             }
