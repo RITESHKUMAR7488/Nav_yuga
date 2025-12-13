@@ -21,9 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,15 +39,96 @@ import com.example.navyuga.ui.theme.SuccessGreen
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
 
-// ⚡ HELPER: Indian Number Formatting (e.g., 5,00,000)
+// ⚡ HELPER: Smart Indian Formatting (Integers vs Decimals)
 fun formatIndian(amount: Double): String {
     return try {
         val formatter = NumberFormat.getInstance(Locale("en", "IN"))
-        formatter.maximumFractionDigits = 0
+        if (amount % 1.0 == 0.0) {
+            formatter.maximumFractionDigits = 0 // "5,00,000"
+        } else {
+            formatter.maximumFractionDigits = 2 // "8.5" or "10.25"
+        }
         formatter.format(amount)
     } catch (e: Exception) {
         String.format("%.0f", amount)
+    }
+}
+
+// ⚡ VISUAL TRANSFORMATION: Adds Indian Commas AS YOU TYPE
+class IndianNumberVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val original = text.text
+        if (original.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
+
+        // Split integer and decimal parts
+        val parts = original.split(".")
+        val integerPart = parts[0]
+        val decimalPart = if (parts.size > 1) "." + parts[1] else ""
+
+        // Format integer part with Indian commas
+        val formattedInteger = formatIndianInteger(integerPart)
+        val formatted = formattedInteger + decimalPart
+
+        // Map offsets between original and formatted text
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                // Calculate how many commas are inserted before this offset
+                if (offset <= 0) return 0
+
+                // Count characters in original integer part up to offset
+                val separatorIndex = original.indexOf('.')
+                val offsetInInteger = if (separatorIndex == -1 || offset <= separatorIndex) offset else separatorIndex
+
+                val commasAdded = countCommasAdded(integerPart.take(offsetInInteger))
+
+                return if (separatorIndex != -1 && offset > separatorIndex) {
+                    // Offset is in decimal part
+                    offsetInInteger + commasAdded + (offset - separatorIndex)
+                } else {
+                    offset + commasAdded
+                }
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                // Remove commas from formatted text up to offset to find original index
+                if (offset <= 0) return 0
+                val cleanTextUpToOffset = formatted.take(offset).replace(",", "")
+                return min(cleanTextUpToOffset.length, original.length)
+            }
+        }
+
+        return TransformedText(AnnotatedString(formatted), offsetMapping)
+    }
+
+    private fun formatIndianInteger(number: String): String {
+        if (number.isEmpty()) return ""
+        val sb = StringBuilder(number)
+        val len = sb.length
+        if (len <= 3) return sb.toString()
+
+        // Indian system: 3 digits, then 2, then 2...
+        // 1234567 -> 12,34,567
+        // Commas at: len-3, len-5, len-7...
+
+        var i = len - 3
+        while (i > 0) {
+            sb.insert(i, ",")
+            i -= 2
+        }
+        return sb.toString()
+    }
+
+    private fun countCommasAdded(subString: String): Int {
+        if (subString.length <= 3) return 0
+        // First comma at 3 from right, then every 2
+        // Example: 1234 (len 4) -> 1 comma (1,234)
+        // 12345 (len 5) -> 1 comma (12,345)
+        // 123456 (len 6) -> 2 commas (1,23,456)
+        val chunks = (subString.length - 3)
+        return 1 + (chunks - 1) / 2
     }
 }
 
@@ -392,7 +477,6 @@ fun Step5Result(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("NET ANNUAL INCOME", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = BrandBlue)
-                // ⚡ UPDATED: Indian Format
                 Text(
                     text = "₹${formatIndian(state.netAnnualIncome)}",
                     style = MaterialTheme.typography.titleLarge,
@@ -541,7 +625,6 @@ fun CounterOfferResultScreen(
             ) {
                 Text("PROPOSED OFFER PRICE", style = MaterialTheme.typography.labelMedium, color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                // ⚡ UPDATED: Indian Format
                 Text(
                     "₹${formatIndian(counterPrice)}",
                     style = MaterialTheme.typography.displayMedium,
@@ -646,6 +729,9 @@ fun CounterRoiDialog(
                             Text(String.format("%.2f%%", currentRoi), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
+                        // ⚡ UPDATED: RoiInput logic used here too for consistent behavior?
+                        // Actually Counter Dialog is separate. Let's keep it simple or use RoiInput logic.
+                        // Standard OutlinedTextField is fine here as it's small input (8.5%).
                         OutlinedTextField(
                             value = targetRoiStr,
                             onValueChange = { targetRoiStr = it; hasCalculated = false },
@@ -752,13 +838,11 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(row.year.toString(), modifier = Modifier.weight(0.5f))
-                        // ⚡ UPDATED: Indian Format
                         Text(
                             "₹${formatIndian(row.annualRent)}",
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.End
                         )
-                        // ⚡ UPDATED: Indian Format + White Color
                         Text(
                             "₹${formatIndian(row.netIncome)}",
                             modifier = Modifier.weight(1f),
@@ -774,7 +858,6 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ⚡ UPDATED: Blue Tint, White Text, Indian Format
         Card(
             colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.15f)),
             shape = RoundedCornerShape(12.dp),
@@ -805,18 +888,28 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
     }
 }
 
-// --- Common Components ---
-
+// ⚡ UPDATED: Input with Visual Transformation
 @Composable
 fun RoiInput(label: String, value: String, modifier: Modifier = Modifier, isNumber: Boolean = false, onValueChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { input ->
+            if (isNumber) {
+                // Allow digits and at most one dot
+                val filtered = input.filter { it.isDigit() || it == '.' }
+                if (filtered.count { it == '.' } <= 1) {
+                    onValueChange(filtered)
+                }
+            } else {
+                onValueChange(input)
+            }
+        },
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next) else KeyboardOptions.Default,
-        singleLine = true
+        singleLine = true,
+        visualTransformation = if (isNumber) IndianNumberVisualTransformation() else VisualTransformation.None
     )
 }
 
@@ -838,7 +931,6 @@ fun ResultRow(label: String, amount: Double, isNegative: Boolean = false, isBold
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = if(isBold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium, fontWeight = if(isBold) FontWeight.Bold else FontWeight.Normal)
-        // ⚡ UPDATED: Indian Format
         Text(
             text = "${if(isNegative) "- " else ""}₹${formatIndian(kotlin.math.abs(amount))}",
             style = if(isBold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
