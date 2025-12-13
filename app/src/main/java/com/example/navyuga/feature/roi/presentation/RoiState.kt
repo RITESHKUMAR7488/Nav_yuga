@@ -3,6 +3,7 @@ package com.example.navyuga.feature.roi.presentation
 data class RoiState(
     val isBuyerMode: Boolean = true,
     val currentStep: Int = 0,
+    // Property
     val propertyName: String = "",
     val propertyAddress: String = "",
     val buildingAge: String = "",
@@ -10,6 +11,7 @@ data class RoiState(
     val saleableArea: String = "",
     val floor: String = "",
     val carPark: String = "",
+    // Lease
     val tenantName: String = "",
     val periodOfOccupation: String = "",
     val rentStartDate: Long? = null,
@@ -18,15 +20,18 @@ data class RoiState(
     val escalationYears: String = "",
     val monthlyRent: String = "",
     val securityDeposit: String = "",
+    // Expenses
     val propertyTaxMonthly: String = "",
     val maintenanceCost: String = "",
     val isMaintenanceByLandlord: Boolean = false,
+    // Financials
     val acquisitionCost: String = "",
     val targetRoi: String = "",
     val legalCharges: String = "",
     val electricityCharges: String = "",
     val dgCharges: String = "",
     val fireFightingCharges: String = "",
+    // Results
     val calculatedRoi: Double = 0.0,
     val calculatedSellingPrice: Double = 0.0,
     val totalInvestment: Double = 0.0,
@@ -36,7 +41,10 @@ data class RoiState(
     val registryCost: Double = 0.0,
     val gstAmount: Double = 0.0,
     val totalOtherCharges: Double = 0.0,
-    val cashFlows: List<CashFlowRow> = emptyList()
+    val cashFlows: List<CashFlowRow> = emptyList(),
+    // Counter Offer
+    val counterOfferPrice: Double? = null,
+    val counterOfferRoi: Double? = null
 )
 
 data class CashFlowRow(

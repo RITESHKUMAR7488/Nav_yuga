@@ -26,10 +26,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.navyuga.ui.theme.BrandBlue
 import com.example.navyuga.ui.theme.SuccessGreen
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +42,15 @@ fun RoiScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+
+    // [COROUTINE EXPLANATION]
+    // We create a CoroutineScope bound to this Composable's lifecycle.
+    // This allows us to launch background tasks (like PDF generation)
+    // without blocking the main UI thread.
+    val scope = rememberCoroutineScope()
+
+    val pdfGenerator = remember { RoiPdfGenerator(context) }
 
     Scaffold(
         topBar = {
@@ -63,7 +75,6 @@ fun RoiScreen(
                 .padding(16.dp)
         ) {
             if (state.currentStep in 1..4) {
-                // Progress Indicator (Only in flow)
                 RoiProgressBar(currentStep = state.currentStep, totalSteps = 4)
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -87,9 +98,25 @@ fun RoiScreen(
                     2 -> Step2Lease(state, viewModel)
                     3 -> Step3Expenses(state, viewModel)
                     4 -> Step4Financials(state, viewModel)
-                    5 -> Step5Result(state, viewModel, onShare = { context ->
-                        shareRoiReport(context, state)
-                    })
+                    5 -> Step5Result(
+                        state = state,
+                        vm = viewModel,
+                        onShare = {
+                            // [COROUTINE EXPLANATION]
+                            // scope.launch starts a new coroutine on the Main thread.
+                            // Inside generateAndSharePdf, we will switch to the IO dispatcher
+                            // to handle the heavy file operations, ensuring the app doesn't freeze.
+                            scope.launch {
+                                pdfGenerator.generateAndSharePdf(state, PdfMode.REPORT)
+                            }
+                        },
+                        onGenerateCounterPdf = {
+                            // Same here: Launching a coroutine for the Counter Offer PDF
+                            scope.launch {
+                                pdfGenerator.generateAndSharePdf(state, PdfMode.COUNTER_OFFER)
+                            }
+                        }
+                    )
                 }
             }
 
@@ -221,12 +248,10 @@ fun Step2Lease(state: RoiState, vm: RoiViewModel) {
 fun Step3Expenses(state: RoiState, vm: RoiViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader("Monthly Expenses")
-        // Mandatory *
         RoiInput("Property Tax / Month (₹)*", state.propertyTaxMonthly, isNumber = true) { vm.updateExpenses(tax = it) }
 
-        Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        // Mandatory *
         RoiInput("Maintenance Cost / Month (₹)*", state.maintenanceCost, isNumber = true) { vm.updateExpenses(maint = it) }
 
         Text("Paid By", style = MaterialTheme.typography.labelLarge)
@@ -277,8 +302,12 @@ fun Step4Financials(state: RoiState, vm: RoiViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
-    val context = LocalContext.current
+fun Step5Result(
+    state: RoiState,
+    vm: RoiViewModel,
+    onShare: () -> Unit,
+    onGenerateCounterPdf: () -> Unit
+) {
     var showCounterDialog by remember { mutableStateOf(false) }
     var showCashFlowSheet by remember { mutableStateOf(false) }
 
@@ -329,7 +358,7 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
 
                 ResultRow("Registry (8%)", state.registryCost)
                 ResultRow("Legal & Others", state.totalOtherCharges)
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 ResultRow("TOTAL INVESTMENT", state.totalInvestment, isBold = true)
             }
         }
@@ -364,7 +393,8 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
                     onClick = { showCounterDialog = true },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    elevation = ButtonDefaults.buttonElevation(4.dp)
                 ) {
                     Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -379,7 +409,8 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
                 },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                elevation = ButtonDefaults.buttonElevation(4.dp)
             ) {
                 Icon(Icons.Default.Timeline, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -388,14 +419,17 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
         }
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Share Report Button
         Button(
-            onClick = { onShare(context) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+            onClick = onShare,
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+            shape = RoundedCornerShape(12.dp),
+            elevation = ButtonDefaults.buttonElevation(6.dp)
         ) {
             Icon(Icons.Default.Share, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Share PDF Report")
+            Text("Share Full Report PDF", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 
@@ -403,7 +437,12 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
         CounterRoiDialog(
             currentRoi = state.calculatedRoi,
             onDismiss = { showCounterDialog = false },
-            onCalculate = { targetRoi -> vm.calculateCounterOffer(targetRoi) }
+            onCalculate = { targetRoi -> vm.calculateCounterOffer(targetRoi) },
+            resultPrice = state.counterOfferPrice,
+            onGeneratePdf = {
+                onGenerateCounterPdf()
+                showCounterDialog = false
+            }
         )
     }
 
@@ -415,72 +454,188 @@ fun Step5Result(state: RoiState, vm: RoiViewModel, onShare: (Context) -> Unit) {
 }
 
 @Composable
-fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Double) -> Double) {
+fun CounterRoiDialog(
+    currentRoi: Double,
+    onDismiss: () -> Unit,
+    onCalculate: (Double) -> Unit,
+    resultPrice: Double?,
+    onGeneratePdf: () -> Unit
+) {
     var targetRoiStr by remember { mutableStateOf("") }
-    var resultPrice by remember { mutableStateOf<Double?>(null) }
+    var hasCalculated by remember { mutableStateOf(false) } // Track if user clicked calculate
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(0.95f)
+                .animateContentSize(), // Smooth animation when result appears
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Header
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(BrandBlue.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Calculate, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(32.dp))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    "Counter ROI Calculator",
+                    "Counter Offer Calculator",
                     style = MaterialTheme.typography.headlineSmall,
                     color = BrandBlue,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    "Current ROI: ${String.format("%.2f%%", currentRoi)}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    "Find the right price for your target ROI",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Input Section
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Current ROI", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                String.format("%.2f%%", currentRoi),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = targetRoiStr,
+                            onValueChange = {
+                                targetRoiStr = it
+                                hasCalculated = false // Reset state on edit
+                            },
+                            label = { Text("Enter Target ROI (%)") },
+                            placeholder = { Text("e.g. 8.5") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = BrandBlue,
+                                focusedLabelColor = BrandBlue
+                            )
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = targetRoiStr,
-                    onValueChange = { targetRoiStr = it },
-                    label = { Text("Target ROI (%)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (resultPrice != null) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.1f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, SuccessGreen)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Make this Offer:", style = MaterialTheme.typography.labelMedium, color = SuccessGreen)
-                            Text(
-                                "₹${String.format("%,.0f", resultPrice)}",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = SuccessGreen
-                            )
+                // --- RESULT SECTION ---
+                AnimatedVisibility(visible = hasCalculated) {
+                    if (resultPrice != null && resultPrice > 0) {
+                        // SUCCESS CASE
+                        Column {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.1f)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SuccessGreen),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("PROPOSED OFFER PRICE", style = MaterialTheme.typography.labelSmall, color = SuccessGreen, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        "₹${String.format("%,.0f", resultPrice)}",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = SuccessGreen
+                                    )
+                                    Text(
+                                        "(Includes reverse calculation of taxes)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = SuccessGreen.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = onGeneratePdf,
+                                modifier = Modifier.fillMaxWidth().height(50.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Generate Proposal PDF")
+                            }
+                        }
+                    } else {
+                        // ERROR CASE (Negative Result)
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "This ROI is unachievable given the current rental income. Please lower your target.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Action Buttons
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                        Text("Close")
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cancel")
                     }
                     Button(
                         onClick = {
                             val target = targetRoiStr.toDoubleOrNull() ?: 0.0
-                            resultPrice = onCalculate(target)
+                            if (target > 0) {
+                                onCalculate(target)
+                                hasCalculated = true
+                            }
                         },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Calculate")
                     }
@@ -492,14 +647,13 @@ fun CounterRoiDialog(currentRoi: Double, onDismiss: () -> Unit, onCalculate: (Do
 
 @Composable
 fun CashFlowContent(cashFlows: List<CashFlowRow>) {
-    // Calculate Total Net Income
     val totalIncome = cashFlows.sumOf { it.netIncome }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .heightIn(max = 600.dp) // Slightly taller to fit footer
+            .heightIn(max = 600.dp)
     ) {
         Text(
             "Projected Cash Flow",
@@ -514,7 +668,6 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Table Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -527,10 +680,9 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
             Text("Net Income", modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
         }
 
-        // List
         LazyColumn(
             modifier = Modifier
-                .weight(1f) // Fill remaining space but allow footer
+                .weight(1f)
                 .padding(vertical = 8.dp)
         ) {
             items(cashFlows) { row ->
@@ -555,12 +707,11 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 }
             }
         }
 
-        // --- NEW: TOTAL FOOTER ---
         Spacer(modifier = Modifier.height(8.dp))
         Card(
             colors = CardDefaults.cardColors(containerColor = SuccessGreen.copy(alpha = 0.15f)),
@@ -642,8 +793,9 @@ fun RoiProgressBar(currentStep: Int, totalSteps: Int) {
             val color = if (isActive) BrandBlue else MaterialTheme.colorScheme.surfaceVariant
 
             if (i > 1) {
-                Divider(
-                    modifier = Modifier.weight(1f).height(2.dp),
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    thickness = 2.dp,
                     color = color
                 )
             }
@@ -660,9 +812,4 @@ fun RoiProgressBar(currentStep: Int, totalSteps: Int) {
             }
         }
     }
-}
-
-fun shareRoiReport(context: Context, state: RoiState) {
-    val pdfGenerator = RoiPdfGenerator(context)
-    pdfGenerator.generateAndSharePdf(state)
 }

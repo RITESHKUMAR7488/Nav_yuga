@@ -28,7 +28,6 @@ fun SearchScreen(
     var selectedCountry by remember { mutableStateOf("India") }
     var selectedCity by remember { mutableStateOf("All Cities") }
 
-    // Use collectAsStateWithLifecycle for better lifecycle handling
     val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
 
     Column(
@@ -71,9 +70,10 @@ fun SearchScreen(
                         InstagramStylePropertyCard(
                             property = property,
                             onItemClick = { navController.navigate("property_detail/${property.id}") },
-                            // ⚡ FIXED: Calls the ViewModel to toggle like status
                             onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
-                            onShareClick = { /* Handle Share */ }
+                            onShareClick = { /* Handle Share */ },
+                            // ⚡ Uses default padding or fill width (parent has padding)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
