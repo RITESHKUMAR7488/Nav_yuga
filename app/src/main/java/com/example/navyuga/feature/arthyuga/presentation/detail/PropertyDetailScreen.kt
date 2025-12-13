@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
+import com.example.navyuga.feature.auth.presentation.components.formatIndian // ⚡ IMPORT
 
-// ⚡ MATCHING HOME SCREEN THEME
 private val DeepDarkBlue = Color(0xFF0F172A)
 private val BrandBlue = Color(0xFF4361EE)
 
@@ -53,7 +53,7 @@ fun PropertyDetailScreen(
         }
     } else if (property != null) {
         Scaffold(
-            containerColor = DeepDarkBlue, // ⚡ Dark Background
+            containerColor = DeepDarkBlue,
             bottomBar = {
                 InvestBottomBar(
                     property = property,
@@ -100,7 +100,6 @@ fun PropertyDetailScreen(
                         )
                     }
 
-                    // Top Gradient Overlay for Back Button visibility
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -109,7 +108,6 @@ fun PropertyDetailScreen(
                             .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)))
                     )
 
-                    // Back Button
                     IconButton(
                         onClick = onNavigateBack,
                         modifier = Modifier.padding(top = 16.dp, start = 8.dp).align(Alignment.TopStart)
@@ -117,7 +115,6 @@ fun PropertyDetailScreen(
                         Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
                     }
 
-                    // Indicators
                     if (images.size > 1) {
                         Row(
                             Modifier
@@ -140,7 +137,6 @@ fun PropertyDetailScreen(
                 // ================== CONTENT ==================
                 Column(modifier = Modifier.padding(24.dp)) {
 
-                    // 1. Header & Type
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -160,7 +156,6 @@ fun PropertyDetailScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // 2. ⚡ PROGRESS BAR (Funded %)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -178,7 +173,6 @@ fun PropertyDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // 3. ⚡ STATS ROW (Value Top, Label Bottom) - ALL WHITE
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -186,28 +180,25 @@ fun PropertyDetailScreen(
                             .padding(vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        StatItem(label = "Price", value = property.totalValuation)
+                        // ⚡ FORMATTED
+                        StatItem(label = "Price", value = "₹${formatIndian(property.totalValuation)}")
                         VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
 
-                        // Rent Logic
-                        val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else property.rentReturn
+                        val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else "₹${formatIndian(property.rentReturn)}"
                         StatItem(label = "Rent", value = displayRent)
 
                         VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
-                        // ⚡ ROI is now White
                         StatItem(label = "ROI", value = "${property.roi}%", isHighlight = true)
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // 4. Property Specs Grid
                     SectionTitle("Property Overview")
                     GridItem(label1 = "Area", value1 = property.area, label2 = "Floor", value2 = property.floor)
                     GridItem(label1 = "Age", value1 = property.age, label2 = "Parking", value2 = property.carPark)
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // 5. Lease Info
                     SectionTitle("Lease Details")
                     InfoRow("Tenant", property.tenantName)
                     InfoRow("Occupancy", property.occupationPeriod)
@@ -215,7 +206,6 @@ fun PropertyDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // 6. Financial Analysis
                     SectionTitle("Financial Breakdown")
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
@@ -223,9 +213,10 @@ fun PropertyDetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            InfoRow("Monthly Rent", property.monthlyRent)
-                            InfoRow("Gross Annual", property.grossAnnualRent)
-                            InfoRow("Property Tax", property.annualPropertyTax)
+                            // ⚡ FORMATTED
+                            InfoRow("Monthly Rent", "₹${formatIndian(property.monthlyRent)}")
+                            InfoRow("Gross Annual", "₹${formatIndian(property.grossAnnualRent)}")
+                            InfoRow("Property Tax", "₹${formatIndian(property.annualPropertyTax)}")
                             Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.1f))
                             InfoRow("Net ROI", "${property.roi}%", isBold = true, valueColor = BrandBlue)
                         }
@@ -257,14 +248,12 @@ fun PropertyDetailScreen(
 @Composable
 fun StatItem(label: String, value: String, isHighlight: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // ⚡ SWAPPED ORDER: Number (Value) First
         Text(
             value,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color.White // ⚡ Always White
+            color = Color.White
         )
         Spacer(modifier = Modifier.height(4.dp))
-        // ⚡ Label Second
         Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
     }
 }
@@ -319,7 +308,8 @@ fun InvestBottomBar(
             ) {
                 Column {
                     Text("Total Price", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.6f))
-                    Text(property.totalValuation, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                    // ⚡ FORMATTED
+                    Text("₹${formatIndian(property.totalValuation)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
                 }
                 Button(
                     onClick = onInvestClicked,

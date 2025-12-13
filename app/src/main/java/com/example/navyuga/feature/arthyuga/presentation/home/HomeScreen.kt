@@ -37,8 +37,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
+import com.example.navyuga.feature.auth.presentation.components.formatIndian // ⚡ IMPORT
 
-// --- Theme Colors ---
 private val DeepDarkBlue = Color(0xFF0F172A)
 private val StoryGradientStart = Color(0xFF4361EE)
 private val StoryGradientEnd = Color(0xFF3F37C9)
@@ -66,7 +66,6 @@ fun HomeScreen(
                 onClick = onRoiClick,
                 containerColor = FabColor,
                 contentColor = Color.White,
-                // 1. Changed shape to Rounded Rect
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.size(80.dp)
             ) {
@@ -100,7 +99,6 @@ fun HomeScreen(
                             text = "Hello ${uiState.userName}",
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = Color.White)
                         )
-                        // 3. Added Welcome Text
                         Text(
                             text = "Welcome to Navyuga",
                             style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.7f)),
@@ -215,7 +213,6 @@ fun HomeTopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 2. Removed background shadow/circle
         IconButton(
             onClick = onBackClick,
             modifier = Modifier.size(40.dp)
@@ -227,7 +224,6 @@ fun HomeTopBar(
             )
         }
 
-        // 2. Removed background shadow/circle
         IconButton(
             onClick = onNotificationClick,
             modifier = Modifier.size(40.dp)
@@ -342,10 +338,12 @@ fun InstagramStylePropertyCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PropertyStat("Price", "₹${property.minInvest}")
+                // ⚡ FORMATTED
+                PropertyStat("Price", "₹${formatIndian(property.minInvest)}")
                 Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
 
-                val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else property.rentReturn
+                // ⚡ FORMATTED
+                val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else "₹${formatIndian(property.rentReturn)}"
                 PropertyStat("Rent", displayRent)
 
                 Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))

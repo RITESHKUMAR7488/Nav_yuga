@@ -3,6 +3,7 @@ package com.example.navyuga.feature.auth.presentation.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -12,11 +13,106 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import com.example.navyuga.ui.theme.ErrorRed
 import com.example.navyuga.ui.theme.PrimaryGradient
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.min
+
+// ==========================================
+// ⚡ UNIVERSAL HELPER FUNCTIONS
+// ==========================================
+
+fun formatIndian(amount: Double): String {
+    return try {
+        val formatter = NumberFormat.getInstance(Locale("en", "IN"))
+        if (amount % 1.0 == 0.0) {
+            formatter.maximumFractionDigits = 0
+        } else {
+            formatter.maximumFractionDigits = 2
+        }
+        formatter.format(amount)
+    } catch (e: Exception) {
+        String.format("%.0f", amount)
+    }
+}
+
+// Overload for String input (Safe parsing)
+fun formatIndian(amount: String?): String {
+    if (amount.isNullOrBlank()) return "-"
+    // Remove existing commas if any before parsing
+    val cleanString = amount.replace(",", "")
+    val d = cleanString.toDoubleOrNull() ?: return amount // Return original if not a number (e.g. "Contact Us")
+    return formatIndian(d)
+}
+
+// ==========================================
+// ⚡ VISUAL TRANSFORMATION (Auto-Commas)
+// ==========================================
+
+class IndianNumberVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val original = text.text
+        if (original.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
+
+        val parts = original.split(".")
+        val integerPart = parts[0]
+        val decimalPart = if (parts.size > 1) "." + parts[1] else ""
+
+        val formattedInteger = formatIndianInteger(integerPart)
+        val formatted = formattedInteger + decimalPart
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 0) return 0
+                val separatorIndex = original.indexOf('.')
+                val offsetInInteger = if (separatorIndex == -1 || offset <= separatorIndex) offset else separatorIndex
+                val commasAdded = countCommasAdded(integerPart.take(offsetInInteger))
+
+                return if (separatorIndex != -1 && offset > separatorIndex) {
+                    offsetInInteger + commasAdded + (offset - separatorIndex)
+                } else {
+                    offset + commasAdded
+                }
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 0) return 0
+                val cleanTextUpToOffset = formatted.take(offset).replace(",", "")
+                return min(cleanTextUpToOffset.length, original.length)
+            }
+        }
+
+        return TransformedText(AnnotatedString(formatted), offsetMapping)
+    }
+
+    private fun formatIndianInteger(number: String): String {
+        if (number.isEmpty()) return ""
+        val sb = StringBuilder(number)
+        val len = sb.length
+        if (len <= 3) return sb.toString()
+
+        var i = len - 3
+        while (i > 0) {
+            sb.insert(i, ",")
+            i -= 2
+        }
+        return sb.toString()
+    }
+
+    private fun countCommasAdded(subString: String): Int {
+        if (subString.length <= 3) return 0
+        val chunks = (subString.length - 3)
+        return 1 + (chunks - 1) / 2
+    }
+}
+
+// ==========================================
+// ⚡ UI COMPONENTS
+// ==========================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,11 +122,11 @@ fun NavyugaTextField(
     label: String,
     icon: ImageVector,
     isPassword: Boolean = false,
+    isNumber: Boolean = false, // ⚡ Added isNumber flag
     errorMessage: String? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // Dynamic Colors
     val containerColor = MaterialTheme.colorScheme.surfaceVariant
     val textColor = MaterialTheme.colorScheme.onSurface
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -40,7 +136,17 @@ fun NavyugaTextField(
     Column(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { input ->
+                if (isNumber) {
+                    // Allow digits and at most one dot
+                    val filtered = input.filter { it.isDigit() || it == '.' }
+                    if (filtered.count { it == '.' } <= 1) {
+                        onValueChange(filtered)
+                    }
+                } else {
+                    onValueChange(input)
+                }
+            },
             label = { Text(label) },
             leadingIcon = { Icon(icon, contentDescription = null, tint = iconColor) },
             trailingIcon = if (isPassword) {
@@ -54,7 +160,13 @@ fun NavyugaTextField(
                     }
                 }
             } else null,
-            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+            // ⚡ Apply transformation if it's a number
+            visualTransformation = when {
+                isPassword && !passwordVisible -> PasswordVisualTransformation()
+                isNumber -> IndianNumberVisualTransformation()
+                else -> VisualTransformation.None
+            },
+            keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next) else KeyboardOptions.Default,
 
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = containerColor,
