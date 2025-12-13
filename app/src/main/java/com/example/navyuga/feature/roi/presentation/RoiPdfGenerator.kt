@@ -26,7 +26,8 @@ class RoiPdfGenerator(private val context: Context) {
     private val BOTTOM_LIMIT = PAGE_HEIGHT - MARGIN
 
     // COLORS
-    private val BRAND_BLUE = Color.parseColor("#2979FF")
+    // ⚡ FIX: Updated to Navy Blue (#0F172A)
+    private val BRAND_BLUE = Color.parseColor("#0F172A")
 
     suspend fun generateAndSharePdf(state: RoiState, mode: PdfMode) {
         withContext(Dispatchers.IO) {
