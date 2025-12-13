@@ -110,6 +110,35 @@ fun HomeScreen(
                     }
                 }
 
+                // --- UPDATED: Filter Buttons ---
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp) // Space between buttons
+                    ) {
+                        FilterButton(
+                            text = "Funding",
+                            isSelected = uiState.selectedFilter == "Funding",
+                            modifier = Modifier.weight(1f), // Equal width
+                            onClick = { viewModel.updateFilter("Funding") }
+                        )
+                        FilterButton(
+                            text = "Funded",
+                            isSelected = uiState.selectedFilter == "Funded",
+                            modifier = Modifier.weight(1f), // Equal width
+                            onClick = { viewModel.updateFilter("Funded") }
+                        )
+                        FilterButton(
+                            text = "Exited",
+                            isSelected = uiState.selectedFilter == "Exited",
+                            modifier = Modifier.weight(1f), // Equal width
+                            onClick = { viewModel.updateFilter("Exited") }
+                        )
+                    }
+                }
+
                 item { HorizontalDivider(color = Color.White.copy(0.1f)) }
 
                 // Property Feed
@@ -126,6 +155,32 @@ fun HomeScreen(
                 item { Spacer(Modifier.height(100.dp)) }
             }
         }
+    }
+}
+
+@Composable
+fun FilterButton(
+    text: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) FabColor else Color.White.copy(0.1f),
+            contentColor = Color.White
+        ),
+        // ⚡ UPDATED: Rectangular with rounded corners
+        shape = RoundedCornerShape(12.dp),
+        contentPadding = PaddingValues(0.dp), // Reduce padding to prevent text truncation on small screens
+        // ⚡ UPDATED: "Little big" (taller height)
+        modifier = modifier.height(50.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+        )
     }
 }
 
@@ -266,7 +321,6 @@ fun InstagramStylePropertyCard(
             Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp, start = 16.dp, end = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 PropertyStat("Price", "₹${property.minInvest}")
 
-                // ⚡ FIX: Safer empty check for Rent
                 val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else property.rentReturn
                 PropertyStat("Rent", displayRent)
 

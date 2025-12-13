@@ -2,7 +2,7 @@ package com.example.navyuga.feature.arthyuga.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel // Changed to PropertyModel for consistency
+import com.example.navyuga.feature.arthyuga.domain.model.PropertyModel
 import com.example.navyuga.feature.arthyuga.domain.repository.PropertyRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -25,8 +25,9 @@ data class StoryState(
 data class HomeUiState(
     val isLoading: Boolean = true,
     val userName: String = "",
-    val properties: List<PropertyModel> = emptyList(), // Changed to PropertyModel
+    val properties: List<PropertyModel> = emptyList(),
     val stories: List<StoryState> = emptyList(),
+    val selectedFilter: String = "Funding", // Added Filter State
     val error: String? = null
 )
 
@@ -42,6 +43,11 @@ class HomeViewModel @Inject constructor(
 
     private var allPropertiesCache: List<PropertyModel> = emptyList()
 
+    // Cache user data to re-apply filters without re-fetching
+    private var lastUserName: String = ""
+    private var lastLikedIds: Set<String> = emptySet()
+    private var lastSeenIds: Set<String> = emptySet()
+
     init {
         loadRealData()
     }
@@ -55,12 +61,7 @@ class HomeViewModel @Inject constructor(
             try {
                 propertyRepository.getAllProperties().collect { state ->
                     if (state is com.example.navyuga.core.common.UiState.Success) {
-                        // The repository already returns List<PropertyModel>, so we use it directly.
-                        // We assume PropertyModel has the necessary fields (title, location, minInvest, etc.)
-                        // populated by the Repository or Data Source.
-                        val fetchedProperties = state.data
-
-                        allPropertiesCache = fetchedProperties
+                        allPropertiesCache = state.data
                         listenToUserData(userId)
                     }
                 }
@@ -70,49 +71,59 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // 2. Real-time Listener for User Data (Name, Likes, Seen Stories)
     private fun listenToUserData(userId: String) {
         firestore.collection("users").document(userId)
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
 
-                val name = snapshot.getString("name") ?: "User"
-                val likedIds = (snapshot.get("likedProperties") as? List<String>)?.toSet() ?: emptySet()
-                val seenStoryIds = (snapshot.get("seenStories") as? List<String>)?.toSet() ?: emptySet()
+                lastUserName = snapshot.getString("name") ?: "User"
+                lastLikedIds = (snapshot.get("likedProperties") as? List<String>)?.toSet() ?: emptySet()
+                lastSeenIds = (snapshot.get("seenStories") as? List<String>)?.toSet() ?: emptySet()
 
-                updateUiWithUserData(name, likedIds, seenStoryIds)
+                updateUiWithUserData()
             }
     }
 
-    private fun updateUiWithUserData(name: String, likedIds: Set<String>, seenIds: Set<String>) {
-        // 1. Update Properties with Like Status
-        val updatedProperties = allPropertiesCache.map { property ->
-            property.copy(isLiked = likedIds.contains(property.id))
+    // Updated to use cached data and apply filter
+    private fun updateUiWithUserData() {
+        // 1. Filter Properties based on selected status
+        val filteredProperties = if (_uiState.value.selectedFilter == "All") {
+            allPropertiesCache
+        } else {
+            allPropertiesCache.filter { it.status.equals(_uiState.value.selectedFilter, ignoreCase = true) }
         }
 
-        // 2. Create and Sort Stories
-        val stories = updatedProperties.map { prop ->
+        // 2. Update Properties with Like Status
+        val finalProperties = filteredProperties.map { property ->
+            property.copy(isLiked = lastLikedIds.contains(property.id))
+        }
+
+        // 3. Create and Sort Stories (Stories usually come from all properties or a specific set, using all here)
+        val stories = allPropertiesCache.map { prop ->
             StoryState(
                 id = prop.id,
-                // Access 'mainImage' helper if 'imageUrl' field doesn't exist directly on PropertyModel
-                // or safely get the first from list
                 imageUrl = if (prop.imageUrls.isNotEmpty()) prop.imageUrls[0] else "",
                 title = prop.title.take(10),
-                isSeen = seenIds.contains(prop.id)
+                isSeen = lastSeenIds.contains(prop.id)
             )
         }.sortedBy { it.isSeen }
 
         _uiState.update {
             it.copy(
                 isLoading = false,
-                userName = name,
-                properties = updatedProperties,
+                userName = lastUserName,
+                properties = finalProperties,
                 stories = stories
             )
         }
     }
 
     // --- Actions ---
+
+    fun updateFilter(filter: String) {
+        _uiState.update { it.copy(selectedFilter = filter) }
+        updateUiWithUserData()
+    }
 
     fun toggleLike(propertyId: String, currentLikeState: Boolean) {
         val userId = auth.currentUser?.uid ?: return

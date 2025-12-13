@@ -42,7 +42,8 @@ fun AddPropertyScreen(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Office") }
-    var status by remember { mutableStateOf("Available") }
+    // ⚡ UPDATE: Default status and replaced with dropdown below
+    var status by remember { mutableStateOf("Funding") }
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
@@ -155,6 +156,16 @@ fun AddPropertyScreen(
                 selected = type,
                 onSelectionChange = { type = it }
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ⚡ NEW: Status Dropdown
+            NavyugaDropdown(
+                label = "Status",
+                options = listOf("Funding", "Funded", "Exited"),
+                selected = status,
+                onSelectionChange = { status = it }
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // ================== 2. SPECIFICATIONS ==================
