@@ -1,10 +1,10 @@
 package com.example.mahayuga
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
+import androidx.fragment.app.FragmentActivity // ⚡ CHANGED from ComponentActivity
 import com.example.mahayuga.core.data.local.PreferenceManager
 import com.example.mahayuga.navigation.AppNavigation
 import com.example.mahayuga.ui.theme.NavyugaTheme
@@ -12,7 +12,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+// ⚡ CHANGE: Must extend FragmentActivity for BiometricPrompt to work
+class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var preferenceManager: PreferenceManager
@@ -21,22 +22,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // ⚡ FIX: Extract values here to prevent compiler crash inside setContent
         val initialDarkMode = preferenceManager.isDarkMode
         val initialLoggedIn = preferenceManager.isLoggedIn
 
         setContent {
-            // 1. Read Theme Preference using the extracted value as default
-            var isDarkTheme by remember {
-                mutableStateOf(initialDarkMode)
-            }
+            var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
-            // 2. Determine Start Destination
-            val startDestination = if (initialLoggedIn) {
-                "super_app_hub"
-            } else {
-                "login"
-            }
+            val startDestination = if (initialLoggedIn) "super_app_hub" else "login"
 
             NavyugaTheme(darkTheme = isDarkTheme) {
                 AppNavigation(
@@ -45,7 +37,6 @@ class MainActivity : ComponentActivity() {
                     onThemeToggle = {
                         val newMode = !isDarkTheme
                         isDarkTheme = newMode
-                        // It is safe to call the method inside the callback
                         preferenceManager.saveThemeMode(newMode)
                     }
                 )

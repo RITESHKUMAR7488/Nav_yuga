@@ -54,14 +54,43 @@ fun AddPropertyScreen(
     var escalationPercent by remember { mutableStateOf("") }
     var escalationYears by remember { mutableStateOf("") }
 
+
     var totalValuation by remember { mutableStateOf("") }
     var minInvest by remember { mutableStateOf("") }
-    var roi by remember { mutableStateOf("") }
+    var monthlyRent by remember { mutableStateOf("") }
+    var annualPropertyTax by remember { mutableStateOf("") }
     var fundedPercent by remember { mutableStateOf("") }
 
-    var monthlyRent by remember { mutableStateOf("") }
+    // Auto-Calculated Fields (Initialized empty)
+    var roi by remember { mutableStateOf("") }
     var grossAnnualRent by remember { mutableStateOf("") }
-    var annualPropertyTax by remember { mutableStateOf("") }
+
+    // ================== âš¡ COROUTINE: AUTO-CALCULATION ==================
+    // This coroutine observes changes in Rent, Valuation, or Tax and auto-fills the fields.
+    LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
+        val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
+        val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
+        val tax = annualPropertyTax.replace(",", "").toDoubleOrNull() ?: 0.0
+
+        if (rent > 0) {
+            // 1. Calculate Gross Annual Rent (Monthly * 12)
+            val calculatedAnnualRent = rent * 12
+            grossAnnualRent = String.format("%.0f", calculatedAnnualRent)
+
+            // 2. Calculate ROI %
+            // Formula: ((Gross Annual Rent - Annual Tax) / Total Price) * 100
+            if (price > 0) {
+                val netIncome = calculatedAnnualRent - tax
+                val calculatedRoi = (netIncome / price) * 100
+                roi = String.format("%.2f", calculatedRoi) // Formats to 2 decimal places (e.g., 8.50)
+            }
+        } else {
+            // Reset if inputs are invalid
+            grossAnnualRent = ""
+            roi = ""
+        }
+    }
+    // ===================================================================
 
     var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
 
@@ -160,7 +189,6 @@ fun AddPropertyScreen(
             // ================== 2. SPECIFICATIONS ==================
             SectionHeader("Specifications")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // ⚡ AUTO-FORMAT ENABLED (isNumber = true)
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = area, onValueChange = { area = it }, label = "Area (Sq Ft)", icon = Icons.Default.SquareFoot, isNumber = true) }
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = floor, onValueChange = { floor = it }, label = "Floor", icon = Icons.Default.Layers) }
             }
@@ -175,7 +203,7 @@ fun AddPropertyScreen(
             SectionHeader("Lease Information")
             NavyugaTextField(value = tenantName, onValueChange = { tenantName = it }, label = "Tenant Name", icon = Icons.Default.Person)
             Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period", icon = Icons.Default.Timer, isNumber = true)
+            NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period (Months)", icon = Icons.Default.Timer, isNumber = true)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -193,19 +221,22 @@ fun AddPropertyScreen(
             // ================== 4. FINANCIALS ==================
             SectionHeader("Financial Analysis")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // ⚡ AUTO-FORMAT ENABLED
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = totalValuation, onValueChange = { totalValuation = it }, label = "Price (Total)", icon = Icons.Default.MonetizationOn, isNumber = true) }
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = minInvest, onValueChange = { minInvest = it }, label = "Min Invest", icon = Icons.Default.AttachMoney, isNumber = true) }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = monthlyRent, onValueChange = { monthlyRent = it }, label = "Monthly Rent", icon = Icons.Default.Payments, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = grossAnnualRent, onValueChange = { grossAnnualRent = it }, label = "Gross Annual", icon = Icons.Default.AccountBalanceWallet, isNumber = true) }
+
+                // âš¡ AUTO-FILLED FIELD (Updated label to indicate automation)
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = grossAnnualRent, onValueChange = { grossAnnualRent = it }, label = "Gross Annual (Auto)", icon = Icons.Default.AccountBalanceWallet, isNumber = true) }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = annualPropertyTax, onValueChange = { annualPropertyTax = it }, label = "Annual Tax", icon = Icons.Default.ReceiptLong, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI %", icon = Icons.Default.Percent, isNumber = true) }
+
+                // âš¡ AUTO-FILLED FIELD
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI % (Auto)", icon = Icons.Default.Percent, isNumber = true) }
             }
             Spacer(modifier = Modifier.height(8.dp))
             NavyugaTextField(value = fundedPercent, onValueChange = { fundedPercent = it }, label = "Funded % (0-100)", icon = Icons.Default.PieChart, isNumber = true)
