@@ -167,6 +167,13 @@ fun AppNavigation(
 
                 AdminInvestmentFormScreen(navController, viewModel = sharedViewModel)
             }
+            composable(
+                "admin_user_detail/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                AdminUserDetailScreen(navController = navController, userId = userId)
+            }
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.example.mahayuga.feature.admin.presentation
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -72,20 +71,14 @@ fun AdminSelectUserScreen(
                     }
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(filteredUsers) { user ->
-                            // ⚡ FIX: We wrap the item in a Box to ensure the click overlay works correctly
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                AdminUserItem(user, onToggleStatus = {})
-
-                                // The Overlay: Invisible but clickable, covers the whole card
-                                Box(
-                                    modifier = Modifier
-                                        .matchParentSize()
-                                        .clickable {
-                                            viewModel.selectUserForInvestment(user)
-                                            navController.navigate("admin_inv_select_property")
-                                        }
-                                )
-                            }
+                            // ⚡ FIX: Direct usage of AdminUserItem with the new onClick signature
+                            AdminUserItem(
+                                user = user,
+                                onClick = {
+                                    viewModel.selectUserForInvestment(user)
+                                    navController.navigate("admin_inv_select_property")
+                                }
+                            )
                         }
                     }
                 }
