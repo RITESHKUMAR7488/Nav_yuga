@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -40,14 +39,13 @@ fun AppNavigation(
 
     NavHost(navController = navController, startDestination = startDestination) {
 
-        // ... [Existing Auth & Hub routes remain unchanged] ...
-
-        // Auth Module
+        // --- AUTH MODULE ---
         composable("login") {
             LoginScreen(navController = navController, isDarkTheme = isDarkTheme, onThemeToggle = onThemeToggle)
         }
         composable("register") { RegisterScreen(navController) }
 
+        // --- HUB ---
         composable("super_app_hub") {
             HubScreen(
                 navController = navController,
@@ -57,7 +55,7 @@ fun AppNavigation(
             )
         }
 
-        // ArthYuga User Dashboard
+        // --- NAVYUGA USER DASHBOARD ---
         composable("navyuga_dashboard") {
             NavYugaDashboard(
                 rootNavController = navController,
@@ -69,15 +67,13 @@ fun AppNavigation(
             )
         }
 
-        // ⚡ UPDATED: Route for Liked Properties with Navigation Callback
+        // --- USER FEATURES ---
         composable("liked_properties") {
             LikedPropertiesScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { id -> navController.navigate("property_detail/$id") }
             )
         }
-
-        // ... [Rest of the existing routes remain unchanged] ...
 
         composable(
             "property_detail/{propertyId}",
@@ -132,6 +128,15 @@ fun AppNavigation(
         composable("admin_manage_properties") { ManagePropertiesScreen(navController) }
         composable("admin_manage_users") { ManageUsersScreen(navController) }
         composable("admin_add_property") { AddPropertyScreen(navController) }
+
+        // ⚡ NEW ROUTE: Edit Property (This was missing)
+        composable(
+            "admin_edit_property/{propertyId}",
+            arguments = listOf(navArgument("propertyId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val propertyId = backStackEntry.arguments?.getString("propertyId") ?: ""
+            EditPropertyScreen(navController = navController, propertyId = propertyId)
+        }
     }
 }
 

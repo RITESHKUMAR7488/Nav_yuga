@@ -32,7 +32,7 @@ class PropertyRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    // ⚡ FIX: Added Logging & Error Handling
+    // ⚡ FIX: Implemented as Flow (Real-time)
     override fun getPropertyById(id: String): Flow<PropertyModel?> = callbackFlow {
         Log.d("Repo", "Fetching Property ID: $id")
 
@@ -51,10 +51,8 @@ class PropertyRepositoryImpl @Inject constructor(
 
             if (snapshot != null && snapshot.exists()) {
                 val property = snapshot.toObject(PropertyModel::class.java)
-                Log.d("Repo", "Property Found: ${property?.title}")
                 trySend(property)
             } else {
-                Log.e("Repo", "Document does not exist")
                 trySend(null)
             }
         }
@@ -76,6 +74,15 @@ class PropertyRepositoryImpl @Inject constructor(
             UiState.Success("Property Deleted")
         } catch (e: Exception) {
             UiState.Failure(e.message ?: "Delete Failed")
+        }
+    }
+
+    override suspend fun updateProperty(property: PropertyModel): UiState<String> {
+        return try {
+            collection.document(property.id).set(property).await()
+            UiState.Success("Property Updated Successfully")
+        } catch (e: Exception) {
+            UiState.Failure(e.message ?: "Update Failed")
         }
     }
 }
