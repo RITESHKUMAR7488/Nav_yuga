@@ -24,6 +24,7 @@ import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScr
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.navigation.PlaceholderScreen
+import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
 
 // --- Custom Colors for the Instagram Look ---
 private val NavBackground = Color.Black // Distinct from app background
@@ -158,7 +159,9 @@ fun NavYugaDashboard(
             }
 
             composable("ay_invest") { PlaceholderScreen("Invest (Coming Soon)") }
-            composable("ay_reels") { PlaceholderScreen("Reels (Coming Soon)") }
+            composable("ay_reels") {
+                ReelsScreen()
+            }
             composable("ay_profile") {
                 ProfileScreen(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },

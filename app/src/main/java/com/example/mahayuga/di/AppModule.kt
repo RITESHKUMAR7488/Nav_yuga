@@ -4,10 +4,10 @@ import android.content.Context
 import com.example.mahayuga.core.data.local.PreferenceManager
 import com.example.mahayuga.feature.admin.data.repository.AdminRepositoryImpl
 import com.example.mahayuga.feature.admin.domain.repository.AdminRepository
-import com.example.mahayuga.feature.navyuga.data.repository.PropertyRepositoryImpl
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepositoryImpl
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepository
+import com.example.mahayuga.feature.navyuga.data.repository.PropertyRepositoryImpl
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
