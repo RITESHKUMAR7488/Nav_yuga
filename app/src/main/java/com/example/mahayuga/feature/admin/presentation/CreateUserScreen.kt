@@ -1,37 +1,39 @@
 package com.example.mahayuga.feature.admin.presentation
 
-import android.widget.Toast
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.mahayuga.feature.auth.presentation.components.NavyugaGradientButton
-import com.example.mahayuga.feature.auth.presentation.components.NavyugaTextField
+import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.auth.data.model.UserModel
+import com.example.mahayuga.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateUserScreen(navController: NavController) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var selectedRole by remember { mutableStateOf("User") }
-
-    val context = LocalContext.current
+fun CreateUserScreen(
+    navController: NavController,
+    viewModel: AdminViewModel = hiltViewModel()
+) {
+    val requestsState by viewModel.requestsState.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create Account") },
+                title = { Text("Registration Requests") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -39,80 +41,114 @@ fun CreateUserScreen(navController: NavController) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
-            Text(
-                text = "Register New Member",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Create an account for a new investor or admin.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Form
-            NavyugaTextField(value = name, onValueChange = { name = it }, label = "Full Name", icon = Icons.Default.Person)
-            Spacer(modifier = Modifier.height(16.dp))
-            NavyugaTextField(value = email, onValueChange = { email = it }, label = "Email Address", icon = Icons.Default.Email)
-            Spacer(modifier = Modifier.height(16.dp))
-            NavyugaTextField(value = password, onValueChange = { password = it }, label = "Default Password", icon = Icons.Default.Lock, isPassword = true)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Role Selector
-            Text("Assign Role", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                RoleCard("User", selectedRole == "User") { selectedRole = "User" }
-                RoleCard("Admin", selectedRole == "Admin") { selectedRole = "Admin" }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            NavyugaGradientButton(
-                text = "Create ${selectedRole} Account",
-                onClick = {
-                    // Logic to create user would go here (ViewModel)
-                    Toast.makeText(context, "$selectedRole account created for $name", Toast.LENGTH_LONG).show()
-                    navController.popBackStack()
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            when (val state = requestsState) {
+                is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                is UiState.Failure -> Text("Error: ${state.message}", color = ErrorRed, modifier = Modifier.align(Alignment.Center))
+                is UiState.Success -> {
+                    val requests = state.data
+                    if (requests.isEmpty()) {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("No Pending Requests", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else {
+                        LazyColumn(contentPadding = PaddingValues(16.dp)) {
+                            items(requests) { user ->
+                                RequestItem(
+                                    user = user,
+                                    onApprove = { role -> viewModel.approveUser(user.uid, role) },
+                                    onReject = { viewModel.rejectUser(user.uid) }
+                                )
+                            }
+                        }
+                    }
                 }
-            )
+                else -> {}
+            }
         }
     }
 }
 
 @Composable
-fun RowScope.RoleCard(role: String, isSelected: Boolean, onClick: () -> Unit) {
-    val containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-    val contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+fun RequestItem(
+    user: UserModel,
+    onApprove: (String) -> Unit,
+    onReject: () -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .weight(1f)
-            .height(50.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(role, fontWeight = FontWeight.Bold, color = contentColor)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = BrandBlue)
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(user.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(user.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("DOB: ${user.dob}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { showDialog = true }, // Open Role Selection
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+                ) {
+                    // ⚡ FIX: Added Modifier.size
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Approve")
+                }
+
+                OutlinedButton(
+                    onClick = onReject,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                ) {
+                    // ⚡ FIX: Added Modifier.size
+                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reject")
+                }
+            }
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Select Role") },
+            text = { Text("Approve ${user.name} as:") },
+            confirmButton = {
+                Button(onClick = { onApprove("user"); showDialog = false }) {
+                    Text("User")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { onApprove("admin"); showDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                ) {
+                    Text("Admin")
+                }
+            }
+        )
     }
 }

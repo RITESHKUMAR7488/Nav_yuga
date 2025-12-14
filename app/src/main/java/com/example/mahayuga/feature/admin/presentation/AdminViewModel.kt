@@ -34,6 +34,7 @@ class AdminViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
+    // --- STATES ---
     private val _usersState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val usersState: StateFlow<UiState<List<UserModel>>> = _usersState
 
@@ -43,11 +44,17 @@ class AdminViewModel @Inject constructor(
     private val _propertyUploadState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val propertyUploadState: StateFlow<UiState<String>> = _propertyUploadState
 
+    // ⚡ NEW STATE: Registration Requests
+    private val _requestsState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
+    val requestsState: StateFlow<UiState<List<UserModel>>> = _requestsState
+
     init {
         fetchUsers()
         fetchProperties()
+        fetchPendingRequests()
     }
 
+    // --- DATA FETCHING ---
     private fun fetchUsers() {
         viewModelScope.launch {
             adminRepository.getAllUsers().collect { state -> _usersState.value = state }
@@ -60,13 +67,34 @@ class AdminViewModel @Inject constructor(
         }
     }
 
+    private fun fetchPendingRequests() {
+        viewModelScope.launch {
+            adminRepository.getPendingRequests().collect { state ->
+                _requestsState.value = state
+            }
+        }
+    }
+
+    // --- USER MANAGEMENT ---
+    fun approveUser(uid: String, role: String) {
+        viewModelScope.launch {
+            adminRepository.approveUserRequest(uid, role)
+        }
+    }
+
+    fun rejectUser(uid: String) {
+        viewModelScope.launch {
+            adminRepository.rejectUserRequest(uid)
+        }
+    }
+
     fun toggleUserBlock(uid: String, currentStatus: Boolean) {
         viewModelScope.launch {
             adminRepository.toggleUserStatus(uid, !currentStatus)
         }
     }
 
-    // ⚡ HUGE UPDATE: Accepts all new fields
+    // --- PROPERTY MANAGEMENT ---
     fun listNewProperty(
         // Basic
         title: String,
@@ -104,14 +132,13 @@ class AdminViewModel @Inject constructor(
         // Images
         imageUris: List<Uri>
     ) {
-        // ⚡ COROUTINE SCOPE: Launching background work
         viewModelScope.launch {
             _propertyUploadState.value = UiState.Loading
 
             try {
                 val uploadedImageUrls = mutableListOf<String>()
 
-                // ⚡ PARALLEL IMAGE UPLOAD
+                // Parallel Image Upload
                 if (imageUris.isNotEmpty()) {
                     val uploadJobs = imageUris.map { uri ->
                         async { uploadSingleImage(uri) }
@@ -204,6 +231,7 @@ class AdminViewModel @Inject constructor(
         }
     }
 
+    // ⚡ MISSING FUNCTION RESTORED
     fun resetUploadState() {
         _propertyUploadState.value = UiState.Idle
     }

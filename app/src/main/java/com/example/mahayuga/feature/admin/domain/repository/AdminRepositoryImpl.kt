@@ -16,32 +16,67 @@ class AdminRepositoryImpl @Inject constructor(
 
     override fun getAllUsers(): Flow<UiState<List<UserModel>>> = callbackFlow {
         trySend(UiState.Loading)
-
-        // Listen to real-time updates
         val listener = firestore.collection("users")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(UiState.Failure(error.message ?: "Unknown Error"))
                     return@addSnapshotListener
                 }
-
                 if (snapshot != null) {
                     val users = snapshot.toObjects(UserModel::class.java)
                     trySend(UiState.Success(users))
                 }
             }
-
         awaitClose { listener.remove() }
     }
 
     override suspend fun toggleUserStatus(uid: String, isActive: Boolean): UiState<String> {
         return try {
-            firestore.collection("users").document(uid)
-                .update("isActive", isActive)
-                .await()
+            firestore.collection("users").document(uid).update("isActive", isActive).await()
             UiState.Success("User status updated")
         } catch (e: Exception) {
             UiState.Failure(e.message ?: "Update failed")
+        }
+    }
+
+    // ⚡ CRITICAL: Fetches Pending Requests
+    override fun getPendingRequests(): Flow<UiState<List<UserModel>>> = callbackFlow {
+        trySend(UiState.Loading)
+        val listener = firestore.collection("users")
+            .whereEqualTo("isApproved", false) // Listens for false
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(UiState.Failure(error.message ?: "Sync Error"))
+                    return@addSnapshotListener
+                }
+                val users = snapshot?.toObjects(UserModel::class.java) ?: emptyList()
+                trySend(UiState.Success(users))
+            }
+        awaitClose { listener.remove() }
+    }
+
+    override suspend fun approveUserRequest(uid: String, role: String): UiState<String> {
+        return try {
+            firestore.collection("users").document(uid)
+                .update(
+                    mapOf(
+                        "isApproved" to true,
+                        "role" to role,
+                        "isActive" to true
+                    )
+                ).await()
+            UiState.Success("User Approved")
+        } catch (e: Exception) {
+            UiState.Failure(e.message ?: "Approval Failed")
+        }
+    }
+
+    override suspend fun rejectUserRequest(uid: String): UiState<String> {
+        return try {
+            firestore.collection("users").document(uid).delete().await()
+            UiState.Success("Request Rejected")
+        } catch (e: Exception) {
+            UiState.Failure(e.message ?: "Rejection Failed")
         }
     }
 }

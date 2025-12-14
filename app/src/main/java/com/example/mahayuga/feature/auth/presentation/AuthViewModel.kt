@@ -26,7 +26,6 @@ class AuthViewModel @Inject constructor(
     private val _registerState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val registerState: StateFlow<UiState<String>> = _registerState
 
-    // ⚡ NEW: Expose Current User for Navigation Guard
     val currentUser: StateFlow<UiState<UserModel>> = repository.getCurrentUser()
         .stateIn(
             scope = viewModelScope,
@@ -45,14 +44,19 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(name: String, email: String, pass: String) {
+    // ⚡ UPDATE: Accepts DOB and sets default isApproved = false
+    fun register(name: String, email: String, pass: String, dob: String) {
         viewModelScope.launch {
-            val user = UserModel(name = name, email = email, role = "user")
+            val user = UserModel(
+                name = name,
+                email = email,
+                dob = dob,
+                role = "user",
+                isApproved = false // Default for new users
+            )
             repository.registerUser(user, pass).collect { state ->
                 _registerState.value = state
-                if (state is UiState.Success) {
-                    preferenceManager.saveLoginState(true)
-                }
+                // Note: We do NOT save login state here because they are pending approval
             }
         }
     }
