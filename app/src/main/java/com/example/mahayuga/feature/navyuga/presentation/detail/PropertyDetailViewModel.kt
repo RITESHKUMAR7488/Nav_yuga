@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.core.common.Constants
-import com.example.mahayuga.core.domain.repository.SettingsRepository // Import this
+import com.example.mahayuga.core.domain.repository.SettingsRepository
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.collect // ⚡ ADDED IMPORT
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,7 +27,7 @@ data class PropertyDetailState(
 @HiltViewModel
 class PropertyDetailViewModel @Inject constructor(
     private val repository: PropertyRepository,
-    private val settingsRepository: SettingsRepository, // ⚡ Inject Settings Repo
+    private val settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -35,8 +36,6 @@ class PropertyDetailViewModel @Inject constructor(
     private val _state = MutableStateFlow(PropertyDetailState())
     val state: StateFlow<PropertyDetailState> = _state.asStateFlow()
 
-    // ⚡ REAL-TIME WHATSAPP NUMBER
-    // This flow will start with the default constant, then update if Firestore changes.
     val supportNumber: StateFlow<String> = settingsRepository.getWhatsAppNumber()
         .stateIn(
             scope = viewModelScope,
@@ -57,6 +56,7 @@ class PropertyDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
+                // ⚡ NOW COLLECT WORKS
                 repository.getPropertyById(propertyId).collect { fetchedProperty ->
                     _state.update {
                         it.copy(isLoading = false, property = fetchedProperty)

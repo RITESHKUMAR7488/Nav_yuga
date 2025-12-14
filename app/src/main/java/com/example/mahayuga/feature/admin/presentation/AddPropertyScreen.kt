@@ -65,8 +65,7 @@ fun AddPropertyScreen(
     var roi by remember { mutableStateOf("") }
     var grossAnnualRent by remember { mutableStateOf("") }
 
-    // ================== âš¡ COROUTINE: AUTO-CALCULATION ==================
-    // This coroutine observes changes in Rent, Valuation, or Tax and auto-fills the fields.
+    // ================== ⚡ COROUTINE: AUTO-CALCULATION ==================
     LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
         val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
@@ -228,14 +227,14 @@ fun AddPropertyScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = monthlyRent, onValueChange = { monthlyRent = it }, label = "Monthly Rent", icon = Icons.Default.Payments, isNumber = true) }
 
-                // âš¡ AUTO-FILLED FIELD (Updated label to indicate automation)
+                // ⚡ AUTO-FILLED FIELD (Updated label to indicate automation)
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = grossAnnualRent, onValueChange = { grossAnnualRent = it }, label = "Gross Annual (Auto)", icon = Icons.Default.AccountBalanceWallet, isNumber = true) }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = annualPropertyTax, onValueChange = { annualPropertyTax = it }, label = "Annual Tax", icon = Icons.Default.ReceiptLong, isNumber = true) }
 
-                // âš¡ AUTO-FILLED FIELD
+                // ⚡ AUTO-FILLED FIELD
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI % (Auto)", icon = Icons.Default.Percent, isNumber = true) }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -277,63 +276,6 @@ fun AddPropertyScreen(
             )
 
             Spacer(modifier = Modifier.height(100.dp))
-        }
-    }
-}
-
-@Composable
-fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NavyugaDropdown(
-    label: String,
-    options: List<String>,
-    selected: String,
-    onSelectionChange: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
-            readOnly = true,
-            value = selected,
-            onValueChange = {},
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            shape = RoundedCornerShape(12.dp)
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                        onSelectionChange(option)
-                        expanded = false
-                    },
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
         }
     }
 }

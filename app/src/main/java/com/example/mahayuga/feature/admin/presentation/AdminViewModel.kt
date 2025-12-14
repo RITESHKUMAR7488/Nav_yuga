@@ -6,9 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.admin.domain.repository.AdminRepository
+import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
-import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.profile.data.remote.ImageUploadApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -44,7 +44,7 @@ class AdminViewModel @Inject constructor(
     private val _propertyUploadState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val propertyUploadState: StateFlow<UiState<String>> = _propertyUploadState
 
-    // ⚡ NEW STATE: Registration Requests
+    // Registration Requests State
     private val _requestsState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val requestsState: StateFlow<UiState<List<UserModel>>> = _requestsState
 
@@ -69,13 +69,18 @@ class AdminViewModel @Inject constructor(
 
     private fun fetchPendingRequests() {
         viewModelScope.launch {
-            adminRepository.getPendingRequests().collect { state ->
-                _requestsState.value = state
-            }
+            adminRepository.getPendingRequests().collect { state -> _requestsState.value = state }
         }
     }
 
     // --- USER MANAGEMENT ---
+    // ⚡ This is the function giving you the error. It is included here.
+    fun toggleUserBlock(uid: String, currentStatus: Boolean) {
+        viewModelScope.launch {
+            adminRepository.toggleUserStatus(uid, !currentStatus)
+        }
+    }
+
     fun approveUser(uid: String, role: String) {
         viewModelScope.launch {
             adminRepository.approveUserRequest(uid, role)
@@ -88,106 +93,87 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    fun toggleUserBlock(uid: String, currentStatus: Boolean) {
+    // --- PROPERTY MANAGEMENT (DELETE & UPDATE) ---
+    fun deleteProperty(propertyId: String) {
         viewModelScope.launch {
-            adminRepository.toggleUserStatus(uid, !currentStatus)
+            propertyRepository.deleteProperty(propertyId)
         }
     }
 
-    // --- PROPERTY MANAGEMENT ---
-    fun listNewProperty(
-        // Basic
-        title: String,
-        description: String,
-        type: String,
-        status: String,
-
-        // Location
-        address: String,
-        city: String,
-        state: String,
-
-        // Property Specs
-        age: String,
-        area: String,
-        floor: String,
-        carPark: String,
-
-        // Financials (Overview)
-        totalValuation: String,
-        minInvest: String,
-        roi: Double,
-        fundedPercent: Int,
-
-        // Financials (Deep Dive)
-        monthlyRent: String,
-        grossAnnualRent: String,
-        annualPropertyTax: String,
-
-        // Lease Info
-        tenantName: String,
-        occupationPeriod: String,
-        escalation: String,
-
-        // Images
-        imageUris: List<Uri>
+    fun updateProperty(
+        originalProperty: PropertyModel,
+        updatedFields: PropertyModel,
+        keptImages: List<String>,
+        newImageUris: List<Uri>
     ) {
         viewModelScope.launch {
             _propertyUploadState.value = UiState.Loading
 
             try {
-                val uploadedImageUrls = mutableListOf<String>()
-
-                // Parallel Image Upload
-                if (imageUris.isNotEmpty()) {
-                    val uploadJobs = imageUris.map { uri ->
+                val newUploadedUrls = mutableListOf<String>()
+                if (newImageUris.isNotEmpty()) {
+                    val uploadJobs = newImageUris.map { uri ->
                         async { uploadSingleImage(uri) }
                     }
-                    uploadedImageUrls.addAll(uploadJobs.awaitAll().filterNotNull())
+                    newUploadedUrls.addAll(uploadJobs.awaitAll().filterNotNull())
                 }
 
-                // Fallback image
+                val finalImages = if ((keptImages + newUploadedUrls).isEmpty()) {
+                    listOf("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab")
+                } else {
+                    keptImages + newUploadedUrls
+                }
+
+                val finalProperty = updatedFields.copy(
+                    id = originalProperty.id,
+                    imageUrls = finalImages
+                )
+
+                val result = propertyRepository.updateProperty(finalProperty)
+                if (result is UiState.Success) {
+                    _propertyUploadState.value = UiState.Success("Property Updated Successfully!")
+                } else {
+                    _propertyUploadState.value = UiState.Failure("Update Failed")
+                }
+            } catch (e: Exception) {
+                _propertyUploadState.value = UiState.Failure("Error: ${e.message}")
+            }
+        }
+    }
+
+    // --- ADD PROPERTY ---
+    fun listNewProperty(
+        title: String, description: String, type: String, status: String,
+        address: String, city: String, state: String,
+        age: String, area: String, floor: String, carPark: String,
+        totalValuation: String, minInvest: String, roi: Double, fundedPercent: Int,
+        monthlyRent: String, grossAnnualRent: String, annualPropertyTax: String,
+        tenantName: String, occupationPeriod: String, escalation: String,
+        imageUris: List<Uri>
+    ) {
+        viewModelScope.launch {
+            _propertyUploadState.value = UiState.Loading
+            try {
+                val uploadedImageUrls = mutableListOf<String>()
+                if (imageUris.isNotEmpty()) {
+                    val uploadJobs = imageUris.map { uri -> async { uploadSingleImage(uri) } }
+                    uploadedImageUrls.addAll(uploadJobs.awaitAll().filterNotNull())
+                }
                 if (uploadedImageUrls.isEmpty()) {
                     uploadedImageUrls.add("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab")
                 }
 
                 val newProperty = PropertyModel(
                     id = UUID.randomUUID().toString(),
-                    title = title,
-                    description = description,
-                    type = type,
-                    status = status,
-
-                    // Location
-                    address = address,
-                    city = city,
-                    state = state,
-                    location = "$city, $state",
-
-                    // Specs
-                    age = age,
-                    area = area,
-                    floor = floor,
-                    carPark = carPark,
-
-                    // Financials
-                    totalValuation = totalValuation,
-                    minInvest = minInvest,
-                    roi = roi,
-                    fundedPercent = fundedPercent,
-                    monthlyRent = monthlyRent,
-                    grossAnnualRent = grossAnnualRent,
-                    annualPropertyTax = annualPropertyTax,
-
-                    // Lease
-                    tenantName = tenantName,
-                    occupationPeriod = occupationPeriod,
-                    escalation = escalation,
-
+                    title = title, description = description, type = type, status = status,
+                    address = address, city = city, state = state, location = "$city, $state",
+                    age = age, area = area, floor = floor, carPark = carPark,
+                    totalValuation = totalValuation, minInvest = minInvest, roi = roi, fundedPercent = fundedPercent,
+                    monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
+                    tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = escalation,
                     imageUrls = uploadedImageUrls
                 )
 
-                // Save to DB
                 val result = propertyRepository.addProperty(newProperty)
                 if (result is UiState.Success) {
                     _propertyUploadState.value = UiState.Success("Property Listed Successfully!")
@@ -195,7 +181,6 @@ class AdminViewModel @Inject constructor(
                 } else {
                     _propertyUploadState.value = UiState.Failure("Failed to save to DB")
                 }
-
             } catch (e: Exception) {
                 _propertyUploadState.value = UiState.Failure("Error: ${e.message}")
             }
@@ -212,9 +197,7 @@ class AdminViewModel @Inject constructor(
 
             val response = api.uploadImage(key, body, format)
             if (response.status_code == 200) response.image.url else null
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
     }
 
     private fun getFileFromUri(uri: Uri): File? {
@@ -226,12 +209,9 @@ class AdminViewModel @Inject constructor(
             outputStream.close()
             inputStream?.close()
             file
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
     }
 
-    // ⚡ MISSING FUNCTION RESTORED
     fun resetUploadState() {
         _propertyUploadState.value = UiState.Idle
     }
