@@ -18,10 +18,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mahayuga.R
+import com.example.mahayuga.core.common.BiometricAuthenticator
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 
 @Composable
@@ -34,6 +36,9 @@ fun HubScreen(
     var selectedTab by remember { mutableStateOf("Yuga") }
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // 1. Initialize the authenticator
+    val biometricAuth = remember { BiometricAuthenticator(context) }
 
     Scaffold(
         containerColor = Color.Black,
@@ -52,13 +57,32 @@ fun HubScreen(
         ) {
             if (selectedTab == "Yuga") {
                 YugaContent(
-                    onNavyugaClick = { navController.navigate("navyuga_dashboard") },
+                    onNavyugaClick = {
+                        // 2. ⚡ SECURITY CHECK: Intercept click to trigger Biometrics
+                        val activity = context as? FragmentActivity
+                        if (activity != null) {
+                            biometricAuth.authenticate(
+                                activity = activity,
+                                title = "Unlock Navyuga",
+                                subtitle = "Scan your fingerprint to enter",
+                                onSuccess = {
+                                    // 3. Only navigate on success
+                                    navController.navigate("navyuga_dashboard")
+                                },
+                                onError = { errorMsg ->
+                                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        } else {
+                            // Fallback (rare case where context isn't an Activity)
+                            navController.navigate("navyuga_dashboard")
+                        }
+                    },
                     onOtherClick = { name ->
                         Toast.makeText(context, "$name is Coming Soon!", Toast.LENGTH_SHORT).show()
                     }
                 )
             } else {
-                // ⚡ FIXED: Updated parameters to match the new ProfileScreen signature
                 ProfileScreen(
                     onNavigateToLiked = { navController.navigate("liked_properties") },
                     onLogout = onLogout

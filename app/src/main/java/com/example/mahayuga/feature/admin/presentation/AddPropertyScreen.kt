@@ -35,7 +35,6 @@ fun AddPropertyScreen(
     navController: NavController,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    // ================== STATE DECLARATIONS ==================
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Office") }
@@ -55,7 +54,7 @@ fun AddPropertyScreen(
     var escalationPercent by remember { mutableStateOf("") }
     var escalationYears by remember { mutableStateOf("") }
 
-    // Financials
+
     var totalValuation by remember { mutableStateOf("") }
     var minInvest by remember { mutableStateOf("") }
     var monthlyRent by remember { mutableStateOf("") }
