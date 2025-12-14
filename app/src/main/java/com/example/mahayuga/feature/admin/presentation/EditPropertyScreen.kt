@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -43,7 +42,7 @@ fun EditPropertyScreen(
     val uploadState by viewModel.propertyUploadState.collectAsState()
     val context = LocalContext.current
 
-    // State Fields (Same as Add Screen)
+    // State Fields (Matching AddPropertyScreen)
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Commercial") }
@@ -69,7 +68,10 @@ fun EditPropertyScreen(
 
     var tenantName by remember { mutableStateOf("") }
     var occupationPeriod by remember { mutableStateOf("") }
-    var escalation by remember { mutableStateOf("") }
+
+    // Escalation split fields
+    var escalationPercent by remember { mutableStateOf("") }
+    var escalationYears by remember { mutableStateOf("") }
 
     // ⚡ IMAGE MANAGEMENT
     // We maintain two lists:
@@ -105,8 +107,39 @@ fun EditPropertyScreen(
                 annualPropertyTax = it.annualPropertyTax
                 tenantName = it.tenantName
                 occupationPeriod = it.occupationPeriod
-                escalation = it.escalation
+
+                // Parse Escalation String back to fields
+                // Format expected: "5% (Every 3 Years)"
+                val regex = """(\d+)% \(Every (\d+) Years\)""".toRegex()
+                val match = regex.find(it.escalation)
+                if (match != null) {
+                    escalationPercent = match.groupValues[1]
+                    escalationYears = match.groupValues[2]
+                }
+
                 keptImages = it.imageUrls // Load existing images
+            }
+        }
+    }
+
+    // ================== ⚡ COROUTINE: AUTO-CALCULATION ==================
+    // Copied from AddPropertyScreen to maintain consistency
+    LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
+        val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
+        val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
+        val tax = annualPropertyTax.replace(",", "").toDoubleOrNull() ?: 0.0
+
+        if (rent > 0) {
+            // 1. Calculate Gross Annual Rent (Monthly * 12)
+            val calculatedAnnualRent = rent * 12
+            grossAnnualRent = String.format("%.0f", calculatedAnnualRent)
+
+            // 2. Calculate ROI %
+            // Formula: ((Gross Annual Rent - Annual Tax) / Total Price) * 100
+            if (price > 0) {
+                val netIncome = calculatedAnnualRent - tax
+                val calculatedRoi = (netIncome / price) * 100
+                roi = String.format("%.2f", calculatedRoi)
             }
         }
     }
@@ -148,7 +181,7 @@ fun EditPropertyScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // IMAGES SECTION
+            // IMAGES SECTION (Kept as is)
             Text("Property Images", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -204,41 +237,97 @@ fun EditPropertyScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // FORM FIELDS (Grouped for Brevity)
+            // ================== 1. GENERAL INFO ==================
             SectionHeader("Basic Info")
             NavyugaTextField(value = title, onValueChange = { title = it }, label = "Title", icon = Icons.Default.Title)
             Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = description, onValueChange = { description = it }, label = "Description", icon = Icons.Default.Description)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = type, onValueChange = { type = it }, label = "Type", icon = Icons.Default.Category) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = status, onValueChange = { status = it }, label = "Status", icon = Icons.Default.Info) }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionHeader("Location")
             NavyugaTextField(value = address, onValueChange = { address = it }, label = "Address", icon = Icons.Default.Place)
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = city, onValueChange = { city = it }, label = "City", icon = Icons.Default.LocationCity) }
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = state, onValueChange = { state = it }, label = "State", icon = Icons.Default.Map) }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            NavyugaDropdown(
+                label = "Asset Type",
+                options = listOf("Office", "Retail", "Warehouse", "Industrial"),
+                selected = type,
+                onSelectionChange = { type = it }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            NavyugaDropdown(
+                label = "Status",
+                options = listOf("Funding", "Funded", "Exited"),
+                selected = status,
+                onSelectionChange = { status = it }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // ================== 2. SPECIFICATIONS ==================
             SectionHeader("Specifications")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = area, onValueChange = { area = it }, label = "Area (sqft)", icon = Icons.Default.AspectRatio) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = age, onValueChange = { age = it }, label = "Age", icon = Icons.Default.Schedule) }
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = area, onValueChange = { area = it }, label = "Area (sqft)", icon = Icons.Default.SquareFoot, isNumber = true) }
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = floor, onValueChange = { floor = it }, label = "Floor", icon = Icons.Default.Layers) }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = age, onValueChange = { age = it }, label = "Age", icon = Icons.Default.DateRange, isNumber = true) }
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = carPark, onValueChange = { carPark = it }, label = "Car Park", icon = Icons.Default.DirectionsCar) }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // ================== 3. LEASE INFO ==================
+            SectionHeader("Lease Information")
+            NavyugaTextField(value = tenantName, onValueChange = { tenantName = it }, label = "Tenant Name", icon = Icons.Default.Person)
+            Spacer(modifier = Modifier.height(8.dp))
+            NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period (Months)", icon = Icons.Default.Timer, isNumber = true)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(value = escalationPercent, onValueChange = { escalationPercent = it }, label = "Escalation %", icon = Icons.Default.TrendingUp, isNumber = true)
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(value = escalationYears, onValueChange = { escalationYears = it }, label = "Every X Years", icon = Icons.Default.Update, isNumber = true)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ================== 4. FINANCIALS ==================
             SectionHeader("Financials")
-            NavyugaTextField(value = totalValuation, onValueChange = { totalValuation = it }, label = "Valuation (₹)", icon = Icons.Default.AttachMoney)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = totalValuation, onValueChange = { totalValuation = it }, label = "Valuation (₹)", icon = Icons.Default.MonetizationOn, isNumber = true) }
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = minInvest, onValueChange = { minInvest = it }, label = "Min Invest", icon = Icons.Default.AttachMoney, isNumber = true) }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI %", icon = Icons.Default.TrendingUp) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = fundedPercent, onValueChange = { fundedPercent = it }, label = "Funded %", icon = Icons.Default.PieChart) }
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = monthlyRent, onValueChange = { monthlyRent = it }, label = "Monthly Rent", icon = Icons.Default.Payments, isNumber = true) }
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = grossAnnualRent, onValueChange = { grossAnnualRent = it }, label = "Gross Annual", icon = Icons.Default.AccountBalanceWallet, isNumber = true) }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = annualPropertyTax, onValueChange = { annualPropertyTax = it }, label = "Annual Tax", icon = Icons.Default.ReceiptLong, isNumber = true) }
+                Box(Modifier.weight(1f)) { NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI %", icon = Icons.Default.TrendingUp) }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            NavyugaTextField(value = fundedPercent, onValueChange = { fundedPercent = it }, label = "Funded %", icon = Icons.Default.PieChart, isNumber = true)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Description
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -247,6 +336,8 @@ fun EditPropertyScreen(
                 isLoading = uploadState is UiState.Loading,
                 onClick = {
                     originalProperty?.let { orig ->
+                        val finalEscalation = if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
+
                         // Create a temporary object to hold fields
                         val updatedFields = orig.copy(
                             title = title, description = description, type = type, status = status,
@@ -256,7 +347,7 @@ fun EditPropertyScreen(
                             roi = roi.toDoubleOrNull() ?: 0.0,
                             fundedPercent = fundedPercent.toIntOrNull() ?: 0,
                             monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
-                            tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = escalation
+                            tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = finalEscalation
                         )
 
                         viewModel.updateProperty(
