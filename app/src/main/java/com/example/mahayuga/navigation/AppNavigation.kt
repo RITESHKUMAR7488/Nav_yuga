@@ -8,12 +8,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.mahayuga.core.common.UiState
@@ -129,13 +131,42 @@ fun AppNavigation(
         composable("admin_manage_users") { ManageUsersScreen(navController) }
         composable("admin_add_property") { AddPropertyScreen(navController) }
 
-        // ⚡ NEW ROUTE: Edit Property (This was missing)
         composable(
             "admin_edit_property/{propertyId}",
             arguments = listOf(navArgument("propertyId") { type = NavType.StringType })
         ) { backStackEntry ->
             val propertyId = backStackEntry.arguments?.getString("propertyId") ?: ""
             EditPropertyScreen(navController = navController, propertyId = propertyId)
+        }
+
+        // ⚡ FIXED: INVESTMENT FLOW (SHARED VIEWMODEL)
+        // We create a nested graph called "investment_flow"
+        // This allows us to create ONE ViewModel instance and pass it to all 3 screens
+        navigation(
+            startDestination = "admin_register_investment",
+            route = "investment_flow" // This acts as the "Scope" for the ViewModel
+        ) {
+            composable("admin_register_investment") { entry ->
+                // Get ViewModel scoped to the graph, not the screen
+                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
+
+                AdminSelectUserScreen(navController, viewModel = sharedViewModel)
+            }
+
+            composable("admin_inv_select_property") { entry ->
+                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
+
+                AdminSelectPropertyScreen(navController, viewModel = sharedViewModel)
+            }
+
+            composable("admin_inv_form") { entry ->
+                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
+
+                AdminInvestmentFormScreen(navController, viewModel = sharedViewModel)
+            }
         }
     }
 }

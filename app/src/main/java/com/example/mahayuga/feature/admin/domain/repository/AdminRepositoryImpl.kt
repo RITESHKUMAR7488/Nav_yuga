@@ -1,6 +1,7 @@
 package com.example.mahayuga.feature.admin.data.repository
 
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.admin.data.model.InvestmentModel
 import com.example.mahayuga.feature.admin.domain.repository.AdminRepository
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.google.firebase.firestore.FirebaseFirestore
@@ -39,11 +40,10 @@ class AdminRepositoryImpl @Inject constructor(
         }
     }
 
-    // ⚡ CRITICAL: Fetches Pending Requests
     override fun getPendingRequests(): Flow<UiState<List<UserModel>>> = callbackFlow {
         trySend(UiState.Loading)
         val listener = firestore.collection("users")
-            .whereEqualTo("isApproved", false) // Listens for false
+            .whereEqualTo("isApproved", false)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(UiState.Failure(error.message ?: "Sync Error"))
@@ -77,6 +77,43 @@ class AdminRepositoryImpl @Inject constructor(
             UiState.Success("Request Rejected")
         } catch (e: Exception) {
             UiState.Failure(e.message ?: "Rejection Failed")
+        }
+    }
+
+    // ⚡ NEW: Atomic Transaction for Investment
+    override suspend fun registerInvestment(investment: InvestmentModel): UiState<String> {
+        return try {
+            firestore.runTransaction { transaction ->
+                // 1. References
+                val userRef = firestore.collection("users").document(investment.userId)
+                val propertyRef = firestore.collection("properties").document(investment.propertyId)
+                val investmentRef = firestore.collection("investments").document()
+
+                // 2. Read (Must come before writes)
+                val userSnapshot = transaction.get(userRef)
+                val propertySnapshot = transaction.get(propertyRef)
+
+                // 3. Calculate New Values
+                val currentUserInvest = userSnapshot.getLong("totalInvestment") ?: 0L
+                val newUserInvest = currentUserInvest + investment.amount
+
+                val currentPropFundingStr = propertySnapshot.getString("totalFunding") ?: "0"
+                // Remove commas if present (e.g. "1,00,000")
+                val currentPropFunding = currentPropFundingStr.replace(",", "").toLongOrNull() ?: 0L
+                val newPropFunding = currentPropFunding + investment.amount
+
+                // 4. Write Updates
+                // A. Save Receipt
+                transaction.set(investmentRef, investment.copy(id = investmentRef.id))
+                // B. Update User Total
+                transaction.update(userRef, "totalInvestment", newUserInvest)
+                // C. Update Property Funding
+                transaction.update(propertyRef, "totalFunding", newPropFunding.toString())
+            }.await()
+
+            UiState.Success("Investment Registered Successfully")
+        } catch (e: Exception) {
+            UiState.Failure(e.message ?: "Transaction Failed")
         }
     }
 }

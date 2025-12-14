@@ -17,7 +17,9 @@ data class PropertyModel(
     val roi: Double = 0.0,
     val fundedPercent: Int = 0,
 
-    // ⚡ THIS IS THE MISSING FIELD FIX ⚡
+    // ⚡ ADDED THIS FIELD TO FIX THE ERROR
+    val totalFunding: String = "0",
+
     val rentReturn: String = "",
 
     // Images
