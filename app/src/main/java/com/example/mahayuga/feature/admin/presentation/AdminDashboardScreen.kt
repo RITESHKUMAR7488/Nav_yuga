@@ -101,7 +101,7 @@ fun AdminDashboardScreen(
                 title = "Register Investment",
                 subtitle = "Record offline payments",
                 icon = Icons.Default.AttachMoney,
-                onClick = { navController.navigate("admin_register_investment") }
+                onClick = { navController.navigate("investment_flow") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))

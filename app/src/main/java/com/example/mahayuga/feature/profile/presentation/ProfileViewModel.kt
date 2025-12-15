@@ -27,7 +27,7 @@ class ProfileViewModel @Inject constructor(
     private val propertyRepository: PropertyRepository,
     private val preferenceManager: PreferenceManager,
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore // ⚡ ADDED: Required for database updates
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private val _currentUser = authRepository.getCurrentUser()
@@ -42,8 +42,8 @@ class ProfileViewModel @Inject constructor(
         _allProperties
     ) { userState, propsState ->
         if (userState is UiState.Success && propsState is UiState.Success) {
-            // Placeholder logic for ownership
-            emptyList<PropertyModel>()
+            val investedIds = userState.data.investedProperties
+            propsState.data.filter { it.id in investedIds }
         } else {
             emptyList()
         }
@@ -71,41 +71,71 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun calculateStats() {
-        // ⚡ COROUTINE USAGE: Launching a coroutine to collect flow updates.
-        // This is good code because it reacts to changes in user or property data
-        // in real-time without blocking the UI thread.
         viewModelScope.launch {
             combine(_currentUser, ownedProperties) { userState, owned ->
                 if (userState is UiState.Success) {
                     val user = userState.data
+
                     val totalInv = user.totalInvestment.toDouble()
                     val currentVal = user.currentValue.toDouble()
+                    val totalArea = user.totalArea
+                    val totalRent = user.totalRent.toDouble()
 
                     val count = owned.size
                     val propProgress = if (count > 0) (count / 5f).coerceIn(0f, 1f) else 0f
 
-                    val roiVal = if (totalInv > 0) ((currentVal - totalInv) / totalInv) * 100 else 0.0
-                    val roiDisplay = String.format("%.1f%%", roiVal)
-                    val roiProgress = if (roiVal > 0) (roiVal / 20f).toFloat().coerceIn(0f, 1f) else 0f
+                    // ⚡ AUTHENTICATED ROI LOGIC ⚡
+                    val roiDisplay: String
+                    val roiProgress: Float
 
-                    // 6 Stats for the 3x2 Grid
+                    if (totalInv > 0) {
+                        // 1. Capital Gains (Growth): (CurrentVal - Invested) / Invested
+                        // Initially this is 0%
+                        val capitalGains = ((currentVal - totalInv) / totalInv) * 100
+
+                        // 2. Rental Yield (Income): (Annual Rent / Invested)
+                        // This uses the REAL rent data we saved in the transaction
+                        val annualRent = totalRent * 12
+                        val rentalYield = (annualRent / totalInv) * 100
+
+                        // 3. Total ROI = Growth + Yield
+                        val totalRoi = capitalGains + rentalYield
+
+                        roiDisplay = String.format("%.1f%%", totalRoi)
+                        // Scale progress: 15% is a great ROI, so we use that as "100% progress"
+                        roiProgress = (totalRoi / 15.0).toFloat().coerceIn(0f, 1f)
+                    } else {
+                        roiDisplay = "0%"
+                        roiProgress = 0f
+                    }
+
+                    // Format Currency
+                    fun formatK(amount: Double): String {
+                        return if (amount >= 10000000) "₹${String.format("%.2f", amount/10000000)}Cr"
+                        else if (amount >= 100000) "₹${String.format("%.1f", amount/100000)}L"
+                        else if (amount >= 1000) "₹${(amount/1000).toInt()}k"
+                        else "₹${amount.toInt()}"
+                    }
+
+                    val areaDisplay = if (totalArea >= 1.0) "${String.format("%.1f", totalArea)} Sqft" else "0 Sqft"
+
+                    // Grid with Brand Blue (0xFF2979FF)
                     listOf(
                         ProfileStat("Properties", count.toString(), propProgress, 0xFF2979FF),
-                        ProfileStat("Total ROI", roiDisplay, roiProgress, 0xFF2979FF),
-                        ProfileStat("Total Rent", "₹0", 0f, 0xFF2979FF),
-                        ProfileStat("Total Area", "0 Sqft", 0f, 0xFF2979FF),
-                        // Placeholders
-                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888),
-                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888)
+                        ProfileStat("Invested", formatK(totalInv), 1f, 0xFF2979FF),
+                        ProfileStat("Total Area", areaDisplay, 1f, 0xFF2979FF),
+                        ProfileStat("Avg. ROI", roiDisplay, roiProgress, 0xFF2979FF), // Now shows ~6.5%
+                        ProfileStat("Monthly Rent", formatK(totalRent), 1f, 0xFF2979FF),
+                        ProfileStat("Wallet", "₹0", 0f, 0xFF2979FF)
                     )
                 } else {
                     listOf(
                         ProfileStat("Properties", "0", 0f, 0xFF2979FF),
-                        ProfileStat("Total ROI", "0%", 0f, 0xFF2979FF),
-                        ProfileStat("Total Rent", "₹0", 0f, 0xFF2979FF),
+                        ProfileStat("Invested", "₹0", 0f, 0xFF2979FF),
                         ProfileStat("Total Area", "0 Sqft", 0f, 0xFF2979FF),
-                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888),
-                        ProfileStat("Coming Soon", "-", 0f, 0xFF888888)
+                        ProfileStat("Avg. ROI", "0%", 0f, 0xFF2979FF),
+                        ProfileStat("Monthly Rent", "₹0", 0f, 0xFF2979FF),
+                        ProfileStat("Wallet", "₹0", 0f, 0xFF2979FF)
                     )
                 }
             }.collect { newStats ->
@@ -114,16 +144,12 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // ⚡ ADDED: Function to handle Like/Unlike logic
     fun toggleLike(propertyId: String, currentLikeState: Boolean) {
         val userId = auth.currentUser?.uid ?: return
         val userRef = firestore.collection("users").document(userId)
-
         if (currentLikeState) {
-            // Remove from liked
             userRef.update("likedProperties", FieldValue.arrayRemove(propertyId))
         } else {
-            // Add to liked
             userRef.set(
                 mapOf("likedProperties" to FieldValue.arrayUnion(propertyId)),
                 SetOptions.merge()
