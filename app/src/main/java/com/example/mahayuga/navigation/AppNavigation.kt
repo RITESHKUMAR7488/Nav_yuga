@@ -24,6 +24,7 @@ import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.auth.presentation.LoginScreen
 import com.example.mahayuga.feature.auth.presentation.RegisterScreen
+import com.example.mahayuga.feature.auth.presentation.WelcomeScreen // Make sure this is imported
 import com.example.mahayuga.feature.hub.presentation.HubScreen
 import com.example.mahayuga.feature.navyuga.presentation.NavYugaDashboard
 import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
@@ -41,17 +42,28 @@ fun AppNavigation(
 
     NavHost(navController = navController, startDestination = startDestination) {
 
+        // --- NEW WELCOME SCREEN ---
+        // This is the new entry point for the ChatGPT-like flow
+        composable("welcome") {
+            WelcomeScreen(navController = navController)
+        }
+
         // --- AUTH MODULE ---
         composable("login") {
-            LoginScreen(navController = navController, isDarkTheme = isDarkTheme, onThemeToggle = onThemeToggle)
+            // Updated to use the new minimal LoginScreen (Fixed Theme)
+            LoginScreen(navController = navController)
         }
-        composable("register") { RegisterScreen(navController) }
+
+        composable("register") {
+            // Updated to use the new minimal RegisterScreen (Fixed Theme)
+            RegisterScreen(navController = navController)
+        }
 
         // --- HUB ---
         composable("super_app_hub") {
             HubScreen(
                 navController = navController,
-                onLogout = { navController.navigate("login") { popUpTo(0) { inclusive = true } } },
+                onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } }, // Redirect to welcome on logout
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle
             )
@@ -64,7 +76,7 @@ fun AppNavigation(
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
                 onLogout = {
-                    navController.navigate("login") { popUpTo(0) { inclusive = true } }
+                    navController.navigate("welcome") { popUpTo(0) { inclusive = true } }
                 }
             )
         }
@@ -119,7 +131,7 @@ fun AppNavigation(
             if (isAdmin) {
                 AdminDashboardScreen(
                     navController = navController,
-                    onLogout = { navController.navigate("login") { popUpTo(0) { inclusive = true } } }
+                    onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } }
                 )
             } else {
                 PlaceholderScreen("Verifying Admin Privileges...")
@@ -139,34 +151,29 @@ fun AppNavigation(
             EditPropertyScreen(navController = navController, propertyId = propertyId)
         }
 
-        // ⚡ FIXED: INVESTMENT FLOW (SHARED VIEWMODEL)
-        // We create a nested graph called "investment_flow"
-        // This allows us to create ONE ViewModel instance and pass it to all 3 screens
+        // ⚡ INVESTMENT FLOW (SHARED VIEWMODEL)
         navigation(
             startDestination = "admin_register_investment",
-            route = "investment_flow" // This acts as the "Scope" for the ViewModel
+            route = "investment_flow"
         ) {
             composable("admin_register_investment") { entry ->
-                // Get ViewModel scoped to the graph, not the screen
                 val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
-
                 AdminSelectUserScreen(navController, viewModel = sharedViewModel)
             }
 
             composable("admin_inv_select_property") { entry ->
                 val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
-
                 AdminSelectPropertyScreen(navController, viewModel = sharedViewModel)
             }
 
             composable("admin_inv_form") { entry ->
                 val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
-
                 AdminInvestmentFormScreen(navController, viewModel = sharedViewModel)
             }
+
             composable(
                 "admin_user_detail/{userId}",
                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
