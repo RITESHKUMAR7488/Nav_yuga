@@ -14,6 +14,15 @@ interface AdminRepository {
     suspend fun approveUserRequest(uid: String, role: String): UiState<String>
     suspend fun rejectUserRequest(uid: String): UiState<String>
 
-    // ⚡ NEW: Investment Registration
+    // Investment Registration
     suspend fun registerInvestment(investment: InvestmentModel): UiState<String>
+
+    // ⚡ NEW: Cascade Delete & Portfolio Management
+    fun getUserInvestments(userId: String): Flow<UiState<List<InvestmentModel>>>
+
+    // Deletes one investment and reverses the math on Property & User
+    suspend fun deleteInvestment(investment: InvestmentModel): UiState<String>
+
+    // Deletes the User AND all their investments (Cascade)
+    suspend fun deleteUserConstructively(userId: String): UiState<String>
 }

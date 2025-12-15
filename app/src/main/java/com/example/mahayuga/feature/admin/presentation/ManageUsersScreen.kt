@@ -1,5 +1,6 @@
 package com.example.mahayuga.feature.admin.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,8 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -57,9 +57,9 @@ fun ManageUsersScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.data) { user ->
-                        AdminUserItem(user, onToggleStatus = {
-                            // ⚡ Call the function from ViewModel
-                            viewModel.toggleUserBlock(user.uid, user.isActive)
+                        AdminUserItem(user, onClick = {
+                            // ⚡ Navigate to new Detail Screen
+                            navController.navigate("admin_user_detail/${user.uid}")
                         })
                     }
                 }
@@ -75,12 +75,13 @@ fun ManageUsersScreen(
 }
 
 @Composable
-fun AdminUserItem(user: UserModel, onToggleStatus: () -> Unit) {
+fun AdminUserItem(user: UserModel, onClick: () -> Unit) {
     val cardColor = if (user.isActive) MaterialTheme.colorScheme.surface else ErrorRed.copy(alpha = 0.1f)
 
     Card(
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -118,20 +119,13 @@ fun AdminUserItem(user: UserModel, onToggleStatus: () -> Unit) {
                     style = MaterialTheme.typography.labelSmall,
                     color = SuccessGreen
                 )
-                Text(
-                    text = "Role: ${user.role.uppercase()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BrandBlue
-                )
             }
 
-            IconButton(onClick = onToggleStatus) {
-                Icon(
-                    imageVector = if (user.isActive) Icons.Default.Block else Icons.Default.CheckCircle,
-                    contentDescription = if (user.isActive) "Block" else "Unblock",
-                    tint = if (user.isActive) ErrorRed else SuccessGreen
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

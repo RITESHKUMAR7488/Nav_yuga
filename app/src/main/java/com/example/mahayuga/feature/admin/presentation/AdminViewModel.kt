@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.admin.data.model.InvestmentModel
 import com.example.mahayuga.feature.admin.domain.repository.AdminRepository
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
@@ -14,7 +15,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -44,9 +47,24 @@ class AdminViewModel @Inject constructor(
     private val _propertyUploadState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val propertyUploadState: StateFlow<UiState<String>> = _propertyUploadState
 
-    // Registration Requests State
     private val _requestsState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val requestsState: StateFlow<UiState<List<UserModel>>> = _requestsState
+
+    // ⚡ NEW: Specific User Detail States (Safety First)
+    private val _selectedUserInvestments = MutableStateFlow<UiState<List<InvestmentModel>>>(UiState.Loading)
+    val selectedUserInvestments: StateFlow<UiState<List<InvestmentModel>>> = _selectedUserInvestments
+
+    private val _deleteOperationState = MutableSharedFlow<UiState<String>>()
+    val deleteOperationState: SharedFlow<UiState<String>> = _deleteOperationState
+
+    private val _investmentStatus = MutableSharedFlow<String>()
+    val investmentStatus: SharedFlow<String> = _investmentStatus
+
+    // Temporary variables
+    var selectedUser: UserModel? = null
+        private set
+    var selectedProperty: PropertyModel? = null
+        private set
 
     init {
         fetchUsers()
@@ -54,7 +72,6 @@ class AdminViewModel @Inject constructor(
         fetchPendingRequests()
     }
 
-    // --- DATA FETCHING ---
     private fun fetchUsers() {
         viewModelScope.launch {
             adminRepository.getAllUsers().collect { state -> _usersState.value = state }
@@ -73,27 +90,74 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // --- USER MANAGEMENT ---
-    // ⚡ This is the function giving you the error. It is included here.
-    fun toggleUserBlock(uid: String, currentStatus: Boolean) {
+    // --- USER DETAIL & DELETE LOGIC (Safety First) ---
+    fun fetchInvestmentsForUser(userId: String) {
         viewModelScope.launch {
-            adminRepository.toggleUserStatus(uid, !currentStatus)
+            _selectedUserInvestments.value = UiState.Loading
+            adminRepository.getUserInvestments(userId).collect { state ->
+                _selectedUserInvestments.value = state
+            }
         }
+    }
+
+    fun deleteSingleInvestment(investment: InvestmentModel) {
+        viewModelScope.launch {
+            val result = adminRepository.deleteInvestment(investment)
+            _deleteOperationState.emit(result)
+            // Refresh details after delete
+            fetchInvestmentsForUser(investment.userId)
+        }
+    }
+
+    fun deleteUserPermanently(userId: String) {
+        viewModelScope.launch {
+            val result = adminRepository.deleteUserConstructively(userId)
+            _deleteOperationState.emit(result)
+        }
+    }
+
+    // --- INVESTMENT FLOW LOGIC ---
+    fun selectUserForInvestment(user: UserModel) { selectedUser = user }
+    fun selectPropertyForInvestment(property: PropertyModel) { selectedProperty = property }
+
+    fun submitInvestment(amount: Long, mode: String, reference: String) {
+        val user = selectedUser ?: return
+        val property = selectedProperty ?: return
+        viewModelScope.launch {
+            _propertyUploadState.value = UiState.Loading
+            val investment = InvestmentModel(
+                userId = user.uid, userName = user.name, propertyId = property.id,
+                propertyTitle = property.title, amount = amount, paymentMode = mode, paymentReference = reference
+            )
+            val result = adminRepository.registerInvestment(investment)
+            when(result) {
+                is UiState.Success -> {
+                    _propertyUploadState.value = UiState.Success(result.data)
+                    _investmentStatus.emit("Success: ${result.data}")
+                }
+                is UiState.Failure -> {
+                    _propertyUploadState.value = UiState.Failure(result.message)
+                    _investmentStatus.emit("Error: ${result.message}")
+                }
+                else -> {}
+            }
+        }
+    }
+
+    // --- USER MANAGEMENT ---
+    fun toggleUserBlock(uid: String, currentStatus: Boolean) {
+        viewModelScope.launch { adminRepository.toggleUserStatus(uid, !currentStatus) }
     }
 
     fun approveUser(uid: String, role: String) {
-        viewModelScope.launch {
-            adminRepository.approveUserRequest(uid, role)
-        }
+        viewModelScope.launch { adminRepository.approveUserRequest(uid, role) }
     }
 
     fun rejectUser(uid: String) {
-        viewModelScope.launch {
-            adminRepository.rejectUserRequest(uid)
-        }
+        viewModelScope.launch { adminRepository.rejectUserRequest(uid) }
     }
 
-    // --- PROPERTY MANAGEMENT (DELETE & UPDATE) ---
+    // --- RESTORED: PROPERTY MANAGEMENT (Fixes your error) ---
     fun deleteProperty(propertyId: String) {
         viewModelScope.launch {
             propertyRepository.deleteProperty(propertyId)
@@ -108,7 +172,6 @@ class AdminViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             _propertyUploadState.value = UiState.Loading
-
             try {
                 val newUploadedUrls = mutableListOf<String>()
                 if (newImageUris.isNotEmpty()) {
@@ -141,7 +204,6 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // --- ADD PROPERTY ---
     fun listNewProperty(
         title: String, description: String, type: String, status: String,
         address: String, city: String, state: String,
