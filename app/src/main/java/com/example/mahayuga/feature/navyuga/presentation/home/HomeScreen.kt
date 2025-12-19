@@ -1,5 +1,6 @@
 package com.example.mahayuga.feature.navyuga.presentation.home
 
+import android.content.Intent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +29,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,7 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.feature.auth.presentation.components.formatIndian // ⚡ IMPORT
+import com.example.mahayuga.feature.auth.presentation.components.formatIndian
 
 private val DeepDarkBlue = Color(0xFF0F172A)
 private val StoryGradientStart = Color(0xFF4361EE)
@@ -52,6 +54,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         containerColor = Color.Black,
@@ -92,9 +95,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // REMOVED: Greeting & Welcome Message
-
-                // Stories
+                // Stories (Trending)
                 item {
                     Column(Modifier.fillMaxWidth()) {
                         Text(
@@ -124,24 +125,9 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        FilterButton(
-                            text = "Funding",
-                            isSelected = uiState.selectedFilter == "Funding",
-                            modifier = Modifier.weight(1f),
-                            onClick = { viewModel.updateFilter("Funding") }
-                        )
-                        FilterButton(
-                            text = "Funded",
-                            isSelected = uiState.selectedFilter == "Funded",
-                            modifier = Modifier.weight(1f),
-                            onClick = { viewModel.updateFilter("Funded") }
-                        )
-                        FilterButton(
-                            text = "Exited",
-                            isSelected = uiState.selectedFilter == "Exited",
-                            modifier = Modifier.weight(1f),
-                            onClick = { viewModel.updateFilter("Exited") }
-                        )
+                        FilterButton("Funding", uiState.selectedFilter == "Funding", Modifier.weight(1f)) { viewModel.updateFilter("Funding") }
+                        FilterButton("Funded", uiState.selectedFilter == "Funded", Modifier.weight(1f)) { viewModel.updateFilter("Funded") }
+                        FilterButton("Exited", uiState.selectedFilter == "Exited", Modifier.weight(1f)) { viewModel.updateFilter("Exited") }
                     }
                 }
 
@@ -153,7 +139,16 @@ fun HomeScreen(
                         property = property,
                         onItemClick = { onNavigateToDetail(property.id) },
                         onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
-                        onShareClick = { /* Handle Share */ },
+                        onShareClick = {
+                            // ⚡ FIX: SHARE INTENT
+                            val sendIntent: Intent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, "Check out this property: ${property.title} in ${property.city}. Expected ROI: ${property.roi}%")
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, null)
+                            context.startActivity(shareIntent)
+                        },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     )
                 }
@@ -193,13 +188,11 @@ fun HomeTopBar(
     onBackClick: () -> Unit,
     onNotificationClick: () -> Unit
 ) {
-    // ⚡ CHANGED: Using Box to center title absolutely while keeping buttons on edges
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // Centered Title
         Text(
             text = "Navyuga",
             style = MaterialTheme.typography.headlineSmall.copy(
@@ -209,7 +202,6 @@ fun HomeTopBar(
             modifier = Modifier.align(Alignment.Center)
         )
 
-        // Back Button (Left)
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
@@ -223,7 +215,6 @@ fun HomeTopBar(
             )
         }
 
-        // Notification Button (Right)
         IconButton(
             onClick = onNotificationClick,
             modifier = Modifier
@@ -340,17 +331,27 @@ fun InstagramStylePropertyCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ⚡ FORMATTED
-                PropertyStat("Price", "₹${formatIndian(property.minInvest)}")
-                Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
+                if (property.status == "Exited") {
+                    // ⚡ LOGIC FOR EXITED PROPERTIES
+                    PropertyStat("Exit Price", "₹${formatIndian(property.exitPrice)}")
+                    Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
 
-                // ⚡ FORMATTED
-                val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else "₹${formatIndian(property.rentReturn)}"
-                PropertyStat("Rent", displayRent)
+                    PropertyStat("Profit", "₹${formatIndian(property.totalProfit)}", true)
+                    Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
 
-                Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
+                    PropertyStat("ROI", "${property.roi}%")
+                } else {
+                    // ⚡ LOGIC FOR REGULAR PROPERTIES
+                    PropertyStat("Price", "₹${formatIndian(property.totalValuation)}")
+                    Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
 
-                PropertyStat("ROI", "${property.roi}%", true)
+                    val rentToShow = if(property.monthlyRent.isNotEmpty()) property.monthlyRent else "0"
+                    PropertyStat("Rent", "₹${formatIndian(rentToShow)}")
+
+                    Box(Modifier.width(1.dp).height(32.dp).background(Color.Gray.copy(0.2f)))
+
+                    PropertyStat("ROI", "${property.roi}%", true)
+                }
             }
 
             Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -9,18 +9,21 @@ data class PropertyModel(
     val id: String = "",
     val title: String = "",
     val location: String = "",
-    val status: String = "Available",
+    val status: String = "Available", // "Funding", "Funded", "Exited"
 
     // Financial Overview
     val totalValuation: String = "",
     val minInvest: String = "",
     val roi: Double = 0.0,
     val fundedPercent: Int = 0,
-
-    // ⚡ ADDED THIS FIELD TO FIX THE ERROR
     val totalFunding: String = "0",
 
+    // This field can be used for Rent Yield % if needed, or ignored in favor of calculated ROI
     val rentReturn: String = "",
+
+    // ⚡ NEW FIELDS FOR EXITED PROPERTIES
+    val exitPrice: String = "",
+    val totalProfit: String = "",
 
     // Images
     val imageUrls: List<String> = emptyList(),
@@ -38,7 +41,7 @@ data class PropertyModel(
 
     // Lease Information
     val tenantName: String = "",
-    val occupationPeriod: String = "",
+    val occupationPeriod: String = "", // Now represents Years
     val escalation: String = "",
 
     // Financial Analysis
