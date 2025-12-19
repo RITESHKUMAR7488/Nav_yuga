@@ -61,14 +61,14 @@ fun WelcomeScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(170.dp)
                     .background(GptDarkSurface, shape = MaterialTheme.shapes.medium),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.white),
                     contentDescription = "Logo",
-                    modifier = Modifier.size(60.dp),
+                    modifier = Modifier.size(150.dp),
                     colorFilter = ColorFilter.tint(GptTextWhite) // White Logo
                 )
             }
