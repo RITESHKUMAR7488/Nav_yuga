@@ -4,18 +4,23 @@ import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
-import androidx.compose.material.icons.rounded.Book
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Logout
+import androidx.compose.material.icons.rounded.Book // Import Book icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,16 +28,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.profile.data.model.ProfileStat
 import kotlinx.coroutines.launch
+
+// --- COLORS ---
+private val DrawerBg = Color(0xFF050505)       // Deep Black for Drawer
+private val DrawerCardBg = Color(0xFF121212)   // Card inside Drawer
+private val BrandBlue = Color(0xFF2979FF)
+private val TextWhite = Color(0xFFFFFFFF)
+private val TextGrey = Color(0xFF888888)
+private val ProgressGreen = Color(0xFF00E676)
 
 @Composable
 fun ProfileScreen(
@@ -44,129 +59,172 @@ fun ProfileScreen(
     val stats by viewModel.stats.collectAsState()
     val ownedProperties by viewModel.ownedProperties.collectAsState()
 
-    // Drawer State
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
-    // ⚡ COROUTINE USAGE: 'rememberCoroutineScope' creates a CoroutineScope bound to this Composable's lifecycle.
-    // We need this because 'drawerState.open()' and 'drawerState.close()' are suspend functions
-    // (animations) that must be called from a coroutine, not the main UI thread directly.
     val scope = rememberCoroutineScope()
-
     val context = LocalContext.current
+
+    // ⚡ FIX: Open drawer automatically if returning from a screen
+    LaunchedEffect(Unit) {
+        if (viewModel.shouldOpenDrawerOnReturn) {
+            drawerState.open()
+            viewModel.shouldOpenDrawerOnReturn = false // Reset flag
+        }
+    }
 
     val userName = if (currentUserState is UiState.Success) {
         (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
     } else "User"
 
     val userEmail = if (currentUserState is UiState.Success) {
-        (currentUserState as UiState.Success).data.email.ifEmpty { "user@example.com" }
-    } else "Loading..."
+        (currentUserState as UiState.Success).data.email
+    } else ""
 
-    // ⚡ WRAP CONTENT IN MODAL NAVIGATION DRAWER
+    val userInitials = if (userName.isNotEmpty()) userName.take(2).uppercase() else "YO"
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                drawerContainerColor = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.width(300.dp)
+                drawerContainerColor = DrawerBg,
+                modifier = Modifier.fillMaxWidth(0.85f)
             ) {
-                // --- DRAWER HEADER ---
-                Box(
+                // ============================================
+                // ⚡ NEW "STAKE-STYLE" DRAWER CONTENT
+                // ============================================
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        // ⚡ CHANGED: Replaced Gradient with Solid Brand Blue
-                        .background(color = Color(0xFF2979FF)),
-                    contentAlignment = Alignment.BottomStart
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                        .verticalScroll(rememberScrollState())
+                        .systemBarsPadding(),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.Bottom
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // 1. DRAWER HEADER
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { /* Navigate to Personal Details */ },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Profile Picture Placeholder
-                        Icon(
-                            imageVector = Icons.Rounded.AccountCircle,
-                            contentDescription = "Profile",
+                        Box(
                             modifier = Modifier
-                                .size(72.dp)
+                                .size(50.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f)),
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = userName,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = userEmail,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f)
+                                .background(Color(0xFF1A2835)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = userInitials,
+                                color = BrandBlue,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = userName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextWhite
+                            )
+                            Text(
+                                text = "Your account details",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextGrey
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = TextGrey,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+
+                    // 2. PROGRESS CARD
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = DrawerCardBg),
+                        border = BorderStroke(1.dp, Color(0xFF1F2B36))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp)) {
+                                CircularProgressIndicator(
+                                    progress = { 0.5f },
+                                    modifier = Modifier.fillMaxSize(),
+                                    color = BrandBlue,
+                                    trackColor = Color.White.copy(alpha = 0.1f),
+                                    strokeWidth = 3.dp
+                                )
+                                Text("2/4", style = MaterialTheme.typography.labelSmall, color = BrandBlue, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("You're halfway there!", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = TextWhite)
+                                Text("Complete verification", style = MaterialTheme.typography.bodySmall, color = TextGrey)
+                            }
+                        }
+                    }
+
+                    // 3. SETTINGS GROUPS
+                    SettingsGroup {
+                        // ⚡ FIX: Set flag before navigating to keep drawer open on return
+                        DrawerItem(
+                            icon = Icons.Outlined.FavoriteBorder,
+                            title = "Liked Properties",
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                viewModel.shouldOpenDrawerOnReturn = true // Set flag
+                                onNavigateToLiked()
+                            }
+                        )
+                        DrawerItem(icon = Icons.Outlined.AccountBalanceWallet, title = "Wallet", onClick = { Toast.makeText(context, "Wallet Coming Soon", Toast.LENGTH_SHORT).show() })
+                        DrawerItem(icon = Icons.Outlined.Settings, title = "Settings", onClick = { Toast.makeText(context, "Settings", Toast.LENGTH_SHORT).show() })
+                        DrawerItem(icon = Icons.Outlined.Lock, title = "Security & privacy", onClick = { })
+                    }
+
+                    SettingsGroup {
+                        DrawerItem(icon = Icons.Outlined.Info, title = "About Navyuga", onClick = { })
+                        DrawerItem(icon = Icons.Outlined.HelpOutline, title = "Help center", onClick = { })
+                        DrawerItem(icon = Icons.Outlined.Description, title = "Documents", badge = "NEW", onClick = { })
+                        // ⚡ ADDED: 10 Step Guide
+                        DrawerItem(icon = Icons.Rounded.Book, title = "10 Step Guide", onClick = { Toast.makeText(context, "Guide Coming Soon", Toast.LENGTH_SHORT).show() })
+                    }
+
+                    SettingsGroup {
+                        DrawerItem(icon = Icons.Outlined.CardGiftcard, title = "Refer a friend", onClick = { })
+                        DrawerItem(
+                            icon = Icons.AutoMirrored.Filled.ExitToApp,
+                            title = "Log out",
+                            textColor = Color(0xFFFF5252),
+                            iconColor = Color(0xFFFF5252),
+                            showChevron = false,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                viewModel.logout()
+                                onLogout()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // --- DRAWER ITEMS ---
-                NavigationDrawerItem(
-                    label = { Text("Liked Properties") },
-                    icon = { Icon(Icons.Rounded.Favorite, contentDescription = null) },
-                    selected = false,
-                    onClick = {
-                        // ⚡ COROUTINE USAGE: Launching a coroutine to close the drawer smoothly.
-                        // Without 'scope.launch', we cannot call the suspend function 'close()'.
-                        scope.launch { drawerState.close() }
-                        onNavigateToLiked()
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-
-                NavigationDrawerItem(
-                    label = { Text("Wallet") },
-                    icon = { Icon(Icons.Rounded.AccountBalanceWallet, contentDescription = null) },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        Toast.makeText(context, "Wallet Coming Soon", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-
-                NavigationDrawerItem(
-                    label = { Text("10 Step Guide") },
-                    icon = { Icon(Icons.Rounded.Book, contentDescription = null) },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        Toast.makeText(context, "Guide Coming Soon", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                NavigationDrawerItem(
-                    label = { Text("Log Out") },
-                    icon = { Icon(Icons.Rounded.Logout, contentDescription = null) },
-                    selected = false,
-                    colors = NavigationDrawerItemDefaults.colors(
-                        unselectedTextColor = MaterialTheme.colorScheme.error,
-                        unselectedIconColor = MaterialTheme.colorScheme.error
-                    ),
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        viewModel.logout()
-                        onLogout()
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
             }
         }
     ) {
-        // --- MAIN SCREEN CONTENT ---
+        // ============================================
+        // ORIGINAL DASHBOARD CONTENT (Unchanged)
+        // ============================================
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background
         ) { innerPadding ->
@@ -176,7 +234,7 @@ fun ProfileScreen(
                     .fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                // 1. HEADER WITH MENU BUTTON
+                // HEADER
                 item {
                     Row(
                         modifier = Modifier
@@ -199,27 +257,16 @@ fun ProfileScreen(
                             )
                         }
 
-                        // ⚡ Menu Button to Open Drawer
                         IconButton(
-                            onClick = {
-                                // ⚡ COROUTINE USAGE: Launching a coroutine to open the drawer.
-                                // The animation requires suspension, which is why we use a scope.
-                                scope.launch { drawerState.open() }
-                            },
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            )
+                            onClick = { scope.launch { drawerState.open() } },
+                            colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu",
-                                modifier = Modifier.size(28.dp)
-                            )
+                            Icon(Icons.Default.Menu, "Menu", modifier = Modifier.size(28.dp))
                         }
                     }
                 }
 
-                // 2. STATS GRID (3x2 Layout)
+                // STATS
                 item {
                     Text(
                         text = "Your Real Estate Portfolio",
@@ -229,7 +276,6 @@ fun ProfileScreen(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                     )
 
-                    // Ensure we have 6 items or use placeholders
                     val displayStats = if (stats.size >= 6) stats else List(6) {
                         ProfileStat("Coming Soon", "-", 0f, 0xFF888888)
                     }
@@ -240,24 +286,22 @@ fun ProfileScreen(
                             .padding(horizontal = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Row 1
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            CompactStatCard(displayStats[0], Modifier.weight(1f)) // Properties
-                            CompactStatCard(displayStats[1], Modifier.weight(1f)) // ROI
-                            CompactStatCard(displayStats[2], Modifier.weight(1f)) // Rent
+                            CompactStatCard(displayStats[0], Modifier.weight(1f))
+                            CompactStatCard(displayStats[1], Modifier.weight(1f))
+                            CompactStatCard(displayStats[2], Modifier.weight(1f))
                         }
-                        // Row 2
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            CompactStatCard(displayStats[3], Modifier.weight(1f)) // Area
-                            CompactStatCard(displayStats[4], Modifier.weight(1f)) // Coming Soon
-                            CompactStatCard(displayStats[5], Modifier.weight(1f)) // Coming Soon
+                            CompactStatCard(displayStats[3], Modifier.weight(1f))
+                            CompactStatCard(displayStats[4], Modifier.weight(1f))
+                            CompactStatCard(displayStats[5], Modifier.weight(1f))
                         }
                     }
                 }
 
                 item { Spacer(modifier = Modifier.height(32.dp)) }
 
-                // 3. YOUR PROPERTY SECTION (Only if properties exist)
+                // PROPERTIES
                 if (ownedProperties.isNotEmpty()) {
                     item {
                         Text(
@@ -268,13 +312,8 @@ fun ProfileScreen(
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                         )
                     }
-
                     items(ownedProperties) { property ->
-                        ProfilePropertyCard(
-                            property = property,
-                            onLikeClick = { /* Logic handled in main VM usually */ },
-                            onShareClick = { /* Share Logic */ }
-                        )
+                        ProfilePropertyCard(property = property, onLikeClick = {}, onShareClick = {})
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
@@ -283,7 +322,76 @@ fun ProfileScreen(
     }
 }
 
-// ⚡ Refactored Card to fit 3 in a row
+// --- REUSABLE COMPONENTS ---
+
+@Composable
+fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DrawerCardBg)
+    ) {
+        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+            content()
+        }
+    }
+}
+
+@Composable
+fun DrawerItem(
+    icon: ImageVector,
+    title: String,
+    badge: String? = null,
+    textColor: Color = TextWhite,
+    iconColor: Color = TextWhite,
+    showChevron: Boolean = true,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconColor.copy(alpha = 0.7f),
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            modifier = Modifier.weight(1f)
+        )
+        if (badge != null) {
+            Surface(
+                color = Color(0xFF1B5E20),
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                Text(
+                    text = badge,
+                    color = Color(0xFF69F0AE),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+        if (showChevron) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = Color.Gray.copy(alpha = 0.5f),
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
 @Composable
 fun CompactStatCard(stat: ProfileStat, modifier: Modifier = Modifier) {
     Card(

@@ -28,6 +28,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class AdminViewModel @Inject constructor(
@@ -162,6 +163,7 @@ class AdminViewModel @Inject constructor(
         }
     }
 
+    // ⚡ UPDATE THIS: Ensure new fields are preserved during updates if you add edit functionality later
     fun updateProperty(
         originalProperty: PropertyModel,
         updatedFields: PropertyModel,
@@ -187,6 +189,7 @@ class AdminViewModel @Inject constructor(
 
                 val finalProperty = updatedFields.copy(
                     id = originalProperty.id,
+                    assetId = originalProperty.assetId, // Preserve Asset ID
                     imageUrls = finalImages
                 )
 
@@ -202,7 +205,7 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ UPDATED: Now accepts exitPrice and totalProfit
+    // ⚡ UPDATED: LIST NEW PROPERTY WITH ASSET ID & NEW FIELDS
     fun listNewProperty(
         title: String, description: String, type: String, status: String,
         address: String, city: String, state: String,
@@ -210,7 +213,9 @@ class AdminViewModel @Inject constructor(
         totalValuation: String, minInvest: String, roi: Double, fundedPercent: Int,
         monthlyRent: String, grossAnnualRent: String, annualPropertyTax: String,
         tenantName: String, occupationPeriod: String, escalation: String,
-        exitPrice: String, totalProfit: String, // ⚡ NEW PARAMS
+        exitPrice: String, totalProfit: String,
+        // New Params
+        legalWrapper: String, totalUnits: String, liquidityRules: String,
         imageUris: List<Uri>
     ) {
         viewModelScope.launch {
@@ -225,22 +230,29 @@ class AdminViewModel @Inject constructor(
                     uploadedImageUrls.add("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab")
                 }
 
+                // ⚡ GENERATE ASSET ID (NAV-XXXXXX)
+                val generatedAssetId = "NAV-${System.currentTimeMillis().toString().takeLast(6)}"
+
                 val newProperty = PropertyModel(
                     id = UUID.randomUUID().toString(),
+                    assetId = generatedAssetId, // ⚡ SAVING ID
                     title = title, description = description, type = type, status = status,
                     address = address, city = city, state = state, location = "$city, $state",
                     age = age, area = area, floor = floor, carPark = carPark,
                     totalValuation = totalValuation, minInvest = minInvest, roi = roi, fundedPercent = fundedPercent,
                     monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
                     tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = escalation,
-                    // ⚡ SAVE NEW FIELDS
                     exitPrice = exitPrice, totalProfit = totalProfit,
+                    // ⚡ SAVING NEW FIELDS
+                    legalWrapper = legalWrapper,
+                    totalUnits = totalUnits,
+                    liquidityRules = liquidityRules,
                     imageUrls = uploadedImageUrls
                 )
 
                 val result = propertyRepository.addProperty(newProperty)
                 if (result is UiState.Success) {
-                    _propertyUploadState.value = UiState.Success("Property Listed Successfully!")
+                    _propertyUploadState.value = UiState.Success("Listed! Asset ID: $generatedAssetId")
                     fetchProperties()
                 } else {
                     _propertyUploadState.value = UiState.Failure("Failed to save to DB")

@@ -95,27 +95,27 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Stories (Trending)
-                item {
-                    Column(Modifier.fillMaxWidth()) {
-                        Text(
-                            "Trending Properties",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, color = Color.White.copy(0.9f)),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(uiState.stories, key = { it.id }) { story ->
-                                StoryCircle(story = story, onClick = {
-                                    viewModel.markStoryAsSeen(story.id)
-                                    onNavigateToDetail(story.id)
-                                })
-                            }
-                        }
-                    }
-                }
+//                // Stories (Trending)
+//                item {
+//                    Column(Modifier.fillMaxWidth()) {
+//                        Text(
+//                            "Trending Properties",
+//                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, color = Color.White.copy(0.9f)),
+//                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+//                        )
+//                        LazyRow(
+//                            contentPadding = PaddingValues(horizontal = 16.dp),
+//                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+//                        ) {
+////                            items(uiState.stories, key = { it.id }) { story ->
+////                                StoryCircle(story = story, onClick = {
+////                                    viewModel.markStoryAsSeen(story.id)
+////                                    onNavigateToDetail(story.id)
+////                                })
+////                            }
+//                        }
+//                    }
+//                }
 
                 // Filter Buttons
                 item {

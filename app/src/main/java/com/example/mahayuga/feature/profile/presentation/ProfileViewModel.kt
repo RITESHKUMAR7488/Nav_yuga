@@ -30,6 +30,9 @@ class ProfileViewModel @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
+    // ⚡ NEW: State to persist drawer status across navigation
+    var shouldOpenDrawerOnReturn: Boolean = false
+
     private val _currentUser = authRepository.getCurrentUser()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
     val currentUser = _currentUser
@@ -84,32 +87,22 @@ class ProfileViewModel @Inject constructor(
                     val count = owned.size
                     val propProgress = if (count > 0) (count / 5f).coerceIn(0f, 1f) else 0f
 
-                    // ⚡ AUTHENTICATED ROI LOGIC ⚡
                     val roiDisplay: String
                     val roiProgress: Float
 
                     if (totalInv > 0) {
-                        // 1. Capital Gains (Growth): (CurrentVal - Invested) / Invested
-                        // Initially this is 0%
                         val capitalGains = ((currentVal - totalInv) / totalInv) * 100
-
-                        // 2. Rental Yield (Income): (Annual Rent / Invested)
-                        // This uses the REAL rent data we saved in the transaction
                         val annualRent = totalRent * 12
                         val rentalYield = (annualRent / totalInv) * 100
-
-                        // 3. Total ROI = Growth + Yield
                         val totalRoi = capitalGains + rentalYield
 
                         roiDisplay = String.format("%.1f%%", totalRoi)
-                        // Scale progress: 15% is a great ROI, so we use that as "100% progress"
                         roiProgress = (totalRoi / 15.0).toFloat().coerceIn(0f, 1f)
                     } else {
                         roiDisplay = "0%"
                         roiProgress = 0f
                     }
 
-                    // Format Currency
                     fun formatK(amount: Double): String {
                         return if (amount >= 10000000) "₹${String.format("%.2f", amount/10000000)}Cr"
                         else if (amount >= 100000) "₹${String.format("%.1f", amount/100000)}L"
@@ -119,12 +112,11 @@ class ProfileViewModel @Inject constructor(
 
                     val areaDisplay = if (totalArea >= 1.0) "${String.format("%.1f", totalArea)} Sqft" else "0 Sqft"
 
-                    // Grid with Brand Blue (0xFF2979FF)
                     listOf(
                         ProfileStat("Properties", count.toString(), propProgress, 0xFF2979FF),
                         ProfileStat("Invested", formatK(totalInv), 1f, 0xFF2979FF),
                         ProfileStat("Total Area", areaDisplay, 1f, 0xFF2979FF),
-                        ProfileStat("Avg. ROI", roiDisplay, roiProgress, 0xFF2979FF), // Now shows ~6.5%
+                        ProfileStat("Avg. ROI", roiDisplay, roiProgress, 0xFF2979FF),
                         ProfileStat("Monthly Rent", formatK(totalRent), 1f, 0xFF2979FF),
                         ProfileStat("Wallet", "₹0", 0f, 0xFF2979FF)
                     )

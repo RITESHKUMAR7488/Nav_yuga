@@ -46,6 +46,11 @@ fun AddPropertyScreen(
     var floor by remember { mutableStateOf("") }
     var carPark by remember { mutableStateOf("") }
 
+    // ⚡ NEW FIELDS UI STATE
+    var legalWrapper by remember { mutableStateOf("SPV") }
+    var totalUnits by remember { mutableStateOf("") }
+    var liquidityRules by remember { mutableStateOf("3 Year Lock-in") }
+
     var tenantName by remember { mutableStateOf("") }
     var occupationPeriod by remember { mutableStateOf("") }
 
@@ -58,7 +63,7 @@ fun AddPropertyScreen(
     var annualPropertyTax by remember { mutableStateOf("") }
     var fundedPercent by remember { mutableStateOf("") }
 
-    // ⚡ NEW: Exited Property Fields
+    // Exited Property Fields
     var exitPrice by remember { mutableStateOf("") }
     var totalProfit by remember { mutableStateOf("") }
 
@@ -93,7 +98,7 @@ fun AddPropertyScreen(
 
     LaunchedEffect(uploadState) {
         if (uploadState is UiState.Success) {
-            Toast.makeText(context, "Property Published!", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, (uploadState as UiState.Success).data, Toast.LENGTH_LONG).show()
             viewModel.resetUploadState()
             navController.popBackStack()
         } else if (uploadState is UiState.Failure) {
@@ -159,12 +164,43 @@ fun AddPropertyScreen(
             NavyugaDropdown(label = "Asset Type", options = listOf("Office", "Retail", "Warehouse", "Industrial"), selected = type, onSelectionChange = { type = it })
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⚡ STATUS SELECTION - TRIGGERS EXITED LOGIC
             NavyugaDropdown(label = "Status", options = listOf("Funding", "Funded", "Exited"), selected = status, onSelectionChange = { status = it })
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ⚡ EXITED PROPERTY FIELDS
+            // ⚡ NEW STRUCTURE & LIQUIDITY SECTION
+            SectionHeader("Structure & Liquidity")
+
+            // Legal Wrapper Dropdown
+            NavyugaDropdown(
+                label = "Legal Wrapper",
+                options = listOf("SPV", "Trust", "LLP", "Fund"),
+                selected = legalWrapper,
+                onSelectionChange = { legalWrapper = it }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Total Units
+            NavyugaTextField(
+                value = totalUnits,
+                onValueChange = { totalUnits = it },
+                label = "Total Fractional Units",
+                icon = Icons.Default.PieChart,
+                isNumber = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Liquidity Rules
+            NavyugaTextField(
+                value = liquidityRules,
+                onValueChange = { liquidityRules = it },
+                label = "Liquidity Rules (Lock-in/Exit)",
+                icon = Icons.Default.Rule
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Exited Fields
             if (status == "Exited") {
                 SectionHeader("Exit Details")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -193,7 +229,6 @@ fun AddPropertyScreen(
             SectionHeader("Lease Information")
             NavyugaTextField(value = tenantName, onValueChange = { tenantName = it }, label = "Tenant Name", icon = Icons.Default.Person)
             Spacer(modifier = Modifier.height(8.dp))
-            // ⚡ CHANGED TO YEARS
             NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period (Years)", icon = Icons.Default.Timer, isNumber = true)
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -212,7 +247,7 @@ fun AddPropertyScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = monthlyRent, onValueChange = { monthlyRent = it }, label = "Monthly Rent", icon = Icons.Default.Payments, isNumber = true) }
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = grossAnnualRent, onValueChange = { grossAnnualRent = it }, label = "Gross Annual (Auto)", icon = Icons.Default.AccountBalanceWallet, isNumber = true) }
-            }//////hiiii i am here
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { NavyugaTextField(value = annualPropertyTax, onValueChange = { annualPropertyTax = it }, label = "Annual Tax", icon = Icons.Default.ReceiptLong, isNumber = true) }
@@ -238,8 +273,11 @@ fun AddPropertyScreen(
                             monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
                             tenantName = tenantName, occupationPeriod = occupationPeriod,
                             escalation = finalEscalation,
-                            // ⚡ PASS NEW EXITED FIELDS
                             exitPrice = exitPrice, totalProfit = totalProfit,
+                            // ⚡ PASSING NEW FIELDS
+                            legalWrapper = legalWrapper,
+                            totalUnits = totalUnits,
+                            liquidityRules = liquidityRules,
                             imageUris = selectedImageUris
                         )
                     } else {

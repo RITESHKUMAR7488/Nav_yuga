@@ -66,7 +66,7 @@ fun WelcomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.white),
+                    painter = painterResource(id = R.drawable.mahayuga),
                     contentDescription = "Logo",
                     modifier = Modifier.size(150.dp),
                     colorFilter = ColorFilter.tint(GptTextWhite) // White Logo

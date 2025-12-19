@@ -229,7 +229,22 @@ fun AdminInvestmentItem(inv: InvestmentModel, onDelete: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text(inv.propertyTitle, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(inv.propertyTitle, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+
+                    // ⚡ NEW: Display Asset ID if available
+                    if (inv.assetId.isNotEmpty()) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "[${inv.assetId}]",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
                 Text("Invested: ₹${inv.amount}", color = SuccessGreen, style = MaterialTheme.typography.bodySmall)
                 Text("Ref: ${inv.paymentReference}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
             }

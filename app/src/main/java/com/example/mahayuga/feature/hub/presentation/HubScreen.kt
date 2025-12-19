@@ -183,7 +183,7 @@ fun YugaContent(
                 HubCard(
                     title = "Navyuga",
                     subtitle = null,
-                    iconRes = R.drawable.blue, // Using blue resource
+                    iconRes = R.drawable.navyuga, // Using blue resource
                     isActive = true,
                     onClick = onNavyugaClick,
                     modifier = Modifier.weight(1f)
@@ -193,7 +193,7 @@ fun YugaContent(
                 HubCard(
                     title = "Arthyuga",
                     subtitle = "COMING SOON",
-                    iconRes = R.drawable.gold, // Using white resource tinting it grey
+                    iconRes = R.drawable.arthyuga, // Using white resource tinting it grey
                     isActive = false,
                     onClick = { },
                     modifier = Modifier.weight(1f)
@@ -218,7 +218,7 @@ fun RotatingMandala() {
 
     Box(contentAlignment = Alignment.Center) {
         Image(
-            painter = painterResource(id = R.drawable.white),
+            painter = painterResource(id = R.drawable.mahayuga),
             contentDescription = "Mahayuga",
             modifier = Modifier
                 .size(280.dp)
@@ -226,11 +226,11 @@ fun RotatingMandala() {
                 .alpha(0.9f)
         )
         // Center Dot/Core
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .background(Color.White, androidx.compose.foundation.shape.CircleShape)
-        )
+//        Box(
+//            modifier = Modifier
+//                .size(20.dp)
+//                .background(Color.White, androidx.compose.foundation.shape.CircleShape)
+//        )
     }
 }
 

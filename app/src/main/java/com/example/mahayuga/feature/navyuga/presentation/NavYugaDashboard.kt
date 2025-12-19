@@ -78,7 +78,7 @@ fun NavYugaDashboard(
                                     modifier = Modifier.padding(vertical = 4.dp) // Center icon vertically
                                 )
                             },
-                            // REMOVED LABEL for Instagram look
+                            label = { Text(item.label) },
                             selected = isSelected,
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = SelectedIconColor,

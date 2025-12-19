@@ -35,8 +35,6 @@ fun ManagePropertiesScreen(
     viewModel: AdminViewModel = hiltViewModel()
 ) {
     val propertiesState by viewModel.propertiesState.collectAsState()
-
-    // ⚡ STATE: Holds the property currently selected for deletion
     var propertyToDelete by remember { mutableStateOf<PropertyModel?>(null) }
 
     Scaffold(
@@ -54,7 +52,6 @@ fun ManagePropertiesScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
 
-        // ⚡ DELETE CONFIRMATION DIALOG
         if (propertyToDelete != null) {
             AlertDialog(
                 onDismissRequest = { propertyToDelete = null },
@@ -77,9 +74,7 @@ fun ManagePropertiesScreen(
                         Text("Cancel")
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                containerColor = MaterialTheme.colorScheme.surface
             )
         }
 
@@ -92,14 +87,8 @@ fun ManagePropertiesScreen(
                         items(state.data) { property ->
                             ManagePropertyItem(
                                 property = property,
-                                onEdit = {
-                                    // ⚡ NAVIGATE TO EDIT SCREEN
-                                    navController.navigate("admin_edit_property/${property.id}")
-                                },
-                                onDelete = {
-                                    // ⚡ SHOW DIALOG INSTEAD OF DIRECT DELETE
-                                    propertyToDelete = property
-                                }
+                                onEdit = { navController.navigate("admin_edit_property/${property.id}") },
+                                onDelete = { propertyToDelete = property }
                             )
                         }
                     }
@@ -122,31 +111,50 @@ fun ManagePropertyItem(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(property.imageUrls.firstOrNull()),
-                contentDescription = null,
-                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)).background(Color.Gray),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(property.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("₹${property.totalValuation}", style = MaterialTheme.typography.bodyMedium, color = BrandBlue)
-                Text("ROI: ${property.roi}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(modifier = Modifier.padding(12.dp)) {
+            // ⚡ ASSET ID HEADER
+            if (property.assetId.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Surface(
+                        color = BrandBlue.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "ID: ${property.assetId}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BrandBlue,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
 
-            Column {
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, "Edit", tint = BrandBlue)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = rememberAsyncImagePainter(property.imageUrls.firstOrNull()),
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)).background(Color.Gray),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(property.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("₹${property.totalValuation}", style = MaterialTheme.typography.bodyMedium, color = BrandBlue)
+                    Text("ROI: ${property.roi}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, "Delete", tint = ErrorRed)
+
+                Column {
+                    IconButton(onClick = onEdit) {
+                        Icon(Icons.Default.Edit, "Edit", tint = BrandBlue)
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, "Delete", tint = ErrorRed)
+                    }
                 }
             }
         }

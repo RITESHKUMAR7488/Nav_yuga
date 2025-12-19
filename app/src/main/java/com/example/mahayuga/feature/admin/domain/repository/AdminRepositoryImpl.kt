@@ -95,6 +95,9 @@ class AdminRepositoryImpl @Inject constructor(
                 val propArea = parseDouble(propertySnapshot.getString("area"))
                 val propRent = parseLong(propertySnapshot.getString("monthlyRent"))
 
+                // ⚡ NEW: Fetch Asset ID from Property to save in Investment
+                val propAssetId = propertySnapshot.getString("assetId") ?: ""
+
                 // Calculate User's Share
                 val ownershipFraction = if (propValuation > 0) investment.amount.toDouble() / propValuation else 0.0
                 val addedArea = propArea * ownershipFraction
@@ -116,7 +119,9 @@ class AdminRepositoryImpl @Inject constructor(
                 val newPropFunding = currentPropFunding + investment.amount
 
                 // Writes
-                transaction.set(investmentRef, investment.copy(id = investmentRef.id))
+                // ⚡ UPDATE: Save the fetched assetId into the investment document
+                transaction.set(investmentRef, investment.copy(id = investmentRef.id, assetId = propAssetId))
+
                 transaction.update(userRef, mapOf(
                     "totalInvestment" to newInvest,
                     "currentValue" to newVal,
@@ -133,7 +138,6 @@ class AdminRepositoryImpl @Inject constructor(
         }
     }
 
-    // ⚡ NEW: Get User Investments
     override fun getUserInvestments(userId: String): Flow<UiState<List<InvestmentModel>>> = callbackFlow {
         trySend(UiState.Loading)
         val listener = firestore.collection("investments")
@@ -149,7 +153,6 @@ class AdminRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    // ⚡ NEW: Safe Single Delete
     override suspend fun deleteInvestment(investment: InvestmentModel): UiState<String> {
         return try {
             firestore.runTransaction { transaction ->
@@ -172,12 +175,6 @@ class AdminRepositoryImpl @Inject constructor(
                     val currentInvest = userSnapshot.getLong("totalInvestment") ?: 0L
                     val currentVal = userSnapshot.getLong("currentValue") ?: 0L
 
-                    // We need to roughly reverse the area/rent calculation.
-                    // Since we don't store exact area per investment in the investment model,
-                    // we re-calculate based on current property stats or accept a slight drift.
-                    // Ideally, InvestmentModel should store `acquiredArea` and `acquiredRent`.
-                    // For now, we reduce Investment and Value which are exact.
-
                     val newInvest = (currentInvest - investment.amount).coerceAtLeast(0)
                     val newVal = (currentVal - investment.amount).coerceAtLeast(0)
 
@@ -197,7 +194,6 @@ class AdminRepositoryImpl @Inject constructor(
         }
     }
 
-    // ⚡ NEW: Cascade Delete User
     override suspend fun deleteUserConstructively(userId: String): UiState<String> {
         return try {
             // 1. Fetch all investments once (Synchronous fetch)

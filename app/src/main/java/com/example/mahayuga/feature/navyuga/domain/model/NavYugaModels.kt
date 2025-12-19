@@ -7,6 +7,8 @@ data class TenantStory(
 
 data class PropertyModel(
     val id: String = "",
+    // ⚡ NEW: Auto-generated Human Readable ID
+    val assetId: String = "",
     val title: String = "",
     val location: String = "",
     val status: String = "Available", // "Funding", "Funded", "Exited"
@@ -18,10 +20,14 @@ data class PropertyModel(
     val fundedPercent: Int = 0,
     val totalFunding: String = "0",
 
-    // This field can be used for Rent Yield % if needed, or ignored in favor of calculated ROI
+    // ⚡ NEW: Investment Structure Fields
+    val legalWrapper: String = "SPV", // SPV, Trust, LLP, Fund
+    val totalUnits: String = "",      // e.g. "5000"
+    val liquidityRules: String = "",  // e.g. "3 Years Lock-in"
+
     val rentReturn: String = "",
 
-    // ⚡ NEW FIELDS FOR EXITED PROPERTIES
+    // Exited Properties
     val exitPrice: String = "",
     val totalProfit: String = "",
 
@@ -41,7 +47,7 @@ data class PropertyModel(
 
     // Lease Information
     val tenantName: String = "",
-    val occupationPeriod: String = "", // Now represents Years
+    val occupationPeriod: String = "",
     val escalation: String = "",
 
     // Financial Analysis
