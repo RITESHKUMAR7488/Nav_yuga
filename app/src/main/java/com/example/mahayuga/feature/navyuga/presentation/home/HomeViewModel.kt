@@ -27,7 +27,7 @@ data class HomeUiState(
     val userName: String = "",
     val properties: List<PropertyModel> = emptyList(),
     val stories: List<StoryState> = emptyList(),
-    val selectedFilter: String = "Funding", // Added Filter State
+    val selectedFilter: String = "Funding",
     val error: String? = null
 )
 
@@ -43,7 +43,6 @@ class HomeViewModel @Inject constructor(
 
     private var allPropertiesCache: List<PropertyModel> = emptyList()
 
-    // Cache user data to re-apply filters without re-fetching
     private var lastUserName: String = ""
     private var lastLikedIds: Set<String> = emptySet()
     private var lastSeenIds: Set<String> = emptySet()
@@ -84,7 +83,6 @@ class HomeViewModel @Inject constructor(
             }
     }
 
-    // Updated to use cached data and apply filter
     private fun updateUiWithUserData() {
         // 1. Filter Properties based on selected status
         val filteredProperties = if (_uiState.value.selectedFilter == "All") {
@@ -98,15 +96,18 @@ class HomeViewModel @Inject constructor(
             property.copy(isLiked = lastLikedIds.contains(property.id))
         }
 
-        // 3. Create and Sort Stories (Stories usually come from all properties or a specific set, using all here)
-        val stories = allPropertiesCache.map { prop ->
-            StoryState(
-                id = prop.id,
-                imageUrl = if (prop.imageUrls.isNotEmpty()) prop.imageUrls[0] else "",
-                title = prop.title.take(10),
-                isSeen = lastSeenIds.contains(prop.id)
-            )
-        }.sortedBy { it.isSeen }
+        // 3. Create and Sort Stories
+        // ⚡ FILTER: Only show properties that are NOT Exited
+        val stories = allPropertiesCache
+            .filter { it.status != "Exited" } // <--- EXITED FILTER
+            .map { prop ->
+                StoryState(
+                    id = prop.id,
+                    imageUrl = if (prop.imageUrls.isNotEmpty()) prop.imageUrls[0] else "",
+                    title = prop.title.take(10),
+                    isSeen = lastSeenIds.contains(prop.id)
+                )
+            }.sortedBy { it.isSeen }
 
         _uiState.update {
             it.copy(
@@ -117,8 +118,6 @@ class HomeViewModel @Inject constructor(
             )
         }
     }
-
-    // --- Actions ---
 
     fun updateFilter(filter: String) {
         _uiState.update { it.copy(selectedFilter = filter) }

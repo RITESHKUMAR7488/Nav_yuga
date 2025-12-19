@@ -23,7 +23,7 @@ import java.util.Locale
 import kotlin.math.min
 
 // ==========================================
-// ⚡ UNIVERSAL HELPER FUNCTIONS
+// ⚡ UNIVERSAL HELPER FUNCTIONS (RESTORED)
 // ==========================================
 
 fun formatIndian(amount: Double): String {
@@ -45,12 +45,12 @@ fun formatIndian(amount: String?): String {
     if (amount.isNullOrBlank()) return "-"
     // Remove existing commas if any before parsing
     val cleanString = amount.replace(",", "")
-    val d = cleanString.toDoubleOrNull() ?: return amount // Return original if not a number (e.g. "Contact Us")
+    val d = cleanString.toDoubleOrNull() ?: return amount
     return formatIndian(d)
 }
 
 // ==========================================
-// ⚡ VISUAL TRANSFORMATION (Auto-Commas)
+// ⚡ VISUAL TRANSFORMATION (Auto-Commas) (RESTORED)
 // ==========================================
 
 class IndianNumberVisualTransformation : VisualTransformation {
@@ -111,7 +111,7 @@ class IndianNumberVisualTransformation : VisualTransformation {
 }
 
 // ==========================================
-// ⚡ UI COMPONENTS
+// ⚡ ORIGINAL UI COMPONENTS (RESTORED)
 // ==========================================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -138,7 +138,6 @@ fun NavyugaTextField(
             value = value,
             onValueChange = { input ->
                 if (isNumber) {
-                    // Allow digits and at most one dot
                     val filtered = input.filter { it.isDigit() || it == '.' }
                     if (filtered.count { it == '.' } <= 1) {
                         onValueChange(filtered)
@@ -160,14 +159,12 @@ fun NavyugaTextField(
                     }
                 }
             } else null,
-            // ⚡ Apply transformation if it's a number
             visualTransformation = when {
                 isPassword && !passwordVisible -> PasswordVisualTransformation()
                 isNumber -> IndianNumberVisualTransformation()
                 else -> VisualTransformation.None
             },
             keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next) else KeyboardOptions.Default,
-
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = containerColor,
                 unfocusedContainerColor = containerColor,
@@ -221,4 +218,66 @@ fun NavyugaGradientButton(
             }
         }
     }
+}
+
+// ==========================================
+// ⚡ NEW COMPONENT FOR CHATGPT STYLE UI (ADDED)
+// ==========================================
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GptTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    keyboardType: KeyboardType,
+    imeAction: ImeAction,
+    isPassword: Boolean = false
+) {
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    // Dark Mode Colors
+    val InputBackground = Color(0xFF1E1E1E) // Dark Grey Surface
+    val InputBorder = Color(0xFF3E3E3E)     // Slightly lighter border
+    val TextColor = Color(0xFFFFFFFF)       // White Text
+    val LabelColor = Color(0xFF8E8EA0)      // Grey Label
+    val FocusColor = Color(0xFF10A37F)      // Green Focus
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = FocusColor,
+            unfocusedBorderColor = InputBorder,
+            focusedLabelColor = FocusColor,
+            unfocusedLabelColor = LabelColor,
+            cursorColor = FocusColor,
+            // Container Colors
+            focusedContainerColor = InputBackground,
+            unfocusedContainerColor = InputBackground,
+            // Text Colors
+            focusedTextColor = TextColor,
+            unfocusedTextColor = TextColor
+        ),
+        visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+        trailingIcon = if (isPassword) {
+            {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                        contentDescription = null,
+                        tint = LabelColor
+                    )
+                }
+            }
+        } else null,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            imeAction = imeAction
+        ),
+        singleLine = true
+    )
 }

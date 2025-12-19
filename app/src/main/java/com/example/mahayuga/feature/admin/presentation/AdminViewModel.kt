@@ -50,7 +50,6 @@ class AdminViewModel @Inject constructor(
     private val _requestsState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val requestsState: StateFlow<UiState<List<UserModel>>> = _requestsState
 
-    // ⚡ NEW: Specific User Detail States (Safety First)
     private val _selectedUserInvestments = MutableStateFlow<UiState<List<InvestmentModel>>>(UiState.Loading)
     val selectedUserInvestments: StateFlow<UiState<List<InvestmentModel>>> = _selectedUserInvestments
 
@@ -90,7 +89,7 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // --- USER DETAIL & DELETE LOGIC (Safety First) ---
+    // --- USER DETAIL & DELETE LOGIC ---
     fun fetchInvestmentsForUser(userId: String) {
         viewModelScope.launch {
             _selectedUserInvestments.value = UiState.Loading
@@ -104,7 +103,6 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             val result = adminRepository.deleteInvestment(investment)
             _deleteOperationState.emit(result)
-            // Refresh details after delete
             fetchInvestmentsForUser(investment.userId)
         }
     }
@@ -157,7 +155,7 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch { adminRepository.rejectUserRequest(uid) }
     }
 
-    // --- RESTORED: PROPERTY MANAGEMENT (Fixes your error) ---
+    // --- PROPERTY MANAGEMENT ---
     fun deleteProperty(propertyId: String) {
         viewModelScope.launch {
             propertyRepository.deleteProperty(propertyId)
@@ -204,6 +202,7 @@ class AdminViewModel @Inject constructor(
         }
     }
 
+    // ⚡ UPDATED: Now accepts exitPrice and totalProfit
     fun listNewProperty(
         title: String, description: String, type: String, status: String,
         address: String, city: String, state: String,
@@ -211,6 +210,7 @@ class AdminViewModel @Inject constructor(
         totalValuation: String, minInvest: String, roi: Double, fundedPercent: Int,
         monthlyRent: String, grossAnnualRent: String, annualPropertyTax: String,
         tenantName: String, occupationPeriod: String, escalation: String,
+        exitPrice: String, totalProfit: String, // ⚡ NEW PARAMS
         imageUris: List<Uri>
     ) {
         viewModelScope.launch {
@@ -233,6 +233,8 @@ class AdminViewModel @Inject constructor(
                     totalValuation = totalValuation, minInvest = minInvest, roi = roi, fundedPercent = fundedPercent,
                     monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
                     tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = escalation,
+                    // ⚡ SAVE NEW FIELDS
+                    exitPrice = exitPrice, totalProfit = totalProfit,
                     imageUrls = uploadedImageUrls
                 )
 

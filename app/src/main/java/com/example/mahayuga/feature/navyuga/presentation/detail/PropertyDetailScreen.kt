@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.feature.auth.presentation.components.formatIndian // ⚡ IMPORT
+import com.example.mahayuga.feature.auth.presentation.components.formatIndian
 
 private val DeepDarkBlue = Color(0xFF0F172A)
 private val BrandBlue = Color(0xFF4361EE)
@@ -86,7 +86,7 @@ fun PropertyDetailScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
             ) {
-                // ================== CAROUSEL ==================
+                // CAROUSEL
                 Box(modifier = Modifier.height(300.dp).fillMaxWidth()) {
                     val images = if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
                     val pagerState = rememberPagerState(pageCount = { images.size })
@@ -134,7 +134,7 @@ fun PropertyDetailScreen(
                     }
                 }
 
-                // ================== CONTENT ==================
+                // CONTENT
                 Column(modifier = Modifier.padding(24.dp)) {
 
                     Row(
@@ -180,12 +180,12 @@ fun PropertyDetailScreen(
                             .padding(vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        // ⚡ FORMATTED
                         StatItem(label = "Price", value = "₹${formatIndian(property.totalValuation)}")
                         VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
 
-                        val displayRent = if (property.rentReturn.isEmpty()) "₹15k" else "₹${formatIndian(property.rentReturn)}"
-                        StatItem(label = "Rent", value = displayRent)
+                        // Show Rent
+                        val rentToShow = if(property.monthlyRent.isNotEmpty()) property.monthlyRent else "0"
+                        StatItem(label = "Rent", value = "₹${formatIndian(rentToShow)}")
 
                         VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
                         StatItem(label = "ROI", value = "${property.roi}%", isHighlight = true)
@@ -201,7 +201,7 @@ fun PropertyDetailScreen(
 
                     SectionTitle("Lease Details")
                     InfoRow("Tenant", property.tenantName)
-                    InfoRow("Occupancy", property.occupationPeriod)
+                    InfoRow("Occupancy", "${property.occupationPeriod} Years") // Explicitly append Years for clarity
                     InfoRow("Escalation", property.escalation)
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -213,7 +213,6 @@ fun PropertyDetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            // ⚡ FORMATTED
                             InfoRow("Monthly Rent", "₹${formatIndian(property.monthlyRent)}")
                             InfoRow("Gross Annual", "₹${formatIndian(property.grossAnnualRent)}")
                             InfoRow("Property Tax", "₹${formatIndian(property.annualPropertyTax)}")
@@ -307,10 +306,11 @@ fun InvestBottomBar(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("Total Price", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.6f))
-                    // ⚡ FORMATTED
-                    Text("₹${formatIndian(property.totalValuation)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                    // ⚡ FIX: Show Fractional (Min Investment) here
+                    Text("Min Investment", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.6f))
+                    Text("₹${formatIndian(property.minInvest)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
                 }
+
                 Button(
                     onClick = onInvestClicked,
                     shape = RoundedCornerShape(12.dp),

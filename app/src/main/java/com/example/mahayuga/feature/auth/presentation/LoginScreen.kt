@@ -1,154 +1,133 @@
 package com.example.mahayuga.feature.auth.presentation
 
-import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.mahayuga.R
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.auth.presentation.components.NavyugaGradientButton
-import com.example.mahayuga.feature.auth.presentation.components.NavyugaTextField
-import com.example.mahayuga.ui.theme.*
+import com.example.mahayuga.feature.auth.data.model.UserModel // Import UserModel
+import com.example.mahayuga.feature.auth.presentation.components.GptTextField
 
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    NavyugaTheme {
-        LoginScreen(
-            navController = rememberNavController(),
-            isDarkTheme = false,
-            onThemeToggle = {}
-        )
-    }
-}
+// Dark Theme Colors
+private val GptBlack = Color(0xFF000000)
+private val GptTextWhite = Color(0xFFFFFFFF)
+private val GptTextGrey = Color(0xFFC5C5D2)
+private val GptBrandGreen = Color(0xFF10A37F)
+
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel(),
-    isDarkTheme: Boolean,
-    onThemeToggle: () -> Unit
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val loginState by viewModel.loginState.collectAsState()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val loginState by viewModel.loginState.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
-            val user = (loginState as UiState.Success).data
-            if (user.role == "admin") {
-                navController.navigate("admin_dashboard") { popUpTo("login") { inclusive = true } }
+            // ⚡ FIXED: Check Role to determine destination
+            val user = (loginState as UiState.Success<UserModel>).data
+
+            val destination = if (user.role == "admin") {
+                "admin_dashboard"
             } else {
-                navController.navigate("super_app_hub") { popUpTo("login") { inclusive = true } }
+                "super_app_hub"
             }
-        } else if (loginState is UiState.Failure) {
-            Toast.makeText(context, (loginState as UiState.Failure).message, Toast.LENGTH_LONG).show()
+
+            navController.navigate(destination) {
+                // Clear back stack so they can't go back to login/welcome
+                popUpTo("welcome") { inclusive = true }
+            }
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
+    val isLoading = loginState is UiState.Loading
+    val errorMessage = (loginState as? UiState.Failure)?.message
 
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(GptBlack)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(60.dp))
 
-            // Theme Toggle
-            IconButton(
-                onClick = onThemeToggle,
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-            ) {
-                Icon(
-                    // Swaps icon based on state
-                    painter = painterResource(id = if (isDarkTheme) R.drawable.ic_sun else R.drawable.ic_moon),
-                    contentDescription = "Toggle Theme",
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
+        Text(
+            text = "Welcome back",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = GptTextWhite
+            )
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        GptTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = "Email address",
+            keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        GptTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = "Password",
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+            isPassword = true
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        // Continue Button
+        Button(
+            onClick = { viewModel.login(email, password) },
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = GptTextWhite,
+                contentColor = GptBlack
+            ),
+            shape = MaterialTheme.shapes.medium,
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(color = GptBlack, modifier = Modifier.size(24.dp))
+            } else {
+                Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
+        }
 
-            Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.white),
-                    contentDescription = "Logo",
-                    modifier = Modifier
-                        .size(100.dp)
-                        .background(MaterialTheme.colorScheme.surface, shape = androidx.compose.foundation.shape.CircleShape)
-                        .padding(16.dp)
-                )
+        Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Welcome Back",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "Login to manage your portfolio",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                NavyugaTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = "Email Address",
-                    icon = Icons.Default.Email
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                NavyugaTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = "Password",
-                    icon = Icons.Default.Lock,
-                    isPassword = true
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                NavyugaGradientButton(
-                    text = "Secure Login",
-                    isLoading = loginState is UiState.Loading,
-                    onClick = { viewModel.login(email, password) }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row {
-                    Text(text = "New to Navyuga? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = "Create Account",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { navController.navigate("register") }
-                    )
-                }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Don't have an account?", color = GptTextGrey)
+            TextButton(onClick = { navController.navigate("register") }) {
+                Text("Sign up", color = GptBrandGreen, fontWeight = FontWeight.Bold)
             }
         }
     }

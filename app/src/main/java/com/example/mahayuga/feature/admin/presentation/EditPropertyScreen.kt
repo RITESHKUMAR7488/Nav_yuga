@@ -69,14 +69,15 @@ fun EditPropertyScreen(
     var tenantName by remember { mutableStateOf("") }
     var occupationPeriod by remember { mutableStateOf("") }
 
+    // ⚡ NEW: Exited Fields State
+    var exitPrice by remember { mutableStateOf("") }
+    var totalProfit by remember { mutableStateOf("") }
+
     // Escalation split fields
     var escalationPercent by remember { mutableStateOf("") }
     var escalationYears by remember { mutableStateOf("") }
 
     // ⚡ IMAGE MANAGEMENT
-    // We maintain two lists:
-    // 1. keptImages: URLs of images already on server that user kept
-    // 2. newImageUris: Local Uris of new images user added
     var keptImages by remember { mutableStateOf<List<String>>(emptyList()) }
     var newImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var originalProperty by remember { mutableStateOf<PropertyModel?>(null) }
@@ -108,8 +109,11 @@ fun EditPropertyScreen(
                 tenantName = it.tenantName
                 occupationPeriod = it.occupationPeriod
 
-                // Parse Escalation String back to fields
-                // Format expected: "5% (Every 3 Years)"
+                // ⚡ LOAD EXITED FIELDS
+                exitPrice = it.exitPrice
+                totalProfit = it.totalProfit
+
+                // Parse Escalation
                 val regex = """(\d+)% \(Every (\d+) Years\)""".toRegex()
                 val match = regex.find(it.escalation)
                 if (match != null) {
@@ -117,25 +121,21 @@ fun EditPropertyScreen(
                     escalationYears = match.groupValues[2]
                 }
 
-                keptImages = it.imageUrls // Load existing images
+                keptImages = it.imageUrls
             }
         }
     }
 
     // ================== ⚡ COROUTINE: AUTO-CALCULATION ==================
-    // Copied from AddPropertyScreen to maintain consistency
     LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
         val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
         val tax = annualPropertyTax.replace(",", "").toDoubleOrNull() ?: 0.0
 
         if (rent > 0) {
-            // 1. Calculate Gross Annual Rent (Monthly * 12)
             val calculatedAnnualRent = rent * 12
             grossAnnualRent = String.format("%.0f", calculatedAnnualRent)
 
-            // 2. Calculate ROI %
-            // Formula: ((Gross Annual Rent - Annual Tax) / Total Price) * 100
             if (price > 0) {
                 val netIncome = calculatedAnnualRent - tax
                 val calculatedRoi = (netIncome / price) * 100
@@ -144,12 +144,10 @@ fun EditPropertyScreen(
         }
     }
 
-    // Image Launcher
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetMultipleContents()) { uris ->
         newImageUris = newImageUris + uris
     }
 
-    // Handle Upload/Update Result
     LaunchedEffect(uploadState) {
         if (uploadState is UiState.Success) {
             Toast.makeText(context, (uploadState as UiState.Success).data, Toast.LENGTH_LONG).show()
@@ -181,12 +179,11 @@ fun EditPropertyScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // IMAGES SECTION (Kept as is)
+            // IMAGES SECTION (Same as before)
             Text("Property Images", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // 1. Existing Images (Server)
                 items(keptImages) { url ->
                     Box(modifier = Modifier.size(100.dp)) {
                         Image(
@@ -203,8 +200,6 @@ fun EditPropertyScreen(
                         }
                     }
                 }
-
-                // 2. New Images (Local)
                 items(newImageUris) { uri ->
                     Box(modifier = Modifier.size(100.dp)) {
                         Image(
@@ -221,8 +216,6 @@ fun EditPropertyScreen(
                         }
                     }
                 }
-
-                // 3. Add Button
                 item {
                     Button(
                         onClick = { launcher.launch("image/*") },
@@ -257,6 +250,7 @@ fun EditPropertyScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
+            // ⚡ STATUS - Triggers Exited Logic
             NavyugaDropdown(
                 label = "Status",
                 options = listOf("Funding", "Funded", "Exited"),
@@ -265,6 +259,20 @@ fun EditPropertyScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // ⚡ EXITED PROPERTY FIELDS (EDIT MODE)
+            if (status == "Exited") {
+                SectionHeader("Exit Details")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        NavyugaTextField(value = exitPrice, onValueChange = { exitPrice = it }, label = "Exit Price", icon = Icons.Default.MonetizationOn, isNumber = true)
+                    }
+                    Box(Modifier.weight(1f)) {
+                        NavyugaTextField(value = totalProfit, onValueChange = { totalProfit = it }, label = "Total Profit", icon = Icons.Default.TrendingUp, isNumber = true)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // ================== 2. SPECIFICATIONS ==================
             SectionHeader("Specifications")
@@ -284,7 +292,7 @@ fun EditPropertyScreen(
             SectionHeader("Lease Information")
             NavyugaTextField(value = tenantName, onValueChange = { tenantName = it }, label = "Tenant Name", icon = Icons.Default.Person)
             Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period (Months)", icon = Icons.Default.Timer, isNumber = true)
+            NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period (Years)", icon = Icons.Default.Timer, isNumber = true)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -347,7 +355,9 @@ fun EditPropertyScreen(
                             roi = roi.toDoubleOrNull() ?: 0.0,
                             fundedPercent = fundedPercent.toIntOrNull() ?: 0,
                             monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
-                            tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = finalEscalation
+                            tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = finalEscalation,
+                            // ⚡ UPDATE EXITED FIELDS
+                            exitPrice = exitPrice, totalProfit = totalProfit
                         )
 
                         viewModel.updateProperty(

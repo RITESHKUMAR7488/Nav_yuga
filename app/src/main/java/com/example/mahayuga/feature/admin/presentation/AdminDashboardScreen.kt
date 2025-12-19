@@ -11,20 +11,47 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.ui.theme.*
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun AdminDashboardScreen(
     navController: NavController,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    viewModel: AdminViewModel = hiltViewModel()
 ) {
+    val usersState by viewModel.usersState.collectAsState()
+    val propertiesState by viewModel.propertiesState.collectAsState()
+
+    // ⚡ REAL STATS CALCULATION
+    val activePropertiesCount = if (propertiesState is UiState.Success) {
+        (propertiesState as UiState.Success).data.count { it.status != "Exited" }.toString()
+    } else "..."
+
+    val totalUsersCount = if (usersState is UiState.Success) {
+        (usersState as UiState.Success).data.size.toString()
+    } else "..."
+
+    // Calculate Total Volume (Sum of totalValuation of all properties)
+    val totalVolume = if (propertiesState is UiState.Success) {
+        val total = (propertiesState as UiState.Success).data.sumOf {
+            it.totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
+        }
+        "₹${formatLargeNumber(total)}"
+    } else "..."
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
@@ -50,14 +77,14 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. STATS ROW
+            // 2. STATS ROW (REAL DATA)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AdminStatCard("Active Props", "12", SuccessGreen, Modifier.weight(1f))
-                AdminStatCard("Total Users", "1,240", BrandBlue, Modifier.weight(1f))
-                AdminStatCard("Volume", "₹4.5Cr", CyanAccent, Modifier.weight(1f))
+                AdminStatCard("Active Props", activePropertiesCount, SuccessGreen, Modifier.weight(1f))
+                AdminStatCard("Total Users", totalUsersCount, BrandBlue, Modifier.weight(1f))
+                AdminStatCard("Asset Vol", totalVolume, CyanAccent, Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -76,7 +103,7 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ⚡ NEW BUTTON: Manage Properties
+            // Manage Properties
             AdminActionCard(
                 title = "Manage Properties",
                 subtitle = "Edit prices, status, or delete",
@@ -86,7 +113,7 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ⚡ NEW BUTTON: Manage Users
+            // Manage Users
             AdminActionCard(
                 title = "Manage Users",
                 subtitle = "View investors, block accounts",
@@ -129,6 +156,15 @@ fun AdminDashboardScreen(
                 Text("Logout System", fontWeight = FontWeight.Bold)
             }
         }
+    }
+}
+
+// Helper to format Cr/L
+fun formatLargeNumber(value: Double): String {
+    return when {
+        value >= 10000000 -> String.format("%.1fCr", value / 10000000)
+        value >= 100000 -> String.format("%.1fL", value / 100000)
+        else -> String.format("%.0f", value)
     }
 }
 
