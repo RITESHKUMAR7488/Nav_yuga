@@ -48,36 +48,41 @@ fun PropertyDetailScreen(
     val context = LocalContext.current
 
     if (uiState.isLoading) {
-        Box(Modifier.fillMaxSize().background(DeepDarkBlue), contentAlignment = Alignment.Center) {
+        Box(Modifier
+            .fillMaxSize()
+            .background(DeepDarkBlue), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = BrandBlue)
         }
     } else if (property != null) {
+        val isExited = property.status == "Exited"
+        val isFunded = property.status == "Funded"
+        val showBottomBar = !isExited && !isFunded
+
         Scaffold(
             containerColor = DeepDarkBlue,
             bottomBar = {
-                InvestBottomBar(
-                    property = property,
-                    onInvestClicked = {
-                        try {
-                            val message = "Hello, I am interested in investing in *${property.title}*. Please provide more details."
-                            val url = "https://api.whatsapp.com/send?phone=$supportNumber&text=${Uri.encode(message)}"
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                data = Uri.parse(url)
-                                setPackage("com.whatsapp")
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
+                if (showBottomBar) {
+                    InvestBottomBar(
+                        property = property,
+                        onInvestClicked = {
                             try {
-                                val message = "Hello, I am interested in investing in *${property.title}*."
-                                val url = "https://wa.me/$supportNumber?text=${Uri.encode(message)}"
-                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(browserIntent)
-                            } catch (e2: Exception) {
-                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT).show()
+                                val message =
+                                    "Hello, I am interested in investing in *${property.title}*."
+                                val url =
+                                    "https://api.whatsapp.com/send?phone=$supportNumber&text=${
+                                        Uri.encode(message)
+                                    }"
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = Uri.parse(url); setPackage("com.whatsapp")
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
         ) { innerPadding ->
             Column(
@@ -86,12 +91,16 @@ fun PropertyDetailScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
             ) {
-                // CAROUSEL
-                Box(modifier = Modifier.height(300.dp).fillMaxWidth()) {
-                    val images = if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
+                Box(modifier = Modifier
+                    .height(300.dp)
+                    .fillMaxWidth()) {
+                    val images =
+                        if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
                     val pagerState = rememberPagerState(pageCount = { images.size })
-
-                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
                         AsyncImage(
                             model = images[page],
                             contentDescription = null,
@@ -99,80 +108,93 @@ fun PropertyDetailScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     }
-
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp)
                             .align(Alignment.TopCenter)
-                            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.7f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
                     )
-
                     IconButton(
                         onClick = onNavigateBack,
-                        modifier = Modifier.padding(top = 16.dp, start = 8.dp).align(Alignment.TopStart)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
-                    }
-
-                    if (images.size > 1) {
-                        Row(
-                            Modifier
-                                .height(50.dp)
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            repeat(images.size) { iteration ->
-                                val color = if (pagerState.currentPage == iteration) BrandBlue else Color.White.copy(alpha = 0.5f)
-                                Box(modifier = Modifier.padding(4.dp).clip(CircleShape).background(color).size(if (pagerState.currentPage == iteration) 10.dp else 8.dp))
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-                    }
+                        modifier = Modifier
+                            .padding(top = 16.dp, start = 8.dp)
+                            .align(Alignment.TopStart)
+                    ) { Icon(Icons.Default.ArrowBack, "Back", tint = Color.White) }
                 }
-
-                // CONTENT
                 Column(modifier = Modifier.padding(24.dp)) {
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(property.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(property.fullLocation, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f))
+                            Text(
+                                property.title,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            ); Spacer(modifier = Modifier.height(4.dp)); Text(
+                            property.fullLocation,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
                         }
                         SuggestionChip(
                             onClick = {},
-                            label = { Text(property.type, color = BrandBlue) },
-                            colors = SuggestionChipDefaults.suggestionChipColors(containerColor = BrandBlue.copy(alpha = 0.1f))
+                            label = {
+                                Text(
+                                    property.status,
+                                    color = if (isExited) Color.Red else BrandBlue
+                                )
+                            },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = if (isExited) Color.Red.copy(0.1f) else BrandBlue.copy(
+                                    alpha = 0.1f
+                                )
+                            )
                         )
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Funded", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.7f))
-                        Text("${property.fundedPercent}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = BrandBlue)
+                    if (!isExited) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Funded",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(0.7f)
+                            ); Text(
+                            "${property.fundedPercent}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandBlue
+                        )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { property.fundedPercent / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = BrandBlue,
+                            trackColor = Color.White.copy(alpha = 0.1f)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { property.fundedPercent / 100f },
-                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                        color = BrandBlue,
-                        trackColor = Color.White.copy(alpha = 0.1f),
-                    )
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
+                    // Stats Box
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,70 +202,162 @@ fun PropertyDetailScreen(
                             .padding(vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        StatItem(label = "Price", value = "₹${formatIndian(property.totalValuation)}")
-                        VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
-
-                        // Show Rent
-                        val rentToShow = if(property.monthlyRent.isNotEmpty()) property.monthlyRent else "0"
-                        StatItem(label = "Rent", value = "₹${formatIndian(rentToShow)}")
-
-                        VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
-                        StatItem(label = "ROI", value = "${property.roi}%", isHighlight = true)
+                        if (isExited) {
+                            StatItem(
+                                label = "Entry",
+                                value = "₹${formatIndian(property.totalValuation)}"
+                            )
+                            VerticalDivider(
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .width(1.dp),
+                                color = Color.White.copy(alpha = 0.1f)
+                            )
+                            StatItem(label = "Exit", value = "₹${formatIndian(property.exitPrice)}")
+                            VerticalDivider(
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .width(1.dp),
+                                color = Color.White.copy(alpha = 0.1f)
+                            )
+                            // ⚡ PROFIT -> WHITE (Not Green)
+                            StatItem(
+                                label = "Profit",
+                                value = "₹${formatIndian(property.totalProfit)}",
+                                isHighlight = false
+                            )
+                        } else {
+                            StatItem(
+                                label = "Price",
+                                value = "₹${formatIndian(property.totalValuation)}"
+                            )
+                            VerticalDivider(
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .width(1.dp),
+                                color = Color.White.copy(alpha = 0.1f)
+                            )
+                            val rentToShow =
+                                if (property.monthlyRent.isNotEmpty()) property.monthlyRent else "0"
+                            StatItem(label = "Rent", value = "₹${formatIndian(rentToShow)}")
+                            VerticalDivider(
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .width(1.dp),
+                                color = Color.White.copy(alpha = 0.1f)
+                            )
+                            // ⚡ ROI -> WHITE (Not Green)
+                            StatItem(label = "ROI", value = "${property.roi}%", isHighlight = false)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
                     SectionTitle("Property Overview")
-                    GridItem(label1 = "Area", value1 = property.area, label2 = "Floor", value2 = property.floor)
-                    GridItem(label1 = "Age", value1 = property.age, label2 = "Parking", value2 = property.carPark)
+                    GridItem(
+                        label1 = "Area",
+                        value1 = property.area,
+                        label2 = "Floor",
+                        value2 = property.floor
+                    )
+                    GridItem(
+                        label1 = "Age",
+                        value1 = property.age,
+                        label2 = "Parking",
+                        value2 = property.carPark
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    SectionTitle("Lease Details")
-                    InfoRow("Tenant", property.tenantName)
-                    InfoRow("Occupancy", "${property.occupationPeriod} Years") // Explicitly append Years for clarity
-                    InfoRow("Escalation", property.escalation)
+                    // ⚡ EXITED: Exit Performance
+                    if (isExited) {
+                        SectionTitle("Exit Performance")
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White.copy(
+                                    alpha = 0.05f
+                                )
+                            ), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                InfoRow(
+                                    "Entry Price",
+                                    "₹${formatIndian(property.totalValuation)}"
+                                ); InfoRow(
+                                "Exit Price",
+                                "₹${formatIndian(property.exitPrice)}"
+                            ); Divider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = Color.White.copy(alpha = 0.1f)
+                            ); InfoRow(
+                                "Total Profit",
+                                "₹${formatIndian(property.totalProfit)}",
+                                isBold = true,
+                                valueColor = Color.White
+                            )
+                            }
+                        }
+                    } else {
+                        // ⚡ ACTIVE: Restored Lease & Financials
+                        SectionTitle("Lease Details")
+                        InfoRow("Tenant", property.tenantName)
+                        InfoRow("Occupancy", "${property.occupationPeriod} Years")
+                        InfoRow("Escalation", property.escalation)
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    SectionTitle("Financial Breakdown")
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            InfoRow("Monthly Rent", "₹${formatIndian(property.monthlyRent)}")
-                            InfoRow("Gross Annual", "₹${formatIndian(property.grossAnnualRent)}")
-                            InfoRow("Property Tax", "₹${formatIndian(property.annualPropertyTax)}")
-                            Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.1f))
-                            InfoRow("Net ROI", "${property.roi}%", isBold = true, valueColor = BrandBlue)
+                        SectionTitle("Financial Breakdown")
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White.copy(
+                                    alpha = 0.05f
+                                )
+                            ), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                InfoRow(
+                                    "Monthly Rent",
+                                    "₹${formatIndian(property.monthlyRent)}"
+                                ); InfoRow(
+                                "Gross Annual",
+                                "₹${formatIndian(property.grossAnnualRent)}"
+                            ); InfoRow(
+                                "Property Tax",
+                                "₹${formatIndian(property.annualPropertyTax)}"
+                            ); Divider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = Color.White.copy(alpha = 0.1f)
+                            ); InfoRow(
+                                "Net ROI",
+                                "${property.roi}%",
+                                isBold = true,
+                                valueColor = Color.White
+                            )
+                            }
                         }
                     }
-
                     Spacer(modifier = Modifier.height(24.dp))
-
                     SectionTitle("Description")
                     Text(
                         property.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f),
-                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
+                        color = Color.White.copy(alpha = 0.8f)
                     )
-
                     Spacer(modifier = Modifier.height(100.dp))
                 }
             }
         }
     } else {
-        Box(Modifier.fillMaxSize().background(DeepDarkBlue), contentAlignment = Alignment.Center) {
-            Text("Property not found.", color = Color.White)
-        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(DeepDarkBlue),
+            contentAlignment = Alignment.Center
+        ) { Text("Property not found.", color = Color.White) }
     }
 }
 
-// --- HELPER COMPONENTS ---
-
+// Helpers
 @Composable
 fun StatItem(label: String, value: String, isHighlight: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -251,47 +365,75 @@ fun StatItem(label: String, value: String, isHighlight: Boolean = false) {
             value,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = Color.White
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+        ); Spacer(modifier = Modifier.height(4.dp)); Text(
+        label,
+        style = MaterialTheme.typography.labelSmall,
+        color = Color.White.copy(alpha = 0.6f)
+    )
     }
 }
 
 @Composable
 fun SectionTitle(title: String) {
-    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(bottom = 12.dp))
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = Color.White,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
 }
 
 @Composable
 fun GridItem(label1: String, value1: String, label2: String, value2: String) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+    Row(Modifier
+        .fillMaxWidth()
+        .padding(bottom = 12.dp)) {
         Column(Modifier.weight(1f)) {
-            Text(label1, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.5f))
-            Text(value1, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = Color.White)
+            Text(
+                label1,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(0.5f)
+            ); Text(value1, style = MaterialTheme.typography.bodyLarge, color = Color.White)
         }
         Column(Modifier.weight(1f)) {
-            Text(label2, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.5f))
-            Text(value2, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = Color.White)
+            Text(
+                label2,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(0.5f)
+            ); Text(value2, style = MaterialTheme.typography.bodyLarge, color = Color.White)
         }
     }
 }
 
 @Composable
-fun InfoRow(label: String, value: String, isBold: Boolean = false, valueColor: Color = Color.White) {
+fun InfoRow(
+    label: String,
+    value: String,
+    isBold: Boolean = false,
+    valueColor: Color = Color.White
+) {
     Row(
-        Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f))
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal, color = valueColor)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(0.7f)
+        ); Text(
+        value,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
+        color = valueColor
+    )
     }
 }
 
 @Composable
-fun InvestBottomBar(
-    property: PropertyModel,
-    onInvestClicked: () -> Unit
-) {
+fun InvestBottomBar(property: PropertyModel, onInvestClicked: () -> Unit) {
     Surface(
         color = DeepDarkBlue,
         tonalElevation = 8.dp,
@@ -299,26 +441,33 @@ fun InvestBottomBar(
         modifier = Modifier.navigationBarsPadding()
     ) {
         Column {
-            Divider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    // ⚡ FIX: Show Fractional (Min Investment) here
-                    Text("Min Investment", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.6f))
-                    Text("₹${formatIndian(property.minInvest)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Button(
-                    onClick = onInvestClicked,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
-                ) {
-                    Text("Invest Now", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                }
-            }
+            Divider(
+                color = Color.White.copy(alpha = 0.1f),
+                thickness = 1.dp
+            ); Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    "Min Investment",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.6f)
+                ); Text(
+                "₹${formatIndian(property.minInvest)}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            }; Button(
+            onClick = onInvestClicked,
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+        ) { Text("Invest Now", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) }
+        }
         }
     }
 }

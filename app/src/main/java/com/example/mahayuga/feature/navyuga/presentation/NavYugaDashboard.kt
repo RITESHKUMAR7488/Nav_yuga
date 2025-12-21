@@ -1,4 +1,5 @@
 package com.example.mahayuga.feature.navyuga.presentation
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -22,15 +23,14 @@ import com.example.mahayuga.feature.navyuga.presentation.home.HomeScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
-import com.example.mahayuga.navigation.PlaceholderScreen
 import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
+import com.example.mahayuga.feature.navyuga.presentation.trade.TradeScreen
 
-// --- Custom Colors for the Instagram Look ---
-private val NavBackground = Color.Black // Distinct from app background
+private val NavBackground = Color.Black
 private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
 private val SelectedIconColor = Color.White
 private val IndicatorColor = Color.Transparent
-private val BorderColor = Color.White.copy(alpha = 0.15f) // Faint whitish border
+private val BorderColor = Color.White.copy(alpha = 0.15f)
 
 @Composable
 fun NavYugaDashboard(
@@ -44,37 +44,42 @@ fun NavYugaDashboard(
     val items = listOf(
         BottomNavItem("Home", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
         BottomNavItem("Search", "ay_search", Icons.Filled.Search, Icons.Outlined.Search),
-        BottomNavItem("Invest", "ay_invest", Icons.Filled.Paid, Icons.Outlined.Paid),
-        BottomNavItem("Reels", "ay_reels", Icons.Filled.SlowMotionVideo, Icons.Outlined.SlowMotionVideo),
+        BottomNavItem("Trade", "ay_trade", Icons.Filled.Paid, Icons.Outlined.Paid),
+        BottomNavItem(
+            "Reels",
+            "ay_reels",
+            Icons.Filled.SlowMotionVideo,
+            Icons.Outlined.SlowMotionVideo
+        ),
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
     Scaffold(
+        containerColor = Color.Black,
         bottomBar = {
-            // Column to stack Border + Navbar
+            // ⚡ COMPACT BOTTOM BAR
             Column {
-                HorizontalDivider(thickness = 0.5.dp, color = BorderColor) // The faint border
-
+                HorizontalDivider(thickness = 0.5.dp, color = BorderColor)
                 NavigationBar(
                     containerColor = NavBackground,
                     contentColor = Color.White,
                     tonalElevation = 0.dp,
-                    modifier = Modifier.padding(top = 0.dp)
+                    windowInsets = NavigationBarDefaults.windowInsets // Respect insets
                 ) {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = navBackStackEntry?.destination?.route
 
                     items.forEach { item ->
-                        // Check if the current route matches the item route OR if it's a sub-route (like search results)
-                        val isSelected = currentRoute == item.route ||
-                                (item.route == "ay_search" && currentRoute?.startsWith("search_results") == true)
-
+                        val isSelected =
+                            currentRoute == item.route || (item.route == "ay_search" && currentRoute?.startsWith(
+                                "search_results"
+                            ) == true)
                         NavigationBarItem(
                             icon = {
                                 Icon(
                                     imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                                     contentDescription = item.label,
-                                    modifier = Modifier.padding(vertical = 4.dp) // Center icon vertically
+                                    modifier = Modifier.padding(vertical = 4.dp)
                                 )
                             },
                             label = { Text(item.label) },
@@ -87,15 +92,9 @@ fun NavYugaDashboard(
                                 unselectedTextColor = UnselectedIconColor
                             ),
                             onClick = {
-                                if (isSelected) {
-                                    // ⚡ RESET LOGIC: If clicking the active tab again...
-                                    // And we are NOT at the root of that tab (e.g. on search_results)
-                                    // Then pop back to the root (ay_search)
-                                    if (currentRoute != item.route) {
-                                        navController.popBackStack(item.route, inclusive = false)
-                                    }
+                                if (isSelected && currentRoute != item.route) {
+                                    navController.popBackStack(item.route, inclusive = false)
                                 } else {
-                                    // Normal Navigation
                                     navController.navigate(item.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true
@@ -118,49 +117,32 @@ fun NavYugaDashboard(
         ) {
             composable("ay_home") {
                 HomeScreen(
-                    onNavigateToDetail = { id ->
-                        rootNavController.navigate("property_detail/$id")
-                    },
-                    onNavigateBack = {
-                        rootNavController.popBackStack()
-                    },
-                    onRoiClick = {
-                        rootNavController.navigate("roi_calculator")
-                    }
-                )
+                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
+                    onNavigateBack = { rootNavController.popBackStack() },
+                    onRoiClick = { rootNavController.navigate("roi_calculator") })
             }
-
             composable("ay_search") {
-                SearchScreen(navController = navController)
+                SearchScreen(
+                    navController = navController,
+                    onRoiClick = { rootNavController.navigate("roi_calculator") })
             }
-
-            // Search Results Route
             composable(
-                route = "search_results/{country}/{city}",
+                "search_results/{country}/{city}",
                 arguments = listOf(
                     navArgument("country") { type = NavType.StringType },
-                    navArgument("city") { type = NavType.StringType }
-                )
+                    navArgument("city") { type = NavType.StringType })
             ) { entry ->
                 val country = entry.arguments?.getString("country") ?: "India"
                 val city = entry.arguments?.getString("city") ?: "All Cities"
-
                 SearchResultsScreen(
                     country = country,
                     city = city,
-                    onNavigateBack = {
-                        navController.popBackStack() // Pops back to search input
-                    },
-                    onNavigateToDetail = { id ->
-                        rootNavController.navigate("property_detail/$id") // Details go full screen
-                    }
-                )
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
+                    onRoiClick = { rootNavController.navigate("roi_calculator") })
             }
-
-            composable("ay_invest") { PlaceholderScreen("Invest (Coming Soon)") }
-            composable("ay_reels") {
-                ReelsScreen()
-            }
+            composable("ay_trade") { TradeScreen() }
+            composable("ay_reels") { ReelsScreen() }
             composable("ay_profile") {
                 ProfileScreen(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },

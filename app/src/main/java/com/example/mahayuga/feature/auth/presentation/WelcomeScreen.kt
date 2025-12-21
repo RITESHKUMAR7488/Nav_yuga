@@ -22,16 +22,12 @@ import androidx.navigation.NavController
 import com.example.mahayuga.R
 import kotlinx.coroutines.delay
 
-// Dark Theme Colors
 private val GptBlack = Color(0xFF000000)
 private val GptDarkSurface = Color(0xFF1E1E1E)
 private val GptTextWhite = Color(0xFFFFFFFF)
-private val GptTextGrey = Color(0xFFC5C5D2)
 
 @Composable
-fun WelcomeScreen(
-    navController: NavController
-) {
+fun WelcomeScreen(navController: NavController) {
     var showContent by remember { mutableStateOf(false) }
     val textToType = "Welcome to Mahayuga"
     var displayedText by remember { mutableStateOf("") }
@@ -47,36 +43,26 @@ fun WelcomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(GptBlack) // Black Background
+            .background(GptBlack)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(modifier = Modifier.weight(1f))
-
-        // Logo Area
         AnimatedVisibility(
             visible = showContent,
             enter = fadeIn(tween(1000)) + slideInVertically()
         ) {
-            Box(
-                modifier = Modifier
-                    .size(170.dp)
-                    .background(GptDarkSurface, shape = MaterialTheme.shapes.medium),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.size(170.dp), contentAlignment = Alignment.Center) {
                 Image(
                     painter = painterResource(id = R.drawable.mahayuga),
                     contentDescription = "Logo",
                     modifier = Modifier.size(150.dp),
-                    colorFilter = ColorFilter.tint(GptTextWhite) // White Logo
+                    colorFilter = ColorFilter.tint(GptTextWhite)
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(40.dp))
-
-        // Typing Text (White)
         Text(
             text = displayedText,
             style = MaterialTheme.typography.headlineMedium.copy(
@@ -85,44 +71,43 @@ fun WelcomeScreen(
             ),
             textAlign = TextAlign.Center
         )
-
         Spacer(modifier = Modifier.weight(1f))
-
-        // Buttons
         AnimatedVisibility(
             visible = showContent,
-            enter = fadeIn(tween(1000, delayMillis = 1000)) + slideInVertically(initialOffsetY = { 50 })
+            enter = fadeIn(
+                tween(
+                    1000,
+                    delayMillis = 1000
+                )
+            ) + slideInVertically(initialOffsetY = { 50 })
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Log In: White Button, Black Text
                 Button(
                     onClick = { navController.navigate("login") },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = GptTextWhite,
                         contentColor = GptBlack
                     ),
                     shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("Log in", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-
-                // Sign Up: Dark Surface, White Text
+                ) { Text("Log in", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
                 Button(
                     onClick = { navController.navigate("register") },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = GptDarkSurface,
                         contentColor = GptTextWhite
                     ),
                     shape = MaterialTheme.shapes.medium,
                     elevation = ButtonDefaults.buttonElevation(0.dp)
-                ) {
-                    Text("Sign up", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                }
+                ) { Text("Sign up", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
             }
         }
         Spacer(modifier = Modifier.height(40.dp))

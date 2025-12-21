@@ -24,11 +24,12 @@ import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.auth.presentation.LoginScreen
 import com.example.mahayuga.feature.auth.presentation.RegisterScreen
-import com.example.mahayuga.feature.auth.presentation.WelcomeScreen // Make sure this is imported
+import com.example.mahayuga.feature.auth.presentation.WelcomeScreen
 import com.example.mahayuga.feature.hub.presentation.HubScreen
 import com.example.mahayuga.feature.navyuga.presentation.NavYugaDashboard
 import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
+import com.example.mahayuga.feature.navyuga.presentation.splash.NavyugaSplashScreen
 import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
 
@@ -43,19 +44,16 @@ fun AppNavigation(
     NavHost(navController = navController, startDestination = startDestination) {
 
         // --- NEW WELCOME SCREEN ---
-        // This is the new entry point for the ChatGPT-like flow
         composable("welcome") {
             WelcomeScreen(navController = navController)
         }
 
         // --- AUTH MODULE ---
         composable("login") {
-            // Updated to use the new minimal LoginScreen (Fixed Theme)
             LoginScreen(navController = navController)
         }
 
         composable("register") {
-            // Updated to use the new minimal RegisterScreen (Fixed Theme)
             RegisterScreen(navController = navController)
         }
 
@@ -63,9 +61,26 @@ fun AppNavigation(
         composable("super_app_hub") {
             HubScreen(
                 navController = navController,
-                onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } }, // Redirect to welcome on logout
+                onLogout = {
+                    navController.navigate("welcome") {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                },
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle
+            )
+        }
+
+        // --- NAVYUGA SPLASH ---
+        composable("navyuga_splash") {
+            NavyugaSplashScreen(
+                onSplashFinished = {
+                    navController.navigate("navyuga_dashboard") {
+                        popUpTo("navyuga_splash") { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -118,7 +133,8 @@ fun AppNavigation(
                 country = country,
                 city = city,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToDetail = { id -> navController.navigate("property_detail/$id") }
+                onNavigateToDetail = { id -> navController.navigate("property_detail/$id") },
+                onRoiClick = { navController.navigate("roi_calculator") } // ⚡ FIX: Added missing param
             )
         }
 
@@ -131,7 +147,13 @@ fun AppNavigation(
             if (isAdmin) {
                 AdminDashboardScreen(
                     navController = navController,
-                    onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } }
+                    onLogout = {
+                        navController.navigate("welcome") {
+                            popUpTo(0) {
+                                inclusive = true
+                            }
+                        }
+                    }
                 )
             } else {
                 PlaceholderScreen("Verifying Admin Privileges...")
@@ -157,19 +179,22 @@ fun AppNavigation(
             route = "investment_flow"
         ) {
             composable("admin_register_investment") { entry ->
-                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val parentEntry =
+                    remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
                 AdminSelectUserScreen(navController, viewModel = sharedViewModel)
             }
 
             composable("admin_inv_select_property") { entry ->
-                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val parentEntry =
+                    remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
                 AdminSelectPropertyScreen(navController, viewModel = sharedViewModel)
             }
 
             composable("admin_inv_form") { entry ->
-                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val parentEntry =
+                    remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
                 AdminInvestmentFormScreen(navController, viewModel = sharedViewModel)
             }
@@ -188,7 +213,9 @@ fun AppNavigation(
 @Composable
 fun PlaceholderScreen(title: String) {
     Box(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Text(text = title, color = MaterialTheme.colorScheme.onBackground)

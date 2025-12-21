@@ -2,6 +2,8 @@ package com.example.mahayuga.feature.navyuga.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mahayuga.core.common.Constants
+import com.example.mahayuga.core.domain.repository.SettingsRepository
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -9,8 +11,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,14 +39,22 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val propertyRepository: PropertyRepository,
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private var allPropertiesCache: List<PropertyModel> = emptyList()
+    // ⚡ Support Number for Invest Button
+    val supportNumber: StateFlow<String> = settingsRepository.getWhatsAppNumber()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Constants.SUPPORT_WHATSAPP_NUMBER
+        )
 
+    private var allPropertiesCache: List<PropertyModel> = emptyList()
     private var lastUserName: String = ""
     private var lastLikedIds: Set<String> = emptySet()
     private var lastSeenIds: Set<String> = emptySet()
@@ -76,7 +88,8 @@ class HomeViewModel @Inject constructor(
                 if (e != null || snapshot == null) return@addSnapshotListener
 
                 lastUserName = snapshot.getString("name") ?: "User"
-                lastLikedIds = (snapshot.get("likedProperties") as? List<String>)?.toSet() ?: emptySet()
+                lastLikedIds =
+                    (snapshot.get("likedProperties") as? List<String>)?.toSet() ?: emptySet()
                 lastSeenIds = (snapshot.get("seenStories") as? List<String>)?.toSet() ?: emptySet()
 
                 updateUiWithUserData()
@@ -84,22 +97,23 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun updateUiWithUserData() {
-        // 1. Filter Properties based on selected status
         val filteredProperties = if (_uiState.value.selectedFilter == "All") {
             allPropertiesCache
         } else {
-            allPropertiesCache.filter { it.status.equals(_uiState.value.selectedFilter, ignoreCase = true) }
+            allPropertiesCache.filter {
+                it.status.equals(
+                    _uiState.value.selectedFilter,
+                    ignoreCase = true
+                )
+            }
         }
 
-        // 2. Update Properties with Like Status
         val finalProperties = filteredProperties.map { property ->
             property.copy(isLiked = lastLikedIds.contains(property.id))
         }
 
-        // 3. Create and Sort Stories
-        // ⚡ FILTER: Only show properties that are NOT Exited
         val stories = allPropertiesCache
-            .filter { it.status != "Exited" } // <--- EXITED FILTER
+            .filter { it.status != "Exited" }
             .map { prop ->
                 StoryState(
                     id = prop.id,
@@ -129,10 +143,17 @@ class HomeViewModel @Inject constructor(
         val userRef = firestore.collection("users").document(userId)
 
         if (currentLikeState) {
-            userRef.update("likedProperties", com.google.firebase.firestore.FieldValue.arrayRemove(propertyId))
+            userRef.update(
+                "likedProperties",
+                com.google.firebase.firestore.FieldValue.arrayRemove(propertyId)
+            )
         } else {
             userRef.set(
-                mapOf("likedProperties" to com.google.firebase.firestore.FieldValue.arrayUnion(propertyId)),
+                mapOf(
+                    "likedProperties" to com.google.firebase.firestore.FieldValue.arrayUnion(
+                        propertyId
+                    )
+                ),
                 SetOptions.merge()
             )
         }

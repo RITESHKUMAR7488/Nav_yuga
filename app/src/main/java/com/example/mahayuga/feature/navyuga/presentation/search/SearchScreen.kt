@@ -3,12 +3,17 @@ package com.example.mahayuga.feature.navyuga.presentation.search
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.ui.theme.BrandBlue
@@ -17,48 +22,68 @@ import com.example.mahayuga.ui.theme.BrandBlue
 @Composable
 fun SearchScreen(
     navController: NavController,
+    onRoiClick: () -> Unit, // Passed from NavHost
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     var selectedCountry by remember { mutableStateOf("India") }
     var selectedCity by remember { mutableStateOf("All Cities") }
 
     Scaffold(
-        containerColor = Color.Black, // Consistent Black Background
-        topBar = {
-            // Simple title or TopBar can be added here if needed
+        containerColor = Color.Black,
+        floatingActionButton = {
+            // ⚡ EXACT REPLICA OF HOME FAB
+            FloatingActionButton(
+                onClick = onRoiClick,
+                containerColor = Color(0xFF4361EE),
+                contentColor = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .size(80.dp)
+                    .offset(y = 20.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(28.dp))
+                    Text(
+                        "ROI\nCalculator",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            lineHeight = 12.sp
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .padding(16.dp)) {
             Text(
                 text = "Find Properties",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = Color.White,
                 modifier = Modifier.padding(bottom = 24.dp, top = 16.dp)
             )
-
-            NavyugaExposedDropdown("Country", viewModel.countries, selectedCountry) { selectedCountry = it }
+            NavyugaExposedDropdown(
+                "Country",
+                viewModel.countries,
+                selectedCountry
+            ) { selectedCountry = it }
             Spacer(modifier = Modifier.height(16.dp))
             NavyugaExposedDropdown("City", viewModel.cities, selectedCity) { selectedCity = it }
-
             Spacer(modifier = Modifier.height(32.dp))
-
-            // --- SEARCH BUTTON (Lighter Blue) ---
             Button(
-                onClick = {
-                    // Navigate to the new Results Page
-                    navController.navigate("search_results/$selectedCountry/$selectedCity")
-                },
+                onClick = { navController.navigate("search_results/$selectedCountry/$selectedCity") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BrandBlue, // Lighter Blue
+                    containerColor = BrandBlue,
                     contentColor = Color.White
                 )
             ) {
@@ -80,7 +105,6 @@ fun NavyugaExposedDropdown(
     onSelectionChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded },
@@ -89,7 +113,7 @@ fun NavyugaExposedDropdown(
         OutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(), // Makes the whole field clickable
+                .menuAnchor(),
             readOnly = true,
             value = selected,
             onValueChange = {},
@@ -98,19 +122,19 @@ fun NavyugaExposedDropdown(
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
-                focusedContainerColor = Color(0xFF1E293B), // Dark surface
+                focusedContainerColor = Color(0xFF1E293B),
                 unfocusedContainerColor = Color(0xFF1E293B),
                 focusedBorderColor = Color(0xFF60A5FA),
                 unfocusedBorderColor = Color.White.copy(0.2f)
             ),
             shape = RoundedCornerShape(12.dp),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium) // Big word
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
         )
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
-                .background(Color(0xFF1E293B)) // Match dropdown background
+                .background(Color(0xFF1E293B))
                 .fillMaxWidth()
         ) {
             options.forEach { selectionOption ->
@@ -123,10 +147,7 @@ fun NavyugaExposedDropdown(
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     },
-                    onClick = {
-                        onSelectionChange(selectionOption)
-                        expanded = false
-                    },
+                    onClick = { onSelectionChange(selectionOption); expanded = false },
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 )
             }

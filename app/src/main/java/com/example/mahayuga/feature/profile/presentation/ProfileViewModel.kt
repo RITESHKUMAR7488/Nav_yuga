@@ -30,7 +30,6 @@ class ProfileViewModel @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
-    // ⚡ NEW: State to persist drawer status across navigation
     var shouldOpenDrawerOnReturn: Boolean = false
 
     private val _currentUser = authRepository.getCurrentUser()
@@ -40,31 +39,25 @@ class ProfileViewModel @Inject constructor(
     private val _allProperties = propertyRepository.getAllProperties()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
 
-    val ownedProperties: StateFlow<List<PropertyModel>> = combine(
-        _currentUser,
-        _allProperties
-    ) { userState, propsState ->
-        if (userState is UiState.Success && propsState is UiState.Success) {
-            val investedIds = userState.data.investedProperties
-            propsState.data.filter { it.id in investedIds }
-        } else {
-            emptyList()
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val ownedProperties: StateFlow<List<PropertyModel>> =
+        combine(_currentUser, _allProperties) { userState, propsState ->
+            if (userState is UiState.Success && propsState is UiState.Success) {
+                val investedIds = userState.data.investedProperties
+                propsState.data.filter { it.id in investedIds }
+            } else {
+                emptyList()
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val likedProperties: StateFlow<List<PropertyModel>> = combine(
-        _currentUser,
-        _allProperties
-    ) { userState, propsState ->
-        if (userState is UiState.Success && propsState is UiState.Success) {
-            val likedIds = userState.data.likedProperties
-            propsState.data
-                .filter { it.id in likedIds }
-                .map { it.copy(isLiked = true) }
-        } else {
-            emptyList()
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val likedProperties: StateFlow<List<PropertyModel>> =
+        combine(_currentUser, _allProperties) { userState, propsState ->
+            if (userState is UiState.Success && propsState is UiState.Success) {
+                val likedIds = userState.data.likedProperties
+                propsState.data.filter { it.id in likedIds }.map { it.copy(isLiked = true) }
+            } else {
+                emptyList()
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _stats = MutableStateFlow<List<ProfileStat>>(emptyList())
     val stats: StateFlow<List<ProfileStat>> = _stats
@@ -78,15 +71,12 @@ class ProfileViewModel @Inject constructor(
             combine(_currentUser, ownedProperties) { userState, owned ->
                 if (userState is UiState.Success) {
                     val user = userState.data
-
                     val totalInv = user.totalInvestment.toDouble()
                     val currentVal = user.currentValue.toDouble()
                     val totalArea = user.totalArea
                     val totalRent = user.totalRent.toDouble()
-
                     val count = owned.size
                     val propProgress = if (count > 0) (count / 5f).coerceIn(0f, 1f) else 0f
-
                     val roiDisplay: String
                     val roiProgress: Float
 
@@ -95,7 +85,6 @@ class ProfileViewModel @Inject constructor(
                         val annualRent = totalRent * 12
                         val rentalYield = (annualRent / totalInv) * 100
                         val totalRoi = capitalGains + rentalYield
-
                         roiDisplay = String.format("%.1f%%", totalRoi)
                         roiProgress = (totalRoi / 15.0).toFloat().coerceIn(0f, 1f)
                     } else {
@@ -104,13 +93,23 @@ class ProfileViewModel @Inject constructor(
                     }
 
                     fun formatK(amount: Double): String {
-                        return if (amount >= 10000000) "₹${String.format("%.2f", amount/10000000)}Cr"
-                        else if (amount >= 100000) "₹${String.format("%.1f", amount/100000)}L"
-                        else if (amount >= 1000) "₹${(amount/1000).toInt()}k"
+                        return if (amount >= 10000000) "₹${
+                            String.format(
+                                "%.2f",
+                                amount / 10000000
+                            )
+                        } Cr"
+                        // ⚡ FIX: Adjusted logic to show Lakhs for anything >= 1,000
+                        else if (amount >= 1000) "₹${String.format("%.2f L", amount / 100000)}"
                         else "₹${amount.toInt()}"
                     }
 
-                    val areaDisplay = if (totalArea >= 1.0) "${String.format("%.1f", totalArea)} Sqft" else "0 Sqft"
+                    val areaDisplay = if (totalArea >= 1.0) "${
+                        String.format(
+                            "%.1f",
+                            totalArea
+                        )
+                    } Sqft" else "0 Sqft"
 
                     listOf(
                         ProfileStat("Properties", count.toString(), propProgress, 0xFF2979FF),
@@ -130,9 +129,7 @@ class ProfileViewModel @Inject constructor(
                         ProfileStat("Wallet", "₹0", 0f, 0xFF2979FF)
                     )
                 }
-            }.collect { newStats ->
-                _stats.value = newStats
-            }
+            }.collect { newStats -> _stats.value = newStats }
         }
     }
 

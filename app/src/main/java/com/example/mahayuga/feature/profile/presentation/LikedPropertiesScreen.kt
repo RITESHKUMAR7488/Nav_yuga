@@ -64,9 +64,10 @@ fun LikedPropertiesScreen(
                     InstagramStylePropertyCard(
                         property = property,
                         onItemClick = { onNavigateToDetail(property.id) },
-                        // ⚡ FIXED: Correctly calling the new function in ProfileViewModel
                         onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
                         onShareClick = { /* Handle share */ },
+                        // ⚡ FIX: Added missing parameter
+                        onInvestClick = { onNavigateToDetail(property.id) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
