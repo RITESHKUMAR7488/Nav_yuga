@@ -37,7 +37,9 @@ fun NavYugaDashboard(
     rootNavController: NavController,
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    // ⚡ ADDED SETTINGS LAMBDA
+    onNavigateToSettings: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -57,14 +59,12 @@ fun NavYugaDashboard(
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            // ⚡ COMPACT BOTTOM BAR
             Column {
                 HorizontalDivider(thickness = 0.5.dp, color = BorderColor)
                 NavigationBar(
                     containerColor = NavBackground,
                     contentColor = Color.White,
-                    tonalElevation = 0.dp,
-                    windowInsets = NavigationBarDefaults.windowInsets // Respect insets
+                    tonalElevation = 0.dp
                 ) {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = navBackStackEntry?.destination?.route
@@ -119,12 +119,14 @@ fun NavYugaDashboard(
                 HomeScreen(
                     onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onNavigateBack = { rootNavController.popBackStack() },
-                    onRoiClick = { rootNavController.navigate("roi_calculator") })
+                    onRoiClick = { rootNavController.navigate("roi_calculator") }
+                )
             }
             composable("ay_search") {
                 SearchScreen(
                     navController = navController,
-                    onRoiClick = { rootNavController.navigate("roi_calculator") })
+                    onRoiClick = { rootNavController.navigate("roi_calculator") }
+                )
             }
             composable(
                 "search_results/{country}/{city}",
@@ -146,6 +148,8 @@ fun NavYugaDashboard(
             composable("ay_profile") {
                 ProfileScreen(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },
+                    onNavigateToAccount = { rootNavController.navigate("account_details") },
+                    onNavigateToSettings = onNavigateToSettings, // ⚡ PASSED DOWN
                     onLogout = onLogout
                 )
             }

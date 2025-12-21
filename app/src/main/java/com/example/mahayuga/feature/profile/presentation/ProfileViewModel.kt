@@ -9,6 +9,7 @@ import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepository
 import com.example.mahayuga.feature.profile.data.model.ProfileStat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -62,6 +64,10 @@ class ProfileViewModel @Inject constructor(
     private val _stats = MutableStateFlow<List<ProfileStat>>(emptyList())
     val stats: StateFlow<List<ProfileStat>> = _stats
 
+    // ⚡ STATE FOR UPDATE ACTIONS
+    private val _accountActionState = MutableStateFlow<UiState<String>>(UiState.Idle)
+    val accountActionState: StateFlow<UiState<String>> = _accountActionState
+
     init {
         calculateStats()
     }
@@ -99,7 +105,6 @@ class ProfileViewModel @Inject constructor(
                                 amount / 10000000
                             )
                         } Cr"
-                        // ⚡ FIX: Adjusted logic to show Lakhs for anything >= 1,000
                         else if (amount >= 1000) "₹${String.format("%.2f L", amount / 100000)}"
                         else "₹${amount.toInt()}"
                     }
@@ -131,6 +136,77 @@ class ProfileViewModel @Inject constructor(
                 }
             }.collect { newStats -> _stats.value = newStats }
         }
+    }
+
+    fun updateUserProfile(newName: String, newEmail: String, newPhone: String) {
+        viewModelScope.launch {
+            _accountActionState.value = UiState.Loading
+            try {
+                val user = auth.currentUser
+                if (user == null) {
+                    _accountActionState.value = UiState.Failure("User not logged in")
+                    return@launch
+                }
+
+                // 1. Update Firebase Auth (Email & Name)
+                if (newEmail != user.email) {
+                    try {
+                        user.updateEmail(newEmail).await()
+                    } catch (e: Exception) {
+                        _accountActionState.value =
+                            UiState.Failure("Email update failed: Login again recently required.")
+                        return@launch
+                    }
+                }
+
+                if (newName.isNotEmpty()) {
+                    val profileUpdates =
+                        UserProfileChangeRequest.Builder().setDisplayName(newName).build()
+                    user.updateProfile(profileUpdates).await()
+                }
+
+                // 2. Update Firestore
+                val updates = mapOf(
+                    "name" to newName,
+                    "email" to newEmail,
+                    "phone" to newPhone
+                )
+                firestore.collection("users").document(user.uid).update(updates).await()
+
+                _accountActionState.value = UiState.Success("Profile Updated Successfully")
+            } catch (e: Exception) {
+                _accountActionState.value = UiState.Failure("Update Failed: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteAccount() {
+        viewModelScope.launch {
+            _accountActionState.value = UiState.Loading
+            try {
+                val user = auth.currentUser
+                if (user == null) {
+                    _accountActionState.value = UiState.Failure("User not found")
+                    return@launch
+                }
+                val uid = user.uid
+
+                // 1. Delete from Firestore
+                firestore.collection("users").document(uid).delete().await()
+
+                // 2. Delete from Auth
+                user.delete().await()
+
+                logout() // Clear local prefs
+                _accountActionState.value = UiState.Success("Account Deleted")
+            } catch (e: Exception) {
+                _accountActionState.value = UiState.Failure("Delete Failed: ${e.message}")
+            }
+        }
+    }
+
+    fun resetActionState() {
+        _accountActionState.value = UiState.Idle
     }
 
     fun toggleLike(propertyId: String, currentLikeState: Boolean) {

@@ -45,6 +45,8 @@ private val ProgressGreen = Color(0xFF00E676)
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onNavigateToLiked: () -> Unit,
+    onNavigateToAccount: () -> Unit,
+    onNavigateToSettings: () -> Unit, // ⚡ ADDED PARAM
     onLogout: () -> Unit
 ) {
     val currentUserState by viewModel.currentUser.collectAsState()
@@ -83,11 +85,15 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     Spacer(modifier = Modifier.height(20.dp))
+
+                    // Header
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { },
-                        verticalAlignment = Alignment.CenterVertically
+                            .clickable {
+                                scope.launch { drawerState.close() }; viewModel.shouldOpenDrawerOnReturn =
+                                true; onNavigateToAccount()
+                            }, verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
@@ -122,6 +128,7 @@ fun ProfileScreen(
                             modifier = Modifier.size(18.dp)
                         )
                     }
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -164,6 +171,7 @@ fun ProfileScreen(
                             }
                         }
                     }
+
                     SettingsGroup {
                         DrawerItem(
                             icon = Icons.Outlined.FavoriteBorder,
@@ -182,12 +190,18 @@ fun ProfileScreen(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             })
+
+                        // ⚡ WIRED UP SETTINGS BUTTON
                         DrawerItem(
                             icon = Icons.Outlined.Settings,
                             title = "Settings",
                             onClick = {
-                                Toast.makeText(context, "Settings", Toast.LENGTH_SHORT).show()
-                            })
+                                scope.launch { drawerState.close() }
+                                viewModel.shouldOpenDrawerOnReturn = true
+                                onNavigateToSettings()
+                            }
+                        )
+
                         DrawerItem(
                             icon = Icons.Outlined.Lock,
                             title = "Security & privacy",
@@ -248,7 +262,7 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "User's Portfolio",
+                            text = "$userName's Portfolio",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
@@ -334,6 +348,7 @@ fun ProfileScreen(
     }
 }
 
+// Reusable Components
 @Composable
 fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
     Card(
