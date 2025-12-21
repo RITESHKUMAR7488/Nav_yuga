@@ -51,8 +51,10 @@ class AdminViewModel @Inject constructor(
     private val _requestsState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val requestsState: StateFlow<UiState<List<UserModel>>> = _requestsState
 
-    private val _selectedUserInvestments = MutableStateFlow<UiState<List<InvestmentModel>>>(UiState.Loading)
-    val selectedUserInvestments: StateFlow<UiState<List<InvestmentModel>>> = _selectedUserInvestments
+    private val _selectedUserInvestments =
+        MutableStateFlow<UiState<List<InvestmentModel>>>(UiState.Loading)
+    val selectedUserInvestments: StateFlow<UiState<List<InvestmentModel>>> =
+        _selectedUserInvestments
 
     private val _deleteOperationState = MutableSharedFlow<UiState<String>>()
     val deleteOperationState: SharedFlow<UiState<String>> = _deleteOperationState
@@ -80,7 +82,8 @@ class AdminViewModel @Inject constructor(
 
     private fun fetchProperties() {
         viewModelScope.launch {
-            propertyRepository.getAllProperties().collect { state -> _propertiesState.value = state }
+            propertyRepository.getAllProperties()
+                .collect { state -> _propertiesState.value = state }
         }
     }
 
@@ -116,8 +119,13 @@ class AdminViewModel @Inject constructor(
     }
 
     // --- INVESTMENT FLOW LOGIC ---
-    fun selectUserForInvestment(user: UserModel) { selectedUser = user }
-    fun selectPropertyForInvestment(property: PropertyModel) { selectedProperty = property }
+    fun selectUserForInvestment(user: UserModel) {
+        selectedUser = user
+    }
+
+    fun selectPropertyForInvestment(property: PropertyModel) {
+        selectedProperty = property
+    }
 
     fun submitInvestment(amount: Long, mode: String, reference: String) {
         val user = selectedUser ?: return
@@ -125,19 +133,26 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             _propertyUploadState.value = UiState.Loading
             val investment = InvestmentModel(
-                userId = user.uid, userName = user.name, propertyId = property.id,
-                propertyTitle = property.title, amount = amount, paymentMode = mode, paymentReference = reference
+                userId = user.uid,
+                userName = user.name,
+                propertyId = property.id,
+                propertyTitle = property.title,
+                amount = amount,
+                paymentMode = mode,
+                paymentReference = reference
             )
             val result = adminRepository.registerInvestment(investment)
-            when(result) {
+            when (result) {
                 is UiState.Success -> {
                     _propertyUploadState.value = UiState.Success(result.data)
                     _investmentStatus.emit("Success: ${result.data}")
                 }
+
                 is UiState.Failure -> {
                     _propertyUploadState.value = UiState.Failure(result.message)
                     _investmentStatus.emit("Error: ${result.message}")
                 }
+
                 else -> {}
             }
         }
@@ -163,7 +178,6 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ UPDATE THIS: Ensure new fields are preserved during updates if you add edit functionality later
     fun updateProperty(
         originalProperty: PropertyModel,
         updatedFields: PropertyModel,
@@ -189,7 +203,9 @@ class AdminViewModel @Inject constructor(
 
                 val finalProperty = updatedFields.copy(
                     id = originalProperty.id,
-                    assetId = originalProperty.assetId, // Preserve Asset ID
+                    assetId = originalProperty.assetId,
+                    // ⚡ Ensure trending status is carried over if edited
+                    isTrending = updatedFields.isTrending,
                     imageUrls = finalImages
                 )
 
@@ -205,7 +221,7 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ UPDATED: LIST NEW PROPERTY WITH ASSET ID & NEW FIELDS
+    // ⚡ UPDATED: Accept isTrending parameter
     fun listNewProperty(
         title: String, description: String, type: String, status: String,
         address: String, city: String, state: String,
@@ -214,8 +230,8 @@ class AdminViewModel @Inject constructor(
         monthlyRent: String, grossAnnualRent: String, annualPropertyTax: String,
         tenantName: String, occupationPeriod: String, escalation: String,
         exitPrice: String, totalProfit: String,
-        // New Params
         legalWrapper: String, totalUnits: String, liquidityRules: String,
+        isTrending: Boolean, // ⚡ NEW PARAM
         imageUris: List<Uri>
     ) {
         viewModelScope.launch {
@@ -230,29 +246,46 @@ class AdminViewModel @Inject constructor(
                     uploadedImageUrls.add("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab")
                 }
 
-                // ⚡ GENERATE ASSET ID (NAV-XXXXXX)
                 val generatedAssetId = "NAV-${System.currentTimeMillis().toString().takeLast(6)}"
 
                 val newProperty = PropertyModel(
                     id = UUID.randomUUID().toString(),
-                    assetId = generatedAssetId, // ⚡ SAVING ID
-                    title = title, description = description, type = type, status = status,
-                    address = address, city = city, state = state, location = "$city, $state",
-                    age = age, area = area, floor = floor, carPark = carPark,
-                    totalValuation = totalValuation, minInvest = minInvest, roi = roi, fundedPercent = fundedPercent,
-                    monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
-                    tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = escalation,
-                    exitPrice = exitPrice, totalProfit = totalProfit,
-                    // ⚡ SAVING NEW FIELDS
+                    assetId = generatedAssetId,
+                    title = title,
+                    description = description,
+                    type = type,
+                    status = status,
+                    address = address,
+                    city = city,
+                    state = state,
+                    location = "$city, $state",
+                    age = age,
+                    area = area,
+                    floor = floor,
+                    carPark = carPark,
+                    totalValuation = totalValuation,
+                    minInvest = minInvest,
+                    roi = roi,
+                    fundedPercent = fundedPercent,
+                    monthlyRent = monthlyRent,
+                    grossAnnualRent = grossAnnualRent,
+                    annualPropertyTax = annualPropertyTax,
+                    tenantName = tenantName,
+                    occupationPeriod = occupationPeriod,
+                    escalation = escalation,
+                    exitPrice = exitPrice,
+                    totalProfit = totalProfit,
                     legalWrapper = legalWrapper,
                     totalUnits = totalUnits,
                     liquidityRules = liquidityRules,
+                    isTrending = isTrending, // ⚡ SAVE TRENDING STATUS
                     imageUrls = uploadedImageUrls
                 )
 
                 val result = propertyRepository.addProperty(newProperty)
                 if (result is UiState.Success) {
-                    _propertyUploadState.value = UiState.Success("Listed! Asset ID: $generatedAssetId")
+                    _propertyUploadState.value =
+                        UiState.Success("Listed! Asset ID: $generatedAssetId")
                     fetchProperties()
                 } else {
                     _propertyUploadState.value = UiState.Failure("Failed to save to DB")
@@ -268,12 +301,15 @@ class AdminViewModel @Inject constructor(
             val file = getFileFromUri(uri) ?: return null
             val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
             val body = MultipartBody.Part.createFormData("source", file.name, requestFile)
-            val key = "6d207e02198a847aa98d0a2a901485a5".toRequestBody("text/plain".toMediaTypeOrNull())
+            val key =
+                "6d207e02198a847aa98d0a2a901485a5".toRequestBody("text/plain".toMediaTypeOrNull())
             val format = "json".toRequestBody("text/plain".toMediaTypeOrNull())
 
             val response = api.uploadImage(key, body, format)
             if (response.status_code == 200) response.image.url else null
-        } catch (e: Exception) { null }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun getFileFromUri(uri: Uri): File? {
@@ -285,7 +321,9 @@ class AdminViewModel @Inject constructor(
             outputStream.close()
             inputStream?.close()
             file
-        } catch (e: Exception) { null }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun resetUploadState() {

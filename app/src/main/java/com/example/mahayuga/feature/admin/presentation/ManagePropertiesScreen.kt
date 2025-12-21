@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -78,10 +79,16 @@ fun ManagePropertiesScreen(
             )
         }
 
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        Box(modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()) {
             when (val state = propertiesState) {
                 is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                is UiState.Failure -> Text("Error: ${state.message}", modifier = Modifier.align(Alignment.Center))
+                is UiState.Failure -> Text(
+                    "Error: ${state.message}",
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
                 is UiState.Success -> {
                     LazyColumn(contentPadding = PaddingValues(16.dp)) {
                         items(state.data) { property ->
@@ -93,6 +100,7 @@ fun ManagePropertiesScreen(
                         }
                     }
                 }
+
                 else -> {}
             }
         }
@@ -106,18 +114,33 @@ fun ManagePropertyItem(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // ⚡ ASSET ID HEADER
-            if (property.assetId.isNotEmpty()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
+            // ⚡ ASSET ID & TRENDING HEADER
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (property.isTrending) {
+                    Icon(
+                        Icons.Default.TrendingUp,
+                        "Trending",
+                        tint = BrandBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Spacer(Modifier.width(1.dp))
+                }
+
+                if (property.assetId.isNotEmpty()) {
                     Surface(
                         color = BrandBlue.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(4.dp)
@@ -136,16 +159,31 @@ fun ManagePropertyItem(
                 Image(
                     painter = rememberAsyncImagePainter(property.imageUrls.firstOrNull()),
                     contentDescription = null,
-                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)).background(Color.Gray),
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Gray),
                     contentScale = ContentScale.Crop
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(property.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("₹${property.totalValuation}", style = MaterialTheme.typography.bodyMedium, color = BrandBlue)
-                    Text("ROI: ${property.roi}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        property.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "₹${property.totalValuation}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = BrandBlue
+                    )
+                    Text(
+                        "ROI: ${property.roi}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 Column {

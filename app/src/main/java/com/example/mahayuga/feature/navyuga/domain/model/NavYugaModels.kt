@@ -7,11 +7,14 @@ data class TenantStory(
 
 data class PropertyModel(
     val id: String = "",
-    // ⚡ NEW: Auto-generated Human Readable ID
+    // ⚡ Auto-generated Human Readable ID
     val assetId: String = "",
     val title: String = "",
     val location: String = "",
     val status: String = "Available", // "Funding", "Funded", "Exited"
+
+    // ⚡ NEW: Manual Trending Flag
+    val isTrending: Boolean = false,
 
     // Financial Overview
     val totalValuation: String = "",
@@ -20,7 +23,7 @@ data class PropertyModel(
     val fundedPercent: Int = 0,
     val totalFunding: String = "0",
 
-    // ⚡ NEW: Investment Structure Fields
+    // Investment Structure Fields
     val legalWrapper: String = "SPV", // SPV, Trust, LLP, Fund
     val totalUnits: String = "",      // e.g. "5000"
     val liquidityRules: String = "",  // e.g. "3 Years Lock-in"

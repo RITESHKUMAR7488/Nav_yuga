@@ -37,6 +37,10 @@ fun AddPropertyScreen(
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Office") }
     var status by remember { mutableStateOf("Funding") }
+
+    // ⚡ NEW TRENDING OPTION
+    var isTrendingSelection by remember { mutableStateOf("No") }
+
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
@@ -46,7 +50,6 @@ fun AddPropertyScreen(
     var floor by remember { mutableStateOf("") }
     var carPark by remember { mutableStateOf("") }
 
-    // ⚡ NEW FIELDS UI STATE
     var legalWrapper by remember { mutableStateOf("SPV") }
     var totalUnits by remember { mutableStateOf("") }
     var liquidityRules by remember { mutableStateOf("3 Year Lock-in") }
@@ -63,14 +66,12 @@ fun AddPropertyScreen(
     var annualPropertyTax by remember { mutableStateOf("") }
     var fundedPercent by remember { mutableStateOf("") }
 
-    // Exited Property Fields
     var exitPrice by remember { mutableStateOf("") }
     var totalProfit by remember { mutableStateOf("") }
 
     var roi by remember { mutableStateOf("") }
     var grossAnnualRent by remember { mutableStateOf("") }
 
-    // Auto-Calculation Coroutine
     LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
         val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
@@ -102,7 +103,8 @@ fun AddPropertyScreen(
             viewModel.resetUploadState()
             navController.popBackStack()
         } else if (uploadState is UiState.Failure) {
-            Toast.makeText(context, (uploadState as UiState.Failure).message, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, (uploadState as UiState.Failure).message, Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -127,60 +129,121 @@ fun AddPropertyScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // IMAGES
             if (selectedImageUris.isEmpty()) {
                 Card(
-                    modifier = Modifier.fillMaxWidth().height(150.dp)
-                        .clickable { multiplePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clickable {
+                            multiplePhotoPicker.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.AddPhotoAlternate, null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(
+                                Icons.Default.AddPhotoAlternate,
+                                null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                             Text("Add Photos (Max 10)")
                         }
                     }
                 }
             } else {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(120.dp).padding(vertical = 8.dp)) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .height(120.dp)
+                        .padding(vertical = 8.dp)
+                ) {
                     items(selectedImageUris) { uri ->
-                        AsyncImage(model = uri, contentDescription = null, modifier = Modifier.width(160.dp).fillMaxHeight(), contentScale = ContentScale.Crop)
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(160.dp)
+                                .fillMaxHeight(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
             SectionHeader("Property Details")
-            NavyugaTextField(value = title, onValueChange = { title = it }, label = "Property Name", icon = Icons.Default.Apartment)
+            NavyugaTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = "Property Name",
+                icon = Icons.Default.Apartment
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = address, onValueChange = { address = it }, label = "Address", icon = Icons.Default.Place)
+            NavyugaTextField(
+                value = address,
+                onValueChange = { address = it },
+                label = "Address",
+                icon = Icons.Default.Place
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = city, onValueChange = { city = it }, label = "City", icon = Icons.Default.LocationCity) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = state, onValueChange = { state = it }, label = "State", icon = Icons.Default.Map) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = city,
+                        onValueChange = { city = it },
+                        label = "City",
+                        icon = Icons.Default.LocationCity
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = state,
+                        onValueChange = { state = it },
+                        label = "State",
+                        icon = Icons.Default.Map
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            NavyugaDropdown(label = "Asset Type", options = listOf("Office", "Retail", "Warehouse", "Industrial"), selected = type, onSelectionChange = { type = it })
+            NavyugaDropdown(
+                label = "Asset Type",
+                options = listOf("Office", "Retail", "Warehouse", "Industrial"),
+                selected = type,
+                onSelectionChange = { type = it })
             Spacer(modifier = Modifier.height(8.dp))
 
-            NavyugaDropdown(label = "Status", options = listOf("Funding", "Funded", "Exited"), selected = status, onSelectionChange = { status = it })
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaDropdown(
+                        label = "Status",
+                        options = listOf("Funding", "Funded", "Exited"),
+                        selected = status,
+                        onSelectionChange = { status = it })
+                }
+                Box(Modifier.weight(1f)) {
+                    // ⚡ TRENDING SELECTOR
+                    NavyugaDropdown(
+                        label = "Make Trending?",
+                        options = listOf("Yes", "No"),
+                        selected = isTrendingSelection,
+                        onSelectionChange = { isTrendingSelection = it })
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ⚡ NEW STRUCTURE & LIQUIDITY SECTION
             SectionHeader("Structure & Liquidity")
-
-            // Legal Wrapper Dropdown
             NavyugaDropdown(
                 label = "Legal Wrapper",
                 options = listOf("SPV", "Trust", "LLP", "Fund"),
                 selected = legalWrapper,
-                onSelectionChange = { legalWrapper = it }
-            )
+                onSelectionChange = { legalWrapper = it })
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Total Units
             NavyugaTextField(
                 value = totalUnits,
                 onValueChange = { totalUnits = it },
@@ -189,8 +252,6 @@ fun AddPropertyScreen(
                 isNumber = true
             )
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Liquidity Rules
             NavyugaTextField(
                 value = liquidityRules,
                 onValueChange = { liquidityRules = it },
@@ -200,15 +261,26 @@ fun AddPropertyScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Exited Fields
             if (status == "Exited") {
                 SectionHeader("Exit Details")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.weight(1f)) {
-                        NavyugaTextField(value = exitPrice, onValueChange = { exitPrice = it }, label = "Exit Price", icon = Icons.Default.MonetizationOn, isNumber = true)
+                        NavyugaTextField(
+                            value = exitPrice,
+                            onValueChange = { exitPrice = it },
+                            label = "Exit Price",
+                            icon = Icons.Default.MonetizationOn,
+                            isNumber = true
+                        )
                     }
                     Box(Modifier.weight(1f)) {
-                        NavyugaTextField(value = totalProfit, onValueChange = { totalProfit = it }, label = "Total Profit", icon = Icons.Default.TrendingUp, isNumber = true)
+                        NavyugaTextField(
+                            value = totalProfit,
+                            onValueChange = { totalProfit = it },
+                            label = "Total Profit",
+                            icon = Icons.Default.TrendingUp,
+                            isNumber = true
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -216,45 +288,155 @@ fun AddPropertyScreen(
 
             SectionHeader("Specifications")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = area, onValueChange = { area = it }, label = "Area (Sq Ft)", icon = Icons.Default.SquareFoot, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = floor, onValueChange = { floor = it }, label = "Floor", icon = Icons.Default.Layers) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = area,
+                        onValueChange = { area = it },
+                        label = "Area (Sq Ft)",
+                        icon = Icons.Default.SquareFoot,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = floor,
+                        onValueChange = { floor = it },
+                        label = "Floor",
+                        icon = Icons.Default.Layers
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = age, onValueChange = { age = it }, label = "Age of Building", icon = Icons.Default.DateRange, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = carPark, onValueChange = { carPark = it }, label = "Car Park", icon = Icons.Default.DirectionsCar) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = age,
+                        onValueChange = { age = it },
+                        label = "Age of Building",
+                        icon = Icons.Default.DateRange,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = carPark,
+                        onValueChange = { carPark = it },
+                        label = "Car Park",
+                        icon = Icons.Default.DirectionsCar
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
             SectionHeader("Lease Information")
-            NavyugaTextField(value = tenantName, onValueChange = { tenantName = it }, label = "Tenant Name", icon = Icons.Default.Person)
+            NavyugaTextField(
+                value = tenantName,
+                onValueChange = { tenantName = it },
+                label = "Tenant Name",
+                icon = Icons.Default.Person
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period (Years)", icon = Icons.Default.Timer, isNumber = true)
-
+            NavyugaTextField(
+                value = occupationPeriod,
+                onValueChange = { occupationPeriod = it },
+                label = "Occupation Period (Years)",
+                icon = Icons.Default.Timer,
+                isNumber = true
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = escalationPercent, onValueChange = { escalationPercent = it }, label = "Escalation %", icon = Icons.Default.TrendingUp, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = escalationYears, onValueChange = { escalationYears = it }, label = "Every X Years", icon = Icons.Default.Update, isNumber = true) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = escalationPercent,
+                        onValueChange = { escalationPercent = it },
+                        label = "Escalation %",
+                        icon = Icons.Default.TrendingUp,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = escalationYears,
+                        onValueChange = { escalationYears = it },
+                        label = "Every X Years",
+                        icon = Icons.Default.Update,
+                        isNumber = true
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             SectionHeader("Financial Analysis")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = totalValuation, onValueChange = { totalValuation = it }, label = "Price (Total)", icon = Icons.Default.MonetizationOn, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = minInvest, onValueChange = { minInvest = it }, label = "Min Invest", icon = Icons.Default.AttachMoney, isNumber = true) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = totalValuation,
+                        onValueChange = { totalValuation = it },
+                        label = "Price (Total)",
+                        icon = Icons.Default.MonetizationOn,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = minInvest,
+                        onValueChange = { minInvest = it },
+                        label = "Min Invest",
+                        icon = Icons.Default.AttachMoney,
+                        isNumber = true
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = monthlyRent, onValueChange = { monthlyRent = it }, label = "Monthly Rent", icon = Icons.Default.Payments, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = grossAnnualRent, onValueChange = { grossAnnualRent = it }, label = "Gross Annual (Auto)", icon = Icons.Default.AccountBalanceWallet, isNumber = true) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = monthlyRent,
+                        onValueChange = { monthlyRent = it },
+                        label = "Monthly Rent",
+                        icon = Icons.Default.Payments,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = grossAnnualRent,
+                        onValueChange = { grossAnnualRent = it },
+                        label = "Gross Annual (Auto)",
+                        icon = Icons.Default.AccountBalanceWallet,
+                        isNumber = true
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = annualPropertyTax, onValueChange = { annualPropertyTax = it }, label = "Annual Tax", icon = Icons.Default.ReceiptLong, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI % (Auto)", icon = Icons.Default.Percent, isNumber = true) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = annualPropertyTax,
+                        onValueChange = { annualPropertyTax = it },
+                        label = "Annual Tax",
+                        icon = Icons.Default.ReceiptLong,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = roi,
+                        onValueChange = { roi = it },
+                        label = "ROI % (Auto)",
+                        icon = Icons.Default.Percent,
+                        isNumber = true
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = fundedPercent, onValueChange = { fundedPercent = it }, label = "Funded % (0-100)", icon = Icons.Default.PieChart, isNumber = true)
+            NavyugaTextField(
+                value = fundedPercent,
+                onValueChange = { fundedPercent = it },
+                label = "Funded % (0-100)",
+                icon = Icons.Default.PieChart,
+                isNumber = true
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -263,21 +445,38 @@ fun AddPropertyScreen(
                 isLoading = uploadState is UiState.Loading,
                 onClick = {
                     if (title.isNotEmpty() && totalValuation.isNotEmpty()) {
-                        val finalEscalation = if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
+                        val finalEscalation =
+                            if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
 
                         viewModel.listNewProperty(
-                            title = title, description = description, type = type, status = status,
-                            address = address, city = city, state = state,
-                            age = age, area = area, floor = floor, carPark = carPark,
-                            totalValuation = totalValuation, minInvest = minInvest, roi = roi.toDoubleOrNull() ?: 0.0, fundedPercent = fundedPercent.toIntOrNull() ?: 0,
-                            monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
-                            tenantName = tenantName, occupationPeriod = occupationPeriod,
+                            title = title,
+                            description = description,
+                            type = type,
+                            status = status,
+                            address = address,
+                            city = city,
+                            state = state,
+                            age = age,
+                            area = area,
+                            floor = floor,
+                            carPark = carPark,
+                            totalValuation = totalValuation,
+                            minInvest = minInvest,
+                            roi = roi.toDoubleOrNull() ?: 0.0,
+                            fundedPercent = fundedPercent.toIntOrNull() ?: 0,
+                            monthlyRent = monthlyRent,
+                            grossAnnualRent = grossAnnualRent,
+                            annualPropertyTax = annualPropertyTax,
+                            tenantName = tenantName,
+                            occupationPeriod = occupationPeriod,
                             escalation = finalEscalation,
-                            exitPrice = exitPrice, totalProfit = totalProfit,
-                            // ⚡ PASSING NEW FIELDS
+                            exitPrice = exitPrice,
+                            totalProfit = totalProfit,
                             legalWrapper = legalWrapper,
                             totalUnits = totalUnits,
                             liquidityRules = liquidityRules,
+                            // ⚡ PASS TRENDING
+                            isTrending = isTrendingSelection == "Yes",
                             imageUris = selectedImageUris
                         )
                     } else {
