@@ -1,30 +1,39 @@
 package com.example.mahayuga.feature.navyuga.presentation.search
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
-import com.example.mahayuga.feature.navyuga.presentation.home.StoryCircle
+import com.example.mahayuga.feature.navyuga.presentation.home.SearchBarRow
 import com.example.mahayuga.feature.navyuga.presentation.home.StoryState
+
+private val StoryGradientStart = Color(0xFF4361EE)
+private val StoryGradientEnd = Color(0xFF3F37C9)
 
 @Composable
 fun SearchResultsScreen(
@@ -32,7 +41,7 @@ fun SearchResultsScreen(
     city: String,
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
-    onRoiClick: () -> Unit, // Passed from NavHost
+    onRoiClick: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     LaunchedEffect(country, city) {
@@ -60,26 +69,27 @@ fun SearchResultsScreen(
             }
         },
         floatingActionButton = {
-            // ⚡ EXACT REPLICA FAB
             FloatingActionButton(
                 onClick = onRoiClick,
-                containerColor = Color(0xFF4361EE),
+                containerColor = Color(0xFF4361EE).copy(alpha = 0.8f),
                 contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(90.dp)
                     .offset(y = 20.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(8.dp)
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(28.dp))
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(24.dp))
                     Text(
-                        "ROI\nCalculator",
+                        "Calculate\nROI",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = 10.sp,
-                            lineHeight = 12.sp
+                            lineHeight = 11.sp,
+                            fontWeight = FontWeight.Bold
                         ),
                         textAlign = TextAlign.Center
                     )
@@ -90,6 +100,12 @@ fun SearchResultsScreen(
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(padding)) {
+
+            // 6. Added Search Option from Home Screen
+            SearchBarRow(onFilterClick = { /* Handle Filter in Results if needed */ })
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             when (val state = searchState) {
                 is UiState.Loading -> {
                     Box(
@@ -102,7 +118,10 @@ fun SearchResultsScreen(
                     Box(
                         Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
-                    ) { Text(state.message, color = Color.Red) }
+                    ) {
+                        // 7. Changed "No funding..." to "Coming Soon"
+                        Text("Coming Soon", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
+                    }
                 }
 
                 is UiState.Success -> {
@@ -131,7 +150,7 @@ fun SearchResultsScreen(
                             )
                         }
 
-                        // ⚡ RESTORED STORIES
+                        // Stories Row
                         item {
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -171,5 +190,50 @@ fun SearchResultsScreen(
                 else -> {}
             }
         }
+    }
+}
+
+@Composable
+fun StoryCircle(story: StoryState, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }) {
+        Box(modifier = Modifier.size(76.dp), contentAlignment = Alignment.Center) {
+            if (!story.isSeen) {
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .border(
+                            width = 2.5.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    StoryGradientStart,
+                                    StoryGradientEnd
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                )
+            }
+            AsyncImage(
+                model = story.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(66.dp)
+                    .clip(CircleShape)
+                    .background(Color.Gray)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = story.title,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (story.isSeen) Color.Gray else Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(70.dp),
+            textAlign = TextAlign.Center
+        )
     }
 }

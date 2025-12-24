@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.mahayuga.ui.theme.BrandBlue
 
 private val SettingsBg = Color(0xFF050505)
@@ -31,7 +29,8 @@ private val TextGrey = Color(0xFF888888)
 fun SettingsScreen(
     onBackClick: () -> Unit
 ) {
-    var hapticEnabled by remember { mutableStateOf(true) }
+    // State for notification toggle
+    var notificationsEnabled by remember { mutableStateOf(true) }
 
     Scaffold(
         containerColor = SettingsBg,
@@ -67,38 +66,28 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Language
+            // 1. Language (Fixed)
             SettingsOptionCard(
                 icon = Icons.Outlined.Language,
                 title = "Language",
-                value = "EN",
-                onClick = {}
+                value = "EN"
             )
 
-            // 2. Currency
+            // 2. Currency (Changed Icon, Fixed INR)
             SettingsOptionCard(
-                icon = Icons.Outlined.AttachMoney,
+                icon = Icons.Outlined.CurrencyRupee, // Changed to Rupee Icon
                 title = "Currency",
-                value = "AED", // Matching screenshot
-                onClick = {}
+                value = "INR"
             )
 
-            // 3. Investment Preferences
+            // 3. Investment Preferences (Fixed)
             SettingsOptionCard(
-                icon = Icons.Outlined.Tune, // Sliders icon works well here
+                icon = Icons.Outlined.Tune,
                 title = "Investment preferences",
-                value = "Unselected",
-                onClick = {}
+                value = "Fixed"
             )
 
-            // 4. Notifications
-            SettingsOptionCard(
-                icon = Icons.Outlined.Notifications,
-                title = "Notifications settings",
-                onClick = {}
-            )
-
-            // 5. Haptic Feedback (Switch)
+            // 4. Notifications (Toggle Switch)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -112,34 +101,26 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Outlined.Vibration,
+                        Icons.Outlined.Notifications,
                         null,
                         tint = BrandBlue,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Haptic feedback",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "Enable haptic feedback as you navigate through the app.",
-                            color = TextGrey,
-                            style = MaterialTheme.typography.bodySmall,
-                            lineHeight = 16.sp
-                        )
-                    }
+                    Text(
+                        text = "Notification settings",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
 
                     Switch(
-                        checked = hapticEnabled,
-                        onCheckedChange = { hapticEnabled = it },
+                        checked = notificationsEnabled,
+                        onCheckedChange = { notificationsEnabled = it },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
-                            checkedTrackColor = BrandBlue, // Greenish in screenshot, but keeping Brand consistency
+                            checkedTrackColor = BrandBlue,
                             uncheckedThumbColor = Color.Gray,
                             uncheckedTrackColor = Color.DarkGray
                         )
@@ -147,12 +128,13 @@ fun SettingsScreen(
                 }
             }
 
-            // 6. Appearance
+            // 5. Haptic Feedback REMOVED
+
+            // 6. Appearance (Fixed Dark)
             SettingsOptionCard(
-                icon = Icons.Outlined.Contrast, // Or DarkMode icon
+                icon = Icons.Outlined.Contrast,
                 title = "Appearance",
-                value = "System",
-                onClick = {}
+                value = "Dark"
             )
         }
     }
@@ -163,12 +145,12 @@ fun SettingsOptionCard(
     icon: ImageVector,
     title: String,
     value: String? = null,
-    onClick: () -> Unit
+    onClick: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardBg),
         border = BorderStroke(1.dp, BorderColor)
@@ -193,16 +175,11 @@ fun SettingsOptionCard(
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextGrey,
-                    modifier = Modifier.padding(end = 8.dp)
+                    color = TextGrey
                 )
             }
 
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                null,
-                tint = TextGrey
-            )
+            // Arrows removed per request
         }
     }
 }

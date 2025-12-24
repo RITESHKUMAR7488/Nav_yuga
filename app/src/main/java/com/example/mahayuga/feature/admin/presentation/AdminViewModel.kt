@@ -204,7 +204,6 @@ class AdminViewModel @Inject constructor(
                 val finalProperty = updatedFields.copy(
                     id = originalProperty.id,
                     assetId = originalProperty.assetId,
-                    // ⚡ Ensure trending status is carried over if edited
                     isTrending = updatedFields.isTrending,
                     imageUrls = finalImages
                 )
@@ -221,7 +220,7 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ UPDATED: Accept isTrending parameter
+    // ⚡ UPDATED: Accept assetManager
     fun listNewProperty(
         title: String, description: String, type: String, status: String,
         address: String, city: String, state: String,
@@ -231,7 +230,8 @@ class AdminViewModel @Inject constructor(
         tenantName: String, occupationPeriod: String, escalation: String,
         exitPrice: String, totalProfit: String,
         legalWrapper: String, totalUnits: String, liquidityRules: String,
-        isTrending: Boolean, // ⚡ NEW PARAM
+        isTrending: Boolean,
+        assetManager: String, // ⚡ NEW PARAM
         imageUris: List<Uri>
     ) {
         viewModelScope.launch {
@@ -278,7 +278,8 @@ class AdminViewModel @Inject constructor(
                     legalWrapper = legalWrapper,
                     totalUnits = totalUnits,
                     liquidityRules = liquidityRules,
-                    isTrending = isTrending, // ⚡ SAVE TRENDING STATUS
+                    isTrending = isTrending,
+                    assetManager = assetManager, // ⚡ SAVING TO DB
                     imageUrls = uploadedImageUrls
                 )
 

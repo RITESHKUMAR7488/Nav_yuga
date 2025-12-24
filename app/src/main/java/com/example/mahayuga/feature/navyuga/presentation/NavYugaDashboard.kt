@@ -3,6 +3,8 @@ package com.example.mahayuga.feature.navyuga.presentation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -28,8 +30,8 @@ import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
 import com.example.mahayuga.feature.navyuga.presentation.trade.TradeScreen
 
 private val NavBackground = Color.Black
-private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
-private val SelectedIconColor = Color.White
+private val UnselectedIconColor = Color.White
+private val SelectedIconColor = Color(0xFF2979FF)
 private val IndicatorColor = Color.Transparent
 private val BorderColor = Color.White.copy(alpha = 0.15f)
 
@@ -40,21 +42,32 @@ fun NavYugaDashboard(
     onThemeToggle: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToSecurity: () -> Unit, // ⚡ NEW
-    onNavigateToHelp: () -> Unit      // ⚡ NEW
+    onNavigateToSecurity: () -> Unit,
+    onNavigateToHelp: () -> Unit,
+    onNavigateToMenu: () -> Unit
 ) {
     val navController = rememberNavController()
 
     val items = listOf(
         BottomNavItem("Home", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
         BottomNavItem("Search", "ay_search", Icons.Filled.Search, Icons.Outlined.Search),
-        BottomNavItem("Trade", "ay_trade", Icons.Filled.Paid, Icons.Outlined.Paid),
+
+        // ⚡ CHANGED: "Trade" -> "Invest" with TrendingUp Icon (Growth Arrow)
         BottomNavItem(
-            "Reels",
-            "ay_reels",
-            Icons.Filled.SlowMotionVideo,
-            Icons.Outlined.SlowMotionVideo
+            "Trade",
+            "ay_trade",
+            Icons.AutoMirrored.Filled.TrendingUp,
+            Icons.AutoMirrored.Outlined.TrendingUp
         ),
+
+        // ⚡ CHANGED: Discovery Icon to Category (Shapes/Grid look)
+        BottomNavItem(
+            "Discover",
+            "ay_reels",
+            Icons.Filled.Category,
+            Icons.Outlined.Category
+        ),
+
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
@@ -152,8 +165,10 @@ fun NavYugaDashboard(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },
                     onNavigateToAccount = { rootNavController.navigate("account_details") },
                     onNavigateToSettings = onNavigateToSettings,
-                    onNavigateToSecurity = onNavigateToSecurity, // ⚡ PASS DOWN
-                    onNavigateToHelp = onNavigateToHelp,         // ⚡ PASS DOWN
+                    onNavigateToSecurity = onNavigateToSecurity,
+                    onNavigateToHelp = onNavigateToHelp,
+                    onNavigateToWallet = { rootNavController.navigate("wallet_screen") },
+                    onNavigateToMenu = onNavigateToMenu,
                     onLogout = onLogout
                 )
             }

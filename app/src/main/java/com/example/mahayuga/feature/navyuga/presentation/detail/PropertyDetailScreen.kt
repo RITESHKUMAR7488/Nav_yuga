@@ -220,7 +220,6 @@ fun PropertyDetailScreen(
                                     .width(1.dp),
                                 color = Color.White.copy(alpha = 0.1f)
                             )
-                            // ⚡ PROFIT -> WHITE (Not Green)
                             StatItem(
                                 label = "Profit",
                                 value = "₹${formatIndian(property.totalProfit)}",
@@ -246,7 +245,6 @@ fun PropertyDetailScreen(
                                     .width(1.dp),
                                 color = Color.White.copy(alpha = 0.1f)
                             )
-                            // ⚡ ROI -> WHITE (Not Green)
                             StatItem(label = "ROI", value = "${property.roi}%", isHighlight = false)
                         }
                     }
@@ -267,9 +265,14 @@ fun PropertyDetailScreen(
                         value2 = property.carPark
                     )
 
+                    // ⚡ NEW: Asset Manager Row
+                    if (property.assetManager.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        InfoRow("Asset Manager", property.assetManager)
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // ⚡ EXITED: Exit Performance
                     if (isExited) {
                         SectionTitle("Exit Performance")
                         Card(
@@ -298,7 +301,6 @@ fun PropertyDetailScreen(
                             }
                         }
                     } else {
-                        // ⚡ ACTIVE: Restored Lease & Financials
                         SectionTitle("Lease Details")
                         InfoRow("Tenant", property.tenantName)
                         InfoRow("Occupancy", "${property.occupationPeriod} Years")

@@ -3,7 +3,9 @@ package com.example.mahayuga.feature.auth.presentation
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
@@ -45,6 +47,7 @@ fun RegisterScreen(
     // Form States
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") } // ⚡ New Phone State
     var password by remember { mutableStateOf("") }
     var dob by remember { mutableStateOf("") }
 
@@ -77,7 +80,8 @@ fun RegisterScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(GptBlack)
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()), // Added scroll for small screens
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(40.dp))
@@ -109,6 +113,17 @@ fun RegisterScreen(
             onValueChange = { email = it },
             label = "Email address",
             keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ⚡ Phone Number Field
+        GptTextField(
+            value = phone,
+            onValueChange = { if (it.all { char -> char.isDigit() }) phone = it },
+            label = "Phone Number",
+            keyboardType = KeyboardType.Phone,
             imeAction = ImeAction.Next
         )
 
@@ -148,7 +163,6 @@ fun RegisterScreen(
             singleLine = true
         )
 
-        // ⚡ M3 Date Picker Dialog
         if (showDatePicker) {
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
@@ -174,12 +188,9 @@ fun RegisterScreen(
                 )
             ) {
                 DatePicker(state = datePickerState)
-
-                // ⚡ The Snippet You Requested
                 LaunchedEffect(datePickerState.selectedDateMillis) {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                        // Ensure UTC timezone to prevent date shifting
                         formatter.timeZone = TimeZone.getTimeZone("UTC")
                         dob = formatter.format(Date(millis))
                         showDatePicker = false
@@ -277,7 +288,7 @@ fun RegisterScreen(
         }
 
         Button(
-            onClick = { viewModel.register(name, email, password, dob) },
+            onClick = { viewModel.register(name, email, password, dob, phone) }, // ⚡ Pass phone
             modifier = Modifier.fillMaxWidth().height(50.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = GptTextWhite,
@@ -301,5 +312,6 @@ fun RegisterScreen(
                 Text("Log in", color = GptBrandGreen, fontWeight = FontWeight.Bold)
             }
         }
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }

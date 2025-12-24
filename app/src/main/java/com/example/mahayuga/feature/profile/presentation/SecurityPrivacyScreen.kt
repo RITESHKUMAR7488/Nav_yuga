@@ -36,8 +36,6 @@ private val TextGrey = Color(0xFF888888)
 fun SecurityPrivacyScreen(
     onBackClick: () -> Unit
 ) {
-    var biometricEnabled by remember { mutableStateOf(true) }
-
     Scaffold(
         containerColor = ScreenBg,
         topBar = {
@@ -56,7 +54,7 @@ fun SecurityPrivacyScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
                 },
-                actions = { Spacer(modifier = Modifier.width(48.dp)) }, // Center title hack
+                actions = { Spacer(modifier = Modifier.width(48.dp)) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = ScreenBg)
             )
         }
@@ -73,7 +71,7 @@ fun SecurityPrivacyScreen(
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color(0xFF0A1E3F), ScreenBg), // Dark Blue to Black fade
+                            colors = listOf(Color(0xFF0A1E3F), ScreenBg),
                             startY = 0f,
                             endY = 300f
                         )
@@ -97,18 +95,17 @@ fun SecurityPrivacyScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
-                    // Lock Icon Box (Blue)
                     Box(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(BrandBlue.copy(alpha = 0.2f)), // Blue tint
+                            .background(BrandBlue.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Lock,
                             contentDescription = null,
-                            tint = BrandBlue, // Blue Icon
+                            tint = BrandBlue,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -128,7 +125,7 @@ fun SecurityPrivacyScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Biometric Toggle
+                    // Biometric Toggle (Fixed)
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -139,10 +136,20 @@ fun SecurityPrivacyScreen(
                             modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Outlined.Fingerprint, null, tint = BrandBlue, modifier = Modifier.size(24.dp))
+                            Icon(
+                                Icons.Outlined.Fingerprint,
+                                null,
+                                tint = BrandBlue,
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Biometric authentication", color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Biometric authentication",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Enable for added security and streamline your login process",
@@ -151,11 +158,11 @@ fun SecurityPrivacyScreen(
                                 )
                             }
                             Switch(
-                                checked = biometricEnabled,
-                                onCheckedChange = { biometricEnabled = it },
+                                checked = true, // ⚡ Fixed to True
+                                onCheckedChange = { }, // ⚡ No Action (Fixed)
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = Color.White,
-                                    checkedTrackColor = BrandBlue, // Blue Track
+                                    checkedTrackColor = BrandBlue,
                                     uncheckedThumbColor = Color.Gray,
                                     uncheckedTrackColor = Color.DarkGray
                                 )
@@ -163,19 +170,21 @@ fun SecurityPrivacyScreen(
                         }
                     }
 
-                    // MFA
+                    // MFA (Coming Soon, No Arrow)
                     SecurityOptionItem(
                         icon = Icons.Outlined.Security,
                         title = "Multi-factor authentication",
-                        subtitle = "MFA adds an extra layer of security by requiring a one-time verification code.",
+                        subtitle = "Coming Soon",
+                        showArrow = false, // ⚡ Removed Arrow
                         onClick = {}
                     )
 
-                    // Social Logins
+                    // Social Logins (Coming Soon, No Arrow)
                     SecurityOptionItem(
                         icon = Icons.Outlined.Link,
                         title = "Social logins",
-                        subtitle = "Manage your social logins",
+                        subtitle = "Coming Soon",
+                        showArrow = false, // ⚡ Removed Arrow
                         onClick = {}
                     )
                 }
@@ -189,21 +198,23 @@ fun SecurityPrivacyScreen(
                         fontWeight = FontWeight.Bold
                     )
 
+                    // Privacy Policy (Updating, No Arrow)
                     SecurityOptionItem(
                         icon = Icons.Outlined.Description,
                         title = "Privacy policy",
-                        subtitle = null,
+                        subtitle = "Updating", // ⚡ Changed Text
+                        showArrow = false, // ⚡ Removed Arrow
                         onClick = {}
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 4. FOOTER (Regulation)
+                // 4. FOOTER (Regulation Update)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)) // Dark grey footer
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E))
                 ) {
                     Row(
                         modifier = Modifier
@@ -215,14 +226,16 @@ fun SecurityPrivacyScreen(
                         Icon(
                             Icons.Filled.CheckCircle,
                             null,
-                            tint = BrandBlue, // Blue Check
+                            tint = BrandBlue,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
+                        // ⚡ Updated Footer Text
                         Text(
-                            text = "Navyuga is regulated by DFSA | License: F005879",
+                            text = "Navyuga will comply with SEBI if necessary in near future",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextGrey
+                            color = TextGrey,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
@@ -238,6 +251,7 @@ fun SecurityOptionItem(
     icon: ImageVector,
     title: String,
     subtitle: String?,
+    showArrow: Boolean = true, // ⚡ Added Param
     onClick: () -> Unit
 ) {
     Card(
@@ -255,7 +269,12 @@ fun SecurityOptionItem(
             Icon(icon, null, tint = BrandBlue, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
                 if (subtitle != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -266,11 +285,13 @@ fun SecurityOptionItem(
                     )
                 }
             }
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                null,
-                tint = TextGrey
-            )
+            if (showArrow) { // ⚡ Conditionally show arrow
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    null,
+                    tint = TextGrey
+                )
+            }
         }
     }
 }

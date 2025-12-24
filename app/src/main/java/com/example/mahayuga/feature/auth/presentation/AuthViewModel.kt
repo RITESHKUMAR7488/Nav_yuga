@@ -44,19 +44,19 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // ⚡ UPDATE: Accepts DOB and sets default isApproved = false
-    fun register(name: String, email: String, pass: String, dob: String) {
+    // ⚡ UPDATE: Added phone parameter
+    fun register(name: String, email: String, pass: String, dob: String, phone: String) {
         viewModelScope.launch {
             val user = UserModel(
                 name = name,
                 email = email,
                 dob = dob,
+                phone = phone, // ⚡ Storing phone in Firebase
                 role = "user",
                 isApproved = false // Default for new users
             )
             repository.registerUser(user, pass).collect { state ->
                 _registerState.value = state
-                // Note: We do NOT save login state here because they are pending approval
             }
         }
     }

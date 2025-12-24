@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.auth.data.model.UserModel // Import UserModel
+import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.components.GptTextField
 
 // Dark Theme Colors
@@ -36,7 +36,6 @@ fun LoginScreen(
 
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
-            // ⚡ FIXED: Check Role to determine destination
             val user = (loginState as UiState.Success<UserModel>).data
 
             val destination = if (user.role == "admin") {
@@ -46,7 +45,6 @@ fun LoginScreen(
             }
 
             navController.navigate(destination) {
-                // Clear back stack so they can't go back to login/welcome
                 popUpTo("welcome") { inclusive = true }
             }
         }
@@ -64,8 +62,9 @@ fun LoginScreen(
     ) {
         Spacer(modifier = Modifier.height(60.dp))
 
+        // ⚡ CHANGED: Text to "Log in"
         Text(
-            text = "Welcome back",
+            text = "Log in",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = GptTextWhite

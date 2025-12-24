@@ -2,6 +2,7 @@ package com.example.mahayuga.feature.navyuga.presentation.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
@@ -22,7 +23,7 @@ import com.example.mahayuga.ui.theme.BrandBlue
 @Composable
 fun SearchScreen(
     navController: NavController,
-    onRoiClick: () -> Unit, // Passed from NavHost
+    onRoiClick: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     var selectedCountry by remember { mutableStateOf("India") }
@@ -31,26 +32,28 @@ fun SearchScreen(
     Scaffold(
         containerColor = Color.Black,
         floatingActionButton = {
-            // ⚡ EXACT REPLICA OF HOME FAB
+            // ⚡ UPDATED: Transparent Blue Circle ROI Button
             FloatingActionButton(
                 onClick = onRoiClick,
-                containerColor = Color(0xFF4361EE),
+                containerColor = Color(0xFF4361EE).copy(alpha = 0.8f), // Transparent Blue
                 contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(90.dp)
                     .offset(y = 20.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(8.dp)
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(28.dp))
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(24.dp))
                     Text(
-                        "ROI\nCalculator",
+                        "Calculate\nROI",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = 10.sp,
-                            lineHeight = 12.sp
+                            lineHeight = 11.sp,
+                            fontWeight = FontWeight.Bold
                         ),
                         textAlign = TextAlign.Center
                     )
@@ -58,10 +61,12 @@ fun SearchScreen(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
             Text(
                 text = "Find Properties",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),

@@ -9,8 +9,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,8 +33,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.R
 import com.example.mahayuga.core.common.BiometricAuthenticator
-import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,7 +40,6 @@ import kotlinx.coroutines.launch
 private val BackgroundBlack = Color(0xFF050505)
 private val CardDarkSurface = Color(0xFF0A0F14)
 private val NavyugaBlue = Color(0xFF2979FF)
-private val InactiveGrey = Color(0xFF424242)
 
 @Composable
 fun HubScreen(
@@ -47,19 +48,13 @@ fun HubScreen(
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToSecurity: () -> Unit, // ⚡ NEW
-    onNavigateToHelp: () -> Unit,     // ⚡ NEW
+    onNavigateToSecurity: () -> Unit,
+    onNavigateToHelp: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf("Yuga") }
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-
-    val currentUserState by profileViewModel.currentUser.collectAsState()
-    val userName = if (currentUserState is UiState.Success) {
-        (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
-    } else "User"
-
     val biometricAuth = remember { BiometricAuthenticator(context) }
 
     Scaffold(
@@ -74,7 +69,6 @@ fun HubScreen(
             .padding(paddingValues)) {
             if (selectedTab == "Yuga") {
                 YugaContent(
-                    userName = userName,
                     onNavyugaClick = {
                         val activity = context as? FragmentActivity
                         if (activity != null) {
@@ -96,50 +90,90 @@ fun HubScreen(
                     }
                 )
             } else {
-                ProfileScreen(
-                    onNavigateToLiked = { navController.navigate("liked_properties") },
-                    onNavigateToAccount = { navController.navigate("account_details") },
-                    onNavigateToSettings = onNavigateToSettings,
-                    onNavigateToSecurity = onNavigateToSecurity, // ⚡ PASS DOWN
-                    onNavigateToHelp = onNavigateToHelp,         // ⚡ PASS DOWN
-                    onLogout = onLogout
+                HubProfileScreen(
+                    onLogout = {
+                        profileViewModel.logout()
+                        onLogout()
+                    },
+                    onSettings = onNavigateToSettings,
+                    onAbout = { /* Handle About */ }
                 )
             }
         }
     }
 }
 
-// ... YugaContent, HubCard, HubBottomBar unchanged ...
 @Composable
-fun YugaContent(userName: String, onNavyugaClick: () -> Unit) {
+fun HubProfileScreen(
+    onLogout: () -> Unit,
+    onSettings: () -> Unit,
+    onAbout: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundBlack)
+            .padding(24.dp)
+    ) {
+        Text(
+            text = "Profile",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+
+        HubProfileOptionItem(Icons.Outlined.Info, "About Mahayuga", onClick = onAbout)
+        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 12.dp))
+
+        HubProfileOptionItem(Icons.Outlined.Settings, "Settings", onClick = onSettings)
+        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 12.dp))
+
+        HubProfileOptionItem(Icons.AutoMirrored.Filled.ExitToApp, "Log out", onClick = onLogout, textColor = Color.White)
+    }
+}
+
+@Composable
+fun HubProfileOptionItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    onClick: () -> Unit,
+    textColor: Color = Color.White
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = textColor,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Color.Gray)
+    }
+}
+
+@Composable
+fun YugaContent(onNavyugaClick: () -> Unit) {
     val scope = rememberCoroutineScope()
     var cardsVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { scope.launch { delay(300); cardsVisible = true } }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(60.dp))
-        Text(
-            text = "Welcome, $userName",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Medium,
-                color = Color.Gray
-            )
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Box(contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(id = R.drawable.mahayuga),
-                contentDescription = "Mahayuga",
-                modifier = Modifier
-                    .size(280.dp)
-                    .alpha(0.9f)
-            )
-        }
-        Spacer(modifier = Modifier.height(24.dp))
+        // Shifted everything up
+        Spacer(modifier = Modifier.height(40.dp))
+
         Text(
             text = "MAHAYUGA",
             style = MaterialTheme.typography.displayMedium.copy(
@@ -148,26 +182,40 @@ fun YugaContent(userName: String, onNavyugaClick: () -> Unit) {
                 color = Color.White
             )
         )
-        Spacer(modifier = Modifier.weight(1f))
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Box(contentAlignment = Alignment.Center) {
+            Image(
+                painter = painterResource(id = R.drawable.mahayuga),
+                contentDescription = "Mahayuga",
+                modifier = Modifier
+                    .size(120.dp)
+                    .alpha(0.9f)
+            )
+        }
+
+        // ⚡ CHANGE: Replaced weight(1f) with fixed spacer to keep cards "up"
+        Spacer(modifier = Modifier.height(48.dp))
+
         androidx.compose.animation.AnimatedVisibility(
             visible = cardsVisible,
             enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { 100 }) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 HubCard(
-                    title = "Navyuga",
-                    subtitle = null,
+                    title = "NAVYUGA",
+                    subtitle = "Ownership For All",
                     iconRes = R.drawable.navyuga,
                     isActive = true,
                     onClick = onNavyugaClick,
                     modifier = Modifier.weight(1f)
                 )
                 HubCard(
-                    title = "Arthyuga",
+                    title = "ARTHYUGA",
                     subtitle = "COMING SOON",
                     iconRes = R.drawable.arthyuga,
                     isActive = true,
@@ -234,7 +282,7 @@ fun HubCard(
                         text = subtitle,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = InactiveGrey
+                            color = Color.White
                         )
                     )
                 }

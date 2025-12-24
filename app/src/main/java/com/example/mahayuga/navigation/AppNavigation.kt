@@ -32,10 +32,12 @@ import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScr
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.navyuga.presentation.splash.NavyugaSplashScreen
 import com.example.mahayuga.feature.profile.presentation.AccountDetailsScreen
-import com.example.mahayuga.feature.profile.presentation.HelpCenterScreen // ⚡ NEW
+import com.example.mahayuga.feature.profile.presentation.HelpCenterScreen
 import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
-import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen // ⚡ NEW
+import com.example.mahayuga.feature.profile.presentation.ProfileMenuScreen
+import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
+import com.example.mahayuga.feature.profile.presentation.WalletScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
 
 @Composable
@@ -61,8 +63,8 @@ fun AppNavigation(
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
                 onNavigateToSettings = { navController.navigate("settings_screen") },
-                onNavigateToSecurity = { navController.navigate("security_privacy") }, // ⚡ ADDED
-                onNavigateToHelp = { navController.navigate("help_center") } // ⚡ ADDED
+                onNavigateToSecurity = { navController.navigate("security_privacy") },
+                onNavigateToHelp = { navController.navigate("help_center") }
             )
         }
 
@@ -74,8 +76,23 @@ fun AppNavigation(
                 onThemeToggle = onThemeToggle,
                 onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } },
                 onNavigateToSettings = { navController.navigate("settings_screen") },
-                onNavigateToSecurity = { navController.navigate("security_privacy") }, // ⚡ ADDED
-                onNavigateToHelp = { navController.navigate("help_center") } // ⚡ ADDED
+                onNavigateToSecurity = { navController.navigate("security_privacy") },
+                onNavigateToHelp = { navController.navigate("help_center") },
+                // ⚡ Added callback for menu
+                onNavigateToMenu = { navController.navigate("profile_menu") }
+            )
+        }
+
+        // ⚡ NEW: Profile Menu Screen (Full Page)
+        composable("profile_menu") {
+            ProfileMenuScreen(
+                onBackClick = { navController.popBackStack() },
+                onNavigateToLiked = { navController.navigate("liked_properties") },
+                onNavigateToAccount = { navController.navigate("account_details") },
+                onNavigateToSettings = { navController.navigate("settings_screen") },
+                onNavigateToSecurity = { navController.navigate("security_privacy") },
+                onNavigateToHelp = { navController.navigate("help_center") },
+                onNavigateToWallet = { navController.navigate("wallet_screen") }
             )
         }
 
@@ -91,7 +108,6 @@ fun AppNavigation(
             SettingsScreen(onBackClick = { navController.popBackStack() })
         }
 
-        // ⚡ NEW SCREENS
         composable("security_privacy") {
             SecurityPrivacyScreen(onBackClick = { navController.popBackStack() })
         }
@@ -105,6 +121,10 @@ fun AppNavigation(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { id -> navController.navigate("property_detail/$id") }
             )
+        }
+
+        composable("wallet_screen") {
+            WalletScreen(onBackClick = { navController.popBackStack() })
         }
 
         // --- PROPERTY DETAILS & SEARCH ---
@@ -150,7 +170,6 @@ fun AppNavigation(
             EditPropertyScreen(navController = navController, propertyId = propertyId)
         }
 
-        // Investment Flow
         navigation(startDestination = "admin_register_investment", route = "investment_flow") {
             composable("admin_register_investment") { entry ->
                 val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
@@ -173,7 +192,6 @@ fun AppNavigation(
             }
         }
 
-        // --- SPLASH ---
         composable("navyuga_splash") {
             NavyugaSplashScreen(
                 onSplashFinished = { navController.navigate("navyuga_dashboard") { popUpTo("navyuga_splash") { inclusive = true } } }

@@ -53,6 +53,9 @@ data class PropertyModel(
     val occupationPeriod: String = "",
     val escalation: String = "",
 
+    // ⚡ NEW: Asset Manager Field
+    val assetManager: String = "",
+
     // Financial Analysis
     val monthlyRent: String = "",
     val grossAnnualRent: String = "",

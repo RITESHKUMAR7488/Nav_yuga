@@ -4,12 +4,11 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,8 +18,10 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,13 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,10 +43,9 @@ import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.auth.presentation.components.formatIndian
 
 private val DeepDarkBlue = Color(0xFF0F172A)
-private val StoryGradientStart = Color(0xFF4361EE)
-private val StoryGradientEnd = Color(0xFF3F37C9)
 private val FabColor = Color(0xFF4361EE)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToDetail: (String) -> Unit,
@@ -58,6 +56,8 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val supportNumber by viewModel.supportNumber.collectAsState()
     val context = LocalContext.current
+
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Color.Black,
@@ -70,23 +70,25 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onRoiClick,
-                containerColor = FabColor,
+                containerColor = FabColor.copy(alpha = 0.8f),
                 contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(90.dp)
                     .offset(y = 20.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(8.dp)
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(28.dp))
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(24.dp))
                     Text(
-                        "ROI\nCalculator",
+                        "Calculate\nROI",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = 10.sp,
-                            lineHeight = 12.sp
+                            lineHeight = 11.sp,
+                            fontWeight = FontWeight.Bold
                         ),
                         textAlign = TextAlign.Center
                     )
@@ -105,9 +107,11 @@ fun HomeScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // ⚡ REMOVED STORIES SECTION HERE
+                item {
+                    // Exported Search Bar to be reusable
+                    SearchBarRow(onFilterClick = { showFilterSheet = true })
+                }
 
-                // Filter Buttons
                 item {
                     Row(
                         modifier = Modifier
@@ -135,7 +139,6 @@ fun HomeScreen(
 
                 item { HorizontalDivider(color = Color.White.copy(0.1f)) }
 
-                // Property Feed
                 items(uiState.properties, key = { it.id }) { property ->
                     InstagramStylePropertyCard(
                         property = property,
@@ -155,20 +158,14 @@ fun HomeScreen(
                         },
                         onInvestClick = {
                             try {
-                                val message =
-                                    "Hello, I am interested in investing in *${property.title}*."
-                                val url =
-                                    "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                        Uri.encode(message)
-                                    }"
+                                val message = "Hello, I am interested in investing in *${property.title}*."
+                                val url = "https://api.whatsapp.com/send?phone=$supportNumber&text=${Uri.encode(message)}"
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = Uri.parse(url)
-                                    setPackage("com.whatsapp")
+                                    data = Uri.parse(url); setPackage("com.whatsapp")
                                 }
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier
@@ -177,7 +174,126 @@ fun HomeScreen(
                     )
                 }
 
-                item { Spacer(Modifier.height(100.dp)) }
+                item { Spacer(Modifier.height(16.dp)) }
+            }
+        }
+
+        if (showFilterSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showFilterSheet = false },
+                containerColor = Color(0xFF1E1E1E)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(
+                        "Filter Properties",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    FilterOptionRow("Location", listOf("Mumbai", "Bangalore", "Delhi"))
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                    // 3. UPDATED Budget options
+                    FilterOptionRow("Budget", listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"))
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                    FilterOptionRow("Asset Manager", listOf("Navyuga", "3rd Party"))
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                    FilterOptionRow("Type", listOf("Commercial", "Retail", "Warehousing"))
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Button(
+                        onClick = { showFilterSheet = false },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = FabColor),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Apply Filters", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
+    }
+}
+
+// ⚡ REUSABLE SEARCH BAR
+@Composable
+fun SearchBarRow(onFilterClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = { },
+            modifier = Modifier
+                .weight(1f)
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White.copy(alpha = 0.1f),
+                contentColor = Color.White.copy(alpha = 0.6f)
+            ),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Search, null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Search properties...",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .size(50.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.1f))
+                .clickable { onFilterClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.FilterList, "Filter", tint = Color.White)
+        }
+    }
+}
+
+@Composable
+fun FilterOptionRow(title: String, options: List<String>) {
+    Column {
+        Text(
+            title,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { option ->
+                SuggestionChip(
+                    onClick = { },
+                    label = { Text(option, color = Color.White) },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = Color.White.copy(alpha = 0.05f)
+                    ),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                )
             }
         }
     }
@@ -235,27 +351,70 @@ fun InstagramStylePropertyCard(
                 Icon(Icons.Default.MoreVert, "Options", tint = MaterialTheme.colorScheme.onSurface)
             }
 
-            // Image
+            // Image Container
             Box(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .height(320.dp)
-                    .clip(RoundedCornerShape(16.dp))
             ) {
                 AsyncImage(
                     model = property.mainImage,
                     contentDescription = "Property Image",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(16.dp))
                 )
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp)
+                        .size(50.dp)
+                        .background(Color.Black, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        progress = { property.fundedPercent / 100f },
+                        modifier = Modifier.fillMaxSize(),
+                        color = FabColor,
+                        trackColor = Color.White.copy(alpha = 0.2f),
+                        strokeWidth = 4.dp
+                    )
+                    Text(
+                        text = "${property.fundedPercent}%",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
-            // Stats Row
+            // 4. SWAPPED ROWS
+            // TOP ROW (Previously Bottom): Tenant, Area, Tenure
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 12.dp, start = 16.dp, end = 16.dp),
+                    .padding(top = 16.dp, bottom = 8.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PropertyStat("Tenant", property.tenantName.ifEmpty { "-" })
+                VerticalBar()
+                PropertyStat("Sq ft", property.area.ifEmpty { "-" })
+                VerticalBar()
+                PropertyStat(
+                    "Tenure",
+                    if (property.occupationPeriod.isNotEmpty()) "${property.occupationPeriod} Yrs" else "-"
+                )
+            }
+
+            // BOTTOM ROW (Previously Top): Price, Rent, ROI
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp, start = 16.dp, end = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -268,20 +427,19 @@ fun InstagramStylePropertyCard(
                 } else {
                     PropertyStat("Price", "₹${formatIndian(property.totalValuation)}")
                     VerticalBar()
-                    val rentToShow =
-                        if (property.monthlyRent.isNotEmpty()) property.monthlyRent else "0"
+                    val rentToShow = if (property.monthlyRent.isNotEmpty()) property.monthlyRent else "0"
                     PropertyStat("Rent", "₹${formatIndian(rentToShow)}")
                     VerticalBar()
                     PropertyStat("ROI", "${property.roi}%", true)
                 }
             }
 
-            // ⚡ FIX: "Own in min investment" Text Moved HERE (Middle)
+            // 5. Updated Text
             if (property.status == "Funding") {
                 Text(
-                    text = "Now you can own this property in min investment ₹${formatIndian(property.minInvest)}",
+                    text = "Min Investment - ₹${formatIndian(property.minInvest)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = FabColor, // Brand Blue
+                    color = FabColor,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 4.dp)
@@ -298,7 +456,6 @@ fun InstagramStylePropertyCard(
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // LIKE
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -313,7 +470,6 @@ fun InstagramStylePropertyCard(
                     )
                 }
 
-                // INVEST
                 if (!isExited && showInvestButton && property.status != "Funded") {
                     Box(
                         modifier = Modifier
@@ -332,7 +488,6 @@ fun InstagramStylePropertyCard(
                     Spacer(Modifier.weight(1f))
                 }
 
-                // SHARE
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -398,74 +553,31 @@ fun HomeTopBar(onBackClick: () -> Unit, onNotificationClick: () -> Unit) {
                 color = Color.White
             ),
             modifier = Modifier.align(Alignment.Center)
-        ); IconButton(
-        onClick = onBackClick,
-        modifier = Modifier
-            .size(40.dp)
-            .align(Alignment.CenterStart)
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "Back",
-            tint = Color.White
         )
-    }; IconButton(
-        onClick = onNotificationClick,
-        modifier = Modifier
-            .size(40.dp)
-            .align(Alignment.CenterEnd)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Notifications,
-            contentDescription = "Notifications",
-            tint = Color.White
-        )
-    }
-    }
-}
-
-@Composable
-fun StoryCircle(story: StoryState, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }) {
-        Box(modifier = Modifier.size(76.dp), contentAlignment = Alignment.Center) {
-            if (!story.isSeen) {
-                Box(
-                    modifier = Modifier
-                        .size(76.dp)
-                        .border(
-                            width = 2.5.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    StoryGradientStart,
-                                    StoryGradientEnd
-                                )
-                            ),
-                            shape = CircleShape
-                        )
-                )
-            }
-            AsyncImage(
-                model = story.imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(66.dp)
-                    .clip(CircleShape)
-                    .background(Color.Gray)
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterStart)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = story.title,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (story.isSeen) Color.Gray else Color.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(70.dp),
-            textAlign = TextAlign.Center
-        )
+        IconButton(
+            onClick = onNotificationClick,
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Notifications,
+                contentDescription = "Notifications",
+                tint = Color.White
+            )
+        }
     }
 }
 
@@ -476,10 +588,11 @@ fun PropertyStat(label: String, value: String, isHighlight: Boolean = false) {
             text = value,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = Color.White
-        ); Text(
-        text = label,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

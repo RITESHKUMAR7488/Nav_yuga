@@ -38,7 +38,9 @@ fun AddPropertyScreen(
     var type by remember { mutableStateOf("Office") }
     var status by remember { mutableStateOf("Funding") }
 
-    // ⚡ NEW TRENDING OPTION
+    // ⚡ NEW: Asset Manager
+    var assetManager by remember { mutableStateOf("") }
+
     var isTrendingSelection by remember { mutableStateOf("No") }
 
     var address by remember { mutableStateOf("") }
@@ -183,6 +185,16 @@ fun AddPropertyScreen(
                 icon = Icons.Default.Apartment
             )
             Spacer(modifier = Modifier.height(8.dp))
+
+            // ⚡ NEW: Asset Manager Field
+            NavyugaTextField(
+                value = assetManager,
+                onValueChange = { assetManager = it },
+                label = "Asset Manager Name",
+                icon = Icons.Default.PersonOutline
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
             NavyugaTextField(
                 value = address,
                 onValueChange = { address = it },
@@ -226,7 +238,6 @@ fun AddPropertyScreen(
                         onSelectionChange = { status = it })
                 }
                 Box(Modifier.weight(1f)) {
-                    // ⚡ TRENDING SELECTOR
                     NavyugaDropdown(
                         label = "Make Trending?",
                         options = listOf("Yes", "No"),
@@ -475,8 +486,8 @@ fun AddPropertyScreen(
                             legalWrapper = legalWrapper,
                             totalUnits = totalUnits,
                             liquidityRules = liquidityRules,
-                            // ⚡ PASS TRENDING
                             isTrending = isTrendingSelection == "Yes",
+                            assetManager = assetManager, // ⚡ Pass new field
                             imageUris = selectedImageUris
                         )
                     } else {

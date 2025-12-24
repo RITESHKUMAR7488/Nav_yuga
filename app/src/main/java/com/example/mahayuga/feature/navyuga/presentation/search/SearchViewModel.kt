@@ -25,18 +25,10 @@ class SearchViewModel @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
-    // 1. Raw Filtered Results (Without Like Status)
     private val _rawFilteredResults = MutableStateFlow<List<PropertyModel>>(emptyList())
-
-    // 2. User's Liked IDs (Real-time from Firestore)
     private val _likedPropertyIds = MutableStateFlow<Set<String>>(emptySet())
-
-    // 3. Loading/Error State
     private val _uiState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
 
-    // ⚡ COROUTINE MAGIC: combine()
-    // We combine the raw search results with the liked IDs.
-    // Whenever EITHER changes, this flow re-emits a new list with the correct 'isLiked' status.
     val searchResults: StateFlow<UiState<List<PropertyModel>>> = combine(
         _uiState,
         _rawFilteredResults,
@@ -47,11 +39,11 @@ class SearchViewModel @Inject constructor(
             is UiState.Failure -> UiState.Failure(uiState.message)
             else -> {
                 if (properties.isEmpty() && uiState is UiState.Success) {
-                    UiState.Failure("No properties found.")
+                    // 7. Changed error message
+                    UiState.Failure("Coming Soon")
                 } else if (properties.isEmpty()) {
                     UiState.Idle
                 } else {
-                    // Map the liked status
                     val mappedProperties = properties.map { property ->
                         property.copy(isLiked = likedIds.contains(property.id))
                     }
@@ -61,7 +53,6 @@ class SearchViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Idle)
 
-    // Dropdown Data
     val countries = listOf("India", "USA", "UK", "UAE")
     val cities = listOf("All Cities", "Kolkata", "Bangalore", "Gurugram", "Mumbai", "Delhi")
 
@@ -71,13 +62,11 @@ class SearchViewModel @Inject constructor(
 
     private fun listenToUserLikes() {
         val userId = auth.currentUser?.uid ?: return
-
-        // Real-time Firestore Listener
         firestore.collection("users").document(userId)
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
-
-                val likedIds = (snapshot.get("likedProperties") as? List<String>)?.toSet() ?: emptySet()
+                val likedIds =
+                    (snapshot.get("likedProperties") as? List<String>)?.toSet() ?: emptySet()
                 _likedPropertyIds.value = likedIds
             }
     }
@@ -92,29 +81,32 @@ class SearchViewModel @Inject constructor(
                         is UiState.Success -> {
                             val allProperties = state.data
 
-                            // Client-side filtering
                             val filteredList = allProperties.filter { property ->
+                                val isFunding = property.status.equals("Funding", ignoreCase = true)
+
                                 val matchesCity = city == "All Cities" ||
                                         property.city.equals(city, ignoreCase = true) ||
                                         property.location.contains(city, ignoreCase = true)
 
-                                val matchesCountry = property.country.equals(country, ignoreCase = true) ||
-                                        country == "India"
+                                val matchesCountry =
+                                    property.country.equals(country, ignoreCase = true) ||
+                                            country == "India"
 
-                                matchesCity && matchesCountry
+                                isFunding && matchesCity && matchesCountry
                             }
 
-                            // Update the raw list. The 'combine' flow above will automatically
-                            // apply the like status and emit the final success state.
                             _rawFilteredResults.value = filteredList
                             _uiState.value = UiState.Success(Unit)
                         }
+
                         is UiState.Failure -> {
                             _uiState.value = UiState.Failure(state.message)
                         }
+
                         is UiState.Loading -> {
                             _uiState.value = UiState.Loading
                         }
+
                         else -> {}
                     }
                 }
@@ -124,7 +116,6 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    // ⚡ Toggle Like Logic (Same as HomeViewModel)
     fun toggleLike(propertyId: String, currentLikeState: Boolean) {
         val userId = auth.currentUser?.uid ?: return
         val userRef = firestore.collection("users").document(userId)

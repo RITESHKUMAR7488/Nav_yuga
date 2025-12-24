@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.R
 import com.example.mahayuga.core.common.UiState
@@ -31,22 +32,36 @@ fun NavyugaSplashScreen(
     val alpha = remember { Animatable(0f) }
 
     val userName = if (currentUserState is UiState.Success) {
-        (currentUserState as UiState.Success).data.name.ifEmpty { "Yaman" }
-    } else "Yaman"
+        (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
+    } else "User"
 
     LaunchedEffect(Unit) {
         alpha.animateTo(1f, animationSpec = tween(800))
-        delay(1000)
+        delay(1500)
         onSplashFinished()
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF050505)),
-        contentAlignment = Alignment.Center
+            .background(Color(0xFF050505))
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // 1. Top Left Greeting
+        Text(
+            text = "Hi $userName!!",
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 48.dp, start = 24.dp)
+                .alpha(alpha.value)
+        )
+
+        // 2. Center Content
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Image(
                 painter = painterResource(id = R.drawable.navyuga),
                 contentDescription = null,
@@ -54,21 +69,35 @@ fun NavyugaSplashScreen(
                     .size(120.dp)
                     .alpha(alpha.value)
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Welcome to Navyuga,\n$userName",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                text = "NAVYUGA",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                ),
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.alpha(alpha.value)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "A New Era Of Investing",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray,
+                text = "Ownership For All",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.alpha(alpha.value)
             )
         }
+
+        // 3. Bottom Text
+        Text(
+            text = "A New Era Of Real Estate Investing",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+                .alpha(alpha.value)
+        )
     }
 }

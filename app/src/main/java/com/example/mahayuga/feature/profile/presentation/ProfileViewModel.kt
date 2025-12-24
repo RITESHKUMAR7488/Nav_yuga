@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.text.NumberFormat
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -64,7 +66,6 @@ class ProfileViewModel @Inject constructor(
     private val _stats = MutableStateFlow<List<ProfileStat>>(emptyList())
     val stats: StateFlow<List<ProfileStat>> = _stats
 
-    // ⚡ STATE FOR UPDATE ACTIONS
     private val _accountActionState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val accountActionState: StateFlow<UiState<String>> = _accountActionState
 
@@ -82,7 +83,9 @@ class ProfileViewModel @Inject constructor(
                     val totalArea = user.totalArea
                     val totalRent = user.totalRent.toDouble()
                     val count = owned.size
-                    val propProgress = if (count > 0) (count / 5f).coerceIn(0f, 1f) else 0f
+
+                    // Fixed progress logic
+                    val propProgress = if (count > 0) 1f else 0f
                     val roiDisplay: String
                     val roiProgress: Float
 
@@ -98,23 +101,22 @@ class ProfileViewModel @Inject constructor(
                         roiProgress = 0f
                     }
 
+                    // ⚡ UPDATED: Consistent Cr/L logic
                     fun formatK(amount: Double): String {
-                        return if (amount >= 10000000) "₹${
-                            String.format(
-                                "%.2f",
-                                amount / 10000000
-                            )
-                        } Cr"
-                        else if (amount >= 1000) "₹${String.format("%.2f L", amount / 100000)}"
-                        else "₹${amount.toInt()}"
+                        return when {
+                            amount >= 10000000 -> {
+                                val cr = amount / 10000000
+                                if (cr % 1.0 == 0.0) String.format("₹%.0f Cr", cr) else String.format("₹%.2f Cr", cr)
+                            }
+                            amount >= 100000 -> {
+                                val l = amount / 100000
+                                if (l % 1.0 == 0.0) String.format("₹%.0f L", l) else String.format("₹%.2f L", l)
+                            }
+                            else -> "₹${amount.toInt()}"
+                        }
                     }
 
-                    val areaDisplay = if (totalArea >= 1.0) "${
-                        String.format(
-                            "%.1f",
-                            totalArea
-                        )
-                    } Sqft" else "0 Sqft"
+                    val areaDisplay = if (totalArea >= 1.0) "${String.format("%.1f", totalArea)} Sqft" else "0 Sqft"
 
                     listOf(
                         ProfileStat("Properties", count.toString(), propProgress, 0xFF2979FF),
@@ -148,24 +150,20 @@ class ProfileViewModel @Inject constructor(
                     return@launch
                 }
 
-                // 1. Update Firebase Auth (Email & Name)
                 if (newEmail != user.email) {
                     try {
                         user.updateEmail(newEmail).await()
                     } catch (e: Exception) {
-                        _accountActionState.value =
-                            UiState.Failure("Email update failed: Login again recently required.")
+                        _accountActionState.value = UiState.Failure("Email update failed: Login again recently required.")
                         return@launch
                     }
                 }
 
                 if (newName.isNotEmpty()) {
-                    val profileUpdates =
-                        UserProfileChangeRequest.Builder().setDisplayName(newName).build()
+                    val profileUpdates = UserProfileChangeRequest.Builder().setDisplayName(newName).build()
                     user.updateProfile(profileUpdates).await()
                 }
 
-                // 2. Update Firestore
                 val updates = mapOf(
                     "name" to newName,
                     "email" to newEmail,
@@ -190,14 +188,9 @@ class ProfileViewModel @Inject constructor(
                     return@launch
                 }
                 val uid = user.uid
-
-                // 1. Delete from Firestore
                 firestore.collection("users").document(uid).delete().await()
-
-                // 2. Delete from Auth
                 user.delete().await()
-
-                logout() // Clear local prefs
+                logout()
                 _accountActionState.value = UiState.Success("Account Deleted")
             } catch (e: Exception) {
                 _accountActionState.value = UiState.Failure("Delete Failed: ${e.message}")

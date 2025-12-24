@@ -87,23 +87,18 @@ class AdminRepositoryImpl @Inject constructor(
                 val userSnapshot = transaction.get(userRef)
                 val propertySnapshot = transaction.get(propertyRef)
 
-                // Safe parsing helpers
                 fun parseLong(str: String?): Long = str?.replace(Regex("[^\\d]"), "")?.toLongOrNull() ?: 0L
                 fun parseDouble(str: String?): Double = str?.replace(Regex("[^\\d.]"), "")?.toDoubleOrNull() ?: 0.0
 
                 val propValuation = parseLong(propertySnapshot.getString("totalValuation"))
                 val propArea = parseDouble(propertySnapshot.getString("area"))
                 val propRent = parseLong(propertySnapshot.getString("monthlyRent"))
-
-                // ⚡ NEW: Fetch Asset ID from Property to save in Investment
                 val propAssetId = propertySnapshot.getString("assetId") ?: ""
 
-                // Calculate User's Share
                 val ownershipFraction = if (propValuation > 0) investment.amount.toDouble() / propValuation else 0.0
                 val addedArea = propArea * ownershipFraction
                 val addedRent = (propRent * ownershipFraction).toLong()
 
-                // Calculate New User Totals
                 val currentInvest = userSnapshot.getLong("totalInvestment") ?: 0L
                 val currentVal = userSnapshot.getLong("currentValue") ?: 0L
                 val currentArea = userSnapshot.getDouble("totalArea") ?: 0.0
@@ -114,12 +109,9 @@ class AdminRepositoryImpl @Inject constructor(
                 val newArea = currentArea + addedArea
                 val newRent = currentRent + addedRent
 
-                // Calculate New Property Funding
                 val currentPropFunding = parseLong(propertySnapshot.getString("totalFunding"))
                 val newPropFunding = currentPropFunding + investment.amount
 
-                // Writes
-                // ⚡ UPDATE: Save the fetched assetId into the investment document
                 transaction.set(investmentRef, investment.copy(id = investmentRef.id, assetId = propAssetId))
 
                 transaction.update(userRef, mapOf(
@@ -153,6 +145,7 @@ class AdminRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    // ⚡ FIX: Correctly revert Area and Rent
     override suspend fun deleteInvestment(investment: InvestmentModel): UiState<String> {
         return try {
             firestore.runTransaction { transaction ->
@@ -171,16 +164,34 @@ class AdminRepositoryImpl @Inject constructor(
                 }
 
                 // 2. Revert User Stats
-                if (userSnapshot.exists()) {
+                if (userSnapshot.exists() && propSnapshot.exists()) {
                     val currentInvest = userSnapshot.getLong("totalInvestment") ?: 0L
                     val currentVal = userSnapshot.getLong("currentValue") ?: 0L
+                    val currentArea = userSnapshot.getDouble("totalArea") ?: 0.0
+                    val currentRent = userSnapshot.getLong("totalRent") ?: 0L
+
+                    // Calculate amounts to remove
+                    fun parseLong(str: String?): Long = str?.replace(Regex("[^\\d]"), "")?.toLongOrNull() ?: 0L
+                    fun parseDouble(str: String?): Double = str?.replace(Regex("[^\\d.]"), "")?.toDoubleOrNull() ?: 0.0
+
+                    val propValuation = parseLong(propSnapshot.getString("totalValuation"))
+                    val propArea = parseDouble(propSnapshot.getString("area"))
+                    val propRent = parseLong(propSnapshot.getString("monthlyRent"))
+
+                    val ownershipFraction = if (propValuation > 0) investment.amount.toDouble() / propValuation else 0.0
+                    val areaToRemove = propArea * ownershipFraction
+                    val rentToRemove = (propRent * ownershipFraction).toLong()
 
                     val newInvest = (currentInvest - investment.amount).coerceAtLeast(0)
                     val newVal = (currentVal - investment.amount).coerceAtLeast(0)
+                    val newArea = (currentArea - areaToRemove).coerceAtLeast(0.0)
+                    val newRent = (currentRent - rentToRemove).coerceAtLeast(0)
 
                     transaction.update(userRef, mapOf(
                         "totalInvestment" to newInvest,
                         "currentValue" to newVal,
+                        "totalArea" to newArea, // ⚡ Updated
+                        "totalRent" to newRent, // ⚡ Updated
                         "investedProperties" to FieldValue.arrayRemove(investment.propertyId)
                     ))
                 }
@@ -196,20 +207,17 @@ class AdminRepositoryImpl @Inject constructor(
 
     override suspend fun deleteUserConstructively(userId: String): UiState<String> {
         return try {
-            // 1. Fetch all investments once (Synchronous fetch)
             val snapshot = firestore.collection("investments")
                 .whereEqualTo("userId", userId)
                 .get().await()
 
             val investments = snapshot.toObjects(InvestmentModel::class.java)
 
-            // 2. Loop and Delete each safely (Sequential to avoid transaction collisions)
             investments.forEach { inv ->
                 val result = deleteInvestment(inv)
                 if (result is UiState.Failure) throw Exception("Failed to unwind investment: ${inv.id}")
             }
 
-            // 3. Finally, delete the User Document
             firestore.collection("users").document(userId).delete().await()
 
             UiState.Success("User and Portfolio Deleted Successfully")
