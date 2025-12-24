@@ -32,7 +32,9 @@ import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScr
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.navyuga.presentation.splash.NavyugaSplashScreen
 import com.example.mahayuga.feature.profile.presentation.AccountDetailsScreen
+import com.example.mahayuga.feature.profile.presentation.HelpCenterScreen // ⚡ NEW
 import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
+import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen // ⚡ NEW
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
 
@@ -58,7 +60,9 @@ fun AppNavigation(
                 onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } },
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
-                onNavigateToSettings = { navController.navigate("settings_screen") }
+                onNavigateToSettings = { navController.navigate("settings_screen") },
+                onNavigateToSecurity = { navController.navigate("security_privacy") }, // ⚡ ADDED
+                onNavigateToHelp = { navController.navigate("help_center") } // ⚡ ADDED
             )
         }
 
@@ -69,7 +73,9 @@ fun AppNavigation(
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
                 onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } },
-                onNavigateToSettings = { navController.navigate("settings_screen") }
+                onNavigateToSettings = { navController.navigate("settings_screen") },
+                onNavigateToSecurity = { navController.navigate("security_privacy") }, // ⚡ ADDED
+                onNavigateToHelp = { navController.navigate("help_center") } // ⚡ ADDED
             )
         }
 
@@ -83,6 +89,15 @@ fun AppNavigation(
 
         composable("settings_screen") {
             SettingsScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        // ⚡ NEW SCREENS
+        composable("security_privacy") {
+            SecurityPrivacyScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        composable("help_center") {
+            HelpCenterScreen(onBackClick = { navController.popBackStack() })
         }
 
         composable("liked_properties") {
@@ -121,7 +136,6 @@ fun AppNavigation(
             if (isAdmin) {
                 AdminDashboardScreen(navController = navController, onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } })
             } else {
-                // ⚡ THIS WAS CAUSING THE ERROR
                 PlaceholderScreen("Verifying Admin Privileges...")
             }
         }
@@ -168,7 +182,6 @@ fun AppNavigation(
     }
 }
 
-// ⚡ HERE IS THE MISSING COMPOSABLE
 @Composable
 fun PlaceholderScreen(title: String) {
     Box(

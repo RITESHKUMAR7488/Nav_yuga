@@ -46,7 +46,9 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onNavigateToLiked: () -> Unit,
     onNavigateToAccount: () -> Unit,
-    onNavigateToSettings: () -> Unit, // ⚡ ADDED PARAM
+    onNavigateToSettings: () -> Unit,
+    onNavigateToSecurity: () -> Unit, // ⚡ ADDED
+    onNavigateToHelp: () -> Unit,     // ⚡ ADDED
     onLogout: () -> Unit
 ) {
     val currentUserState by viewModel.currentUser.collectAsState()
@@ -190,32 +192,42 @@ fun ProfileScreen(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             })
-
-                        // ⚡ WIRED UP SETTINGS BUTTON
                         DrawerItem(
                             icon = Icons.Outlined.Settings,
                             title = "Settings",
                             onClick = {
-                                scope.launch { drawerState.close() }
-                                viewModel.shouldOpenDrawerOnReturn = true
-                                onNavigateToSettings()
-                            }
-                        )
+                                scope.launch { drawerState.close() }; viewModel.shouldOpenDrawerOnReturn =
+                                true; onNavigateToSettings()
+                            })
 
+                        // ⚡ WIRED UP SECURITY
                         DrawerItem(
                             icon = Icons.Outlined.Lock,
                             title = "Security & privacy",
-                            onClick = { })
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                viewModel.shouldOpenDrawerOnReturn = true
+                                onNavigateToSecurity()
+                            }
+                        )
                     }
                     SettingsGroup {
                         DrawerItem(
                             icon = Icons.Outlined.Info,
                             title = "About Navyuga",
                             onClick = { })
+
+                        // ⚡ WIRED UP HELP CENTER
                         DrawerItem(
                             icon = Icons.Outlined.HelpOutline,
                             title = "Help center",
-                            onClick = { })
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                viewModel.shouldOpenDrawerOnReturn = true
+                                onNavigateToHelp()
+                            }
+                        )
+
                         DrawerItem(
                             icon = Icons.Outlined.Description,
                             title = "Documents",

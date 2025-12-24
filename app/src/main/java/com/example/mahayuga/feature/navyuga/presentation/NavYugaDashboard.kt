@@ -23,6 +23,7 @@ import com.example.mahayuga.feature.navyuga.presentation.home.HomeScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
+import com.example.mahayuga.navigation.PlaceholderScreen
 import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
 import com.example.mahayuga.feature.navyuga.presentation.trade.TradeScreen
 
@@ -38,8 +39,9 @@ fun NavYugaDashboard(
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
     onLogout: () -> Unit,
-    // ⚡ ADDED SETTINGS LAMBDA
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToSecurity: () -> Unit, // ⚡ NEW
+    onNavigateToHelp: () -> Unit      // ⚡ NEW
 ) {
     val navController = rememberNavController()
 
@@ -149,7 +151,9 @@ fun NavYugaDashboard(
                 ProfileScreen(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },
                     onNavigateToAccount = { rootNavController.navigate("account_details") },
-                    onNavigateToSettings = onNavigateToSettings, // ⚡ PASSED DOWN
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToSecurity = onNavigateToSecurity, // ⚡ PASS DOWN
+                    onNavigateToHelp = onNavigateToHelp,         // ⚡ PASS DOWN
                     onLogout = onLogout
                 )
             }
