@@ -39,7 +39,7 @@ fun SearchScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(90.dp)
+                    .size(75.dp)
                     .offset(y = 20.dp)
             ) {
                 Column(
