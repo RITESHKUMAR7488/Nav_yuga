@@ -11,7 +11,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
@@ -168,62 +171,75 @@ fun YugaContent(onNavyugaClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp)
     ) {
-        // Shifted everything up
-        Spacer(modifier = Modifier.height(40.dp))
-
-        Text(
-            text = "MAHAYUGA",
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 4.sp,
-                color = Color.White
+        // 1. HEADER ROW (Center Text, Right Icon)
+        Spacer(modifier = Modifier.height(24.dp))
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Title (Center)
+            Text(
+                text = "MAHAYUGA",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
+                    color = Color.White
+                ),
+                modifier = Modifier.align(Alignment.Center)
             )
-        )
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Box(contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(id = R.drawable.mahayuga),
-                contentDescription = "Mahayuga",
-                modifier = Modifier
-                    .size(120.dp)
-                    .alpha(0.9f)
-            )
-        }
-
-        // ⚡ CHANGE: Replaced weight(1f) with fixed spacer to keep cards "up"
-        Spacer(modifier = Modifier.height(48.dp))
-
-        androidx.compose.animation.AnimatedVisibility(
-            visible = cardsVisible,
-            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { 100 }) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            // Notification Icon (Right)
+            IconButton(
+                onClick = { /* Notification Action */ },
+                modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                HubCard(
-                    title = "NAVYUGA",
-                    subtitle = "Ownership For All",
-                    iconRes = R.drawable.navyuga,
-                    isActive = true,
-                    onClick = onNavyugaClick,
-                    modifier = Modifier.weight(1f)
-                )
-                HubCard(
-                    title = "ARTHYUGA",
-                    subtitle = "COMING SOON",
-                    iconRes = R.drawable.arthyuga,
-                    isActive = true,
-                    onClick = { },
-                    modifier = Modifier.weight(1f)
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }
+
+        // 2. CENTERED CARDS
+        Box(
+            modifier = Modifier
+                .weight(1f) // Takes up remaining space
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center // Vertically Centers content
+        ) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = cardsVisible,
+                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { 100 }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    HubCard(
+                        title = "NAVYUGA",
+                        subtitle = "Ownership For All",
+                        iconRes = R.drawable.navyuga,
+                        isActive = true,
+                        onClick = onNavyugaClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                    HubCard(
+                        title = "ARTHYUGA",
+                        subtitle = "COMING SOON",
+                        iconRes = R.drawable.arthyuga,
+                        isActive = true,
+                        onClick = { },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        // Bottom Spacer to prevent overlap with Nav Bar
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -244,6 +260,7 @@ fun HubCard(
             NavyugaBlue.copy(alpha = 0.3f)
         )
     ) else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent))
+
     Card(
         modifier = modifier
             .height(180.dp)
@@ -302,8 +319,9 @@ fun HubBottomBar(selectedTab: String, onTabSelected: (String) -> Unit) {
             selected = selectedTab == "Yuga",
             onClick = { onTabSelected("Yuga") },
             icon = {
+                // Used standard Dashboard icon for Yuga
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    imageVector = Icons.Default.Dashboard,
                     contentDescription = "Yugas",
                     modifier = Modifier.size(24.dp)
                 )

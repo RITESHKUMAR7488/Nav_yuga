@@ -46,9 +46,10 @@ fun EditPropertyScreen(
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Commercial") }
     var status by remember { mutableStateOf("Open") }
-
-    // ⚡ NEW
     var isTrendingSelection by remember { mutableStateOf("No") }
+
+    // ⚡ NEW: Asset Manager State
+    var assetManager by remember { mutableStateOf("") }
 
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
@@ -90,7 +91,10 @@ fun EditPropertyScreen(
                 description = it.description
                 type = it.type
                 status = it.status
-                isTrendingSelection = if (it.isTrending) "Yes" else "No" // ⚡ Load Trending status
+                isTrendingSelection = if (it.isTrending) "Yes" else "No"
+                // ⚡ Load Asset Manager
+                assetManager = it.assetManager
+
                 address = it.address
                 city = it.city
                 state = it.state
@@ -122,6 +126,7 @@ fun EditPropertyScreen(
         }
     }
 
+    // Auto-calculate logic (kept same as before)
     LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
         val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
@@ -150,8 +155,7 @@ fun EditPropertyScreen(
             viewModel.resetUploadState()
             navController.popBackStack()
         } else if (uploadState is UiState.Failure) {
-            Toast.makeText(context, (uploadState as UiState.Failure).message, Toast.LENGTH_LONG)
-                .show()
+            Toast.makeText(context, (uploadState as UiState.Failure).message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -176,7 +180,7 @@ fun EditPropertyScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // IMAGES SECTION (Omitted for brevity, unchanged)
+            // IMAGES SECTION (Unchanged)
             Text("Property Images", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -185,27 +189,14 @@ fun EditPropertyScreen(
                         Image(
                             painter = rememberAsyncImagePainter(url),
                             contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )
                         IconButton(
                             onClick = { keptImages = keptImages - url },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .background(
-                                    ErrorRed.copy(alpha = 0.7f),
-                                    androidx.compose.foundation.shape.CircleShape
-                                )
-                                .size(24.dp)
+                            modifier = Modifier.align(Alignment.TopEnd).background(ErrorRed.copy(alpha = 0.7f), androidx.compose.foundation.shape.CircleShape).size(24.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Close,
-                                null,
-                                tint = androidx.compose.ui.graphics.Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Icon(Icons.Default.Close, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -214,27 +205,14 @@ fun EditPropertyScreen(
                         Image(
                             painter = rememberAsyncImagePainter(uri),
                             contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )
                         IconButton(
                             onClick = { newImageUris = newImageUris - uri },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .background(
-                                    ErrorRed.copy(alpha = 0.7f),
-                                    androidx.compose.foundation.shape.CircleShape
-                                )
-                                .size(24.dp)
+                            modifier = Modifier.align(Alignment.TopEnd).background(ErrorRed.copy(alpha = 0.7f), androidx.compose.foundation.shape.CircleShape).size(24.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Close,
-                                null,
-                                tint = androidx.compose.ui.graphics.Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Icon(Icons.Default.Close, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -245,11 +223,7 @@ fun EditPropertyScreen(
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        Icon(
-                            Icons.Default.AddAPhoto,
-                            null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Icon(Icons.Default.AddAPhoto, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -263,6 +237,16 @@ fun EditPropertyScreen(
                 label = "Title",
                 icon = Icons.Default.Title
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ⚡ NEW: Editable Asset Manager Field
+            NavyugaTextField(
+                value = assetManager,
+                onValueChange = { assetManager = it },
+                label = "Asset Manager Name",
+                icon = Icons.Default.PersonOutline
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
             NavyugaTextField(
                 value = address,
@@ -307,7 +291,6 @@ fun EditPropertyScreen(
                         onSelectionChange = { status = it })
                 }
                 Box(Modifier.weight(1f)) {
-                    // ⚡ TRENDING EDIT
                     NavyugaDropdown(
                         label = "Make Trending?",
                         options = listOf("Yes", "No"),
@@ -545,8 +528,9 @@ fun EditPropertyScreen(
                             escalation = finalEscalation,
                             exitPrice = exitPrice,
                             totalProfit = totalProfit,
-                            // ⚡ UPDATE TRENDING
-                            isTrending = isTrendingSelection == "Yes"
+                            isTrending = isTrendingSelection == "Yes",
+                            // ⚡ UPDATE ASSET MANAGER
+                            assetManager = assetManager
                         )
 
                         viewModel.updateProperty(

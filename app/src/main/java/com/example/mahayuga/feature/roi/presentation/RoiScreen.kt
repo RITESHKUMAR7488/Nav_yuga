@@ -39,6 +39,7 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.min
 
+// ... [Helper functions formatIndian, VisualTransformation remain unchanged] ...
 // ⚡ HELPER: Smart Indian Formatting
 fun formatIndian(amount: Double): String {
     return try {
@@ -228,6 +229,7 @@ fun RoiScreen(
     }
 }
 
+// ... [Keep ModeSelectionScreen, ModeCard, Step1, Step2, Step3, Step4] ...
 @Composable
 fun ModeSelectionScreen(vm: RoiViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -466,7 +468,7 @@ fun Step4Financials(state: RoiState, vm: RoiViewModel) {
             }
         }
 
-        // ⚡ NEW: Mandatory Registry Input
+        // Mandatory Registry Input
         SectionHeader("Registry")
         RoiInput("Registry Cost (%)*", state.registryInput, isNumber = true) {
             vm.updateFinancials(
@@ -631,7 +633,7 @@ fun Step5Result(
                     Text("Counter ROI")
                 }
             }
-            // ⚡ CASHFLOW BUTTON NOW BLUE
+
             Button(
                 onClick = { vm.generateCashFlow(); showCashFlowSheet = true },
                 modifier = Modifier.weight(1f),
@@ -675,10 +677,15 @@ fun Step5Result(
     }
 }
 
+// ⚡ RECALCULATED REGISTRY LOGIC HERE
 @Composable
 fun CounterOfferResultScreen(state: RoiState, onSharePdf: () -> Unit, onBack: () -> Unit) {
     val counterPrice = state.counterOfferPrice ?: 0.0
-    val registry = state.registryCost // Recalculated in VM for counter
+
+    // ⚡ FIX: Recalculate registry based on the NEW counter offer price
+    val registryPercent = state.registryInput.toDoubleOrNull() ?: 0.0
+    val registry = counterPrice * (registryPercent / 100)
+
     val totalInvest = counterPrice + registry + state.totalOtherCharges
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -722,7 +729,7 @@ fun CounterOfferResultScreen(state: RoiState, onSharePdf: () -> Unit, onBack: ()
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 ResultRow("Offer Price (Base)", counterPrice)
-                ResultRow("Registry", registry)
+                ResultRow("Registry ($registryPercent%)", registry) // ⚡ Show new value
                 ResultRow("Legal & Others", state.totalOtherCharges)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 ResultRow("TOTAL INVESTMENT", totalInvest, isBold = true)
@@ -744,6 +751,7 @@ fun CounterOfferResultScreen(state: RoiState, onSharePdf: () -> Unit, onBack: ()
     }
 }
 
+// ... [Keep CounterRoiDialog, CashFlowContent, RoiInput, SectionHeader, ResultRow, RoiProgressBar] ...
 @Composable
 fun CounterRoiDialog(
     currentRoi: Double,

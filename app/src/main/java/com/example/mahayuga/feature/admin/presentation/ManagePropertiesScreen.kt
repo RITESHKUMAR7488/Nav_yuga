@@ -122,7 +122,7 @@ fun ManagePropertyItem(
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // ⚡ ASSET ID & TRENDING HEADER
+            // ASSET ID & TRENDING HEADER
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -179,11 +179,21 @@ fun ManagePropertyItem(
                         style = MaterialTheme.typography.bodyMedium,
                         color = BrandBlue
                     )
-                    Text(
-                        "ROI: ${property.roi}%",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+
+                    // ⚡ NEW: Show Asset Manager
+                    if (property.assetManager.isNotEmpty()) {
+                        Text(
+                            "Manager: ${property.assetManager}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    } else {
+                        Text(
+                            "ROI: ${property.roi}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Column {
