@@ -202,7 +202,7 @@ fun HomeScreen(
                         color = Color.White.copy(0.1f),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
-                    FilterOptionRow("Asset Manager", listOf("Brookfield", "BlackRock"))
+                    FilterOptionRow("Asset Manager", listOf("Mindspace", "Nuvama"))
                     HorizontalDivider(
                         color = Color.White.copy(0.1f),
                         modifier = Modifier.padding(vertical = 16.dp)

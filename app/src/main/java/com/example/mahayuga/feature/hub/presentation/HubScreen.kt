@@ -14,7 +14,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
@@ -42,7 +41,8 @@ import kotlinx.coroutines.launch
 
 private val BackgroundBlack = Color(0xFF050505)
 private val CardDarkSurface = Color(0xFF0A0F14)
-private val NavyugaBlue = Color(0xFF2979FF)
+// private val NavyugaBlue = Color(0xFF2979FF) // Removed usage for Hub Card
+private val HubGrey = Color(0xFF424242) // New Grey for Hub
 
 @Composable
 fun HubScreen(
@@ -206,9 +206,9 @@ fun YugaContent(onNavyugaClick: () -> Unit) {
         // 2. CENTERED CARDS
         Box(
             modifier = Modifier
-                .weight(1f) // Takes up remaining space
+                .weight(1f)
                 .fillMaxWidth(),
-            contentAlignment = Alignment.Center // Vertically Centers content
+            contentAlignment = Alignment.Center
         ) {
             androidx.compose.animation.AnimatedVisibility(
                 visible = cardsVisible,
@@ -220,7 +220,8 @@ fun YugaContent(onNavyugaClick: () -> Unit) {
                 ) {
                     HubCard(
                         title = "NAVYUGA",
-                        subtitle = "Ownership For All",
+                        // 2. Subtitles CAPITALIZED
+                        subtitle = "OWNERSHIP FOR ALL",
                         iconRes = R.drawable.navyuga,
                         isActive = true,
                         onClick = onNavyugaClick,
@@ -238,7 +239,6 @@ fun YugaContent(onNavyugaClick: () -> Unit) {
             }
         }
 
-        // Bottom Spacer to prevent overlap with Nav Bar
         Spacer(modifier = Modifier.height(20.dp))
     }
 }
@@ -254,10 +254,12 @@ fun HubCard(
 ) {
     val containerColor = if (isActive) CardDarkSurface else Color(0xFF080808)
     val contentColor = if (isActive) Color.White else Color.Gray
+
+    // 1. Hub Card Greyish Background (Replaced NavyugaBlue with Color.Gray)
     val borderBrush = if (isActive) Brush.verticalGradient(
         listOf(
             Color.Transparent,
-            NavyugaBlue.copy(alpha = 0.3f)
+            Color.Gray.copy(alpha = 0.2f) // Greyish glow
         )
     ) else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent))
 
@@ -319,7 +321,6 @@ fun HubBottomBar(selectedTab: String, onTabSelected: (String) -> Unit) {
             selected = selectedTab == "Yuga",
             onClick = { onTabSelected("Yuga") },
             icon = {
-                // Used standard Dashboard icon for Yuga
                 Icon(
                     imageVector = Icons.Default.Dashboard,
                     contentDescription = "Yugas",
@@ -328,11 +329,11 @@ fun HubBottomBar(selectedTab: String, onTabSelected: (String) -> Unit) {
             },
             label = { Text("Yugas") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color.White,
+                selectedIconColor = Color.White, // 3. White Logo Selected
                 selectedTextColor = Color.White,
-                indicatorColor = Color.Transparent,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray
+                indicatorColor = HubGrey, // 3. Grey Background Box
+                unselectedIconColor = Color.White, // White Logo Unselected (slightly dim)
+                unselectedTextColor = Color.White
             )
         )
         NavigationBarItem(
@@ -348,9 +349,9 @@ fun HubBottomBar(selectedTab: String, onTabSelected: (String) -> Unit) {
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.White,
                 selectedTextColor = Color.White,
-                indicatorColor = Color.Transparent,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray
+                indicatorColor = HubGrey,
+                unselectedIconColor = Color.White,
+                unselectedTextColor = Color.White
             )
         )
     }
