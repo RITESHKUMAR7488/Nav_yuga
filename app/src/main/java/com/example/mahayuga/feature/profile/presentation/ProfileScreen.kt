@@ -1,5 +1,7 @@
 package com.example.mahayuga.feature.profile.presentation
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
@@ -158,6 +160,7 @@ fun ProfileMenuScreen(
     onNavigateToSecurity: () -> Unit,
     onNavigateToHelp: () -> Unit,
     onNavigateToWallet: () -> Unit,
+    onNavigateToAbout: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val currentUserState by viewModel.currentUser.collectAsState()
@@ -167,6 +170,16 @@ fun ProfileMenuScreen(
         (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
     } else "User"
     val userInitials = if (userName.isNotEmpty()) userName.take(2).uppercase() else "YO"
+
+    // Helper function to open URLs
+    fun openUrl(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         containerColor = DrawerBg,
@@ -312,7 +325,8 @@ fun ProfileMenuScreen(
                 DrawerItem(
                     icon = Icons.Outlined.Info,
                     title = "About Navyuga",
-                    onClick = { })
+                    onClick = onNavigateToAbout
+                )
 
                 DrawerItem(
                     icon = Icons.Outlined.HelpOutline,
@@ -335,35 +349,73 @@ fun ProfileMenuScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // Social Icons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp),
+                    .padding(top = 20.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SocialIcon(R.drawable.ic_instagram, "Instagram")
+                // 1. Instagram
+                SocialIcon(
+                    iconRes = R.drawable.ic_instagram,
+                    contentDescription = "Instagram",
+                    onClick = { openUrl("https://www.instagram.com/mahayuga_bharat?igsh=MTR3MXJqMzY5NTU5aw%3D%3D&utm_source=qr") }
+                )
                 Spacer(modifier = Modifier.width(16.dp))
-                SocialIcon(R.drawable.ic_linkedin, "LinkedIn")
+
+                // 2. LinkedIn (App)
+                SocialIcon(
+                    iconRes = R.drawable.ic_linkedin,
+                    contentDescription = "LinkedIn",
+                    onClick = { openUrl("https://www.linkedin.com/company/brahmaestates/") }
+                )
                 Spacer(modifier = Modifier.width(16.dp))
-                SocialIcon(R.drawable.ic_youtube, "YouTube")
+
+                // 3. YouTube (Toast)
+                SocialIcon(
+                    iconRes = R.drawable.ic_youtube,
+                    contentDescription = "YouTube",
+                    onClick = { Toast.makeText(context, "Coming Soon", Toast.LENGTH_SHORT).show() }
+                )
                 Spacer(modifier = Modifier.width(16.dp))
-                SocialIcon(R.drawable.ic_x, "X")
+
+                // 4. X (Toast)
+                SocialIcon(
+                    iconRes = R.drawable.ic_x,
+                    contentDescription = "X",
+                    onClick = { Toast.makeText(context, "Coming Soon", Toast.LENGTH_SHORT).show() }
+                )
             }
+
+            // ⚡ UPDATED: Version Info
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "App Version 1.0.0",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextGrey,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
 @Composable
-fun SocialIcon(@DrawableRes iconRes: Int, contentDescription: String) {
+fun SocialIcon(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .size(40.dp)
             .clip(CircleShape)
-            .background(Color(0xFF1E293B)),
+            .background(Color(0xFF1E293B))
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        // ⚡ REMOVED TRY-CATCH: Make sure the drawable files exist!
         Image(
             painter = painterResource(id = iconRes),
             contentDescription = contentDescription,

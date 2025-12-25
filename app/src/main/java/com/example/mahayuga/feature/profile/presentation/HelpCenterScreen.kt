@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -141,7 +140,7 @@ fun HelpOptionItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = BrandBlue, modifier = Modifier.size(24.dp)) // ⚡ Changed to BrandBlue
+        Icon(icon, null, tint = BrandBlue, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = title,
@@ -149,10 +148,6 @@ fun HelpOptionItem(
             color = Color.White,
             modifier = Modifier.weight(1f)
         )
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            null,
-            tint = TextGrey
-        )
+        // ⚡ REMOVED: Forward Arrow Icon
     }
 }

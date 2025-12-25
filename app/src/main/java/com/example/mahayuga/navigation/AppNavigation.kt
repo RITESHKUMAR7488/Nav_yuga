@@ -38,6 +38,7 @@ import com.example.mahayuga.feature.profile.presentation.ProfileMenuScreen
 import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.profile.presentation.WalletScreen
+import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen // ⚡ IMPORT ADDED
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
 
 @Composable
@@ -78,12 +79,11 @@ fun AppNavigation(
                 onNavigateToSettings = { navController.navigate("settings_screen") },
                 onNavigateToSecurity = { navController.navigate("security_privacy") },
                 onNavigateToHelp = { navController.navigate("help_center") },
-                // ⚡ Added callback for menu
                 onNavigateToMenu = { navController.navigate("profile_menu") }
             )
         }
 
-        // ⚡ NEW: Profile Menu Screen (Full Page)
+        // --- PROFILE MENU (FULL PAGE) ---
         composable("profile_menu") {
             ProfileMenuScreen(
                 onBackClick = { navController.popBackStack() },
@@ -92,7 +92,9 @@ fun AppNavigation(
                 onNavigateToSettings = { navController.navigate("settings_screen") },
                 onNavigateToSecurity = { navController.navigate("security_privacy") },
                 onNavigateToHelp = { navController.navigate("help_center") },
-                onNavigateToWallet = { navController.navigate("wallet_screen") }
+                onNavigateToWallet = { navController.navigate("wallet_screen") },
+                // ⚡ Navigate to About Screen
+                onNavigateToAbout = { navController.navigate("about_navyuga") }
             )
         }
 
@@ -125,6 +127,11 @@ fun AppNavigation(
 
         composable("wallet_screen") {
             WalletScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        // ⚡ NEW: About Navyuga Route
+        composable("about_navyuga") {
+            AboutNavyugaScreen(onBackClick = { navController.popBackStack() })
         }
 
         // --- PROPERTY DETAILS & SEARCH ---
@@ -170,6 +177,7 @@ fun AppNavigation(
             EditPropertyScreen(navController = navController, propertyId = propertyId)
         }
 
+        // Investment Flow
         navigation(startDestination = "admin_register_investment", route = "investment_flow") {
             composable("admin_register_investment") { entry ->
                 val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
@@ -192,6 +200,7 @@ fun AppNavigation(
             }
         }
 
+        // --- SPLASH ---
         composable("navyuga_splash") {
             NavyugaSplashScreen(
                 onSplashFinished = { navController.navigate("navyuga_dashboard") { popUpTo("navyuga_splash") { inclusive = true } } }
