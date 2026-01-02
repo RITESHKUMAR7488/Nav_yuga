@@ -32,14 +32,13 @@ fun SearchScreen(
     Scaffold(
         containerColor = Color.Black,
         floatingActionButton = {
-            // ⚡ UPDATED: Transparent Blue Circle ROI Button
             FloatingActionButton(
                 onClick = onRoiClick,
-                containerColor = Color(0xFF4361EE).copy(alpha = 0.8f), // Transparent Blue
+                containerColor = Color(0xFF4361EE).copy(alpha = 0.8f),
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(75.dp)
+                    .size(60.dp) // ⚡ REDUCED SIZE
                     .offset(y = 20.dp)
             ) {
                 Column(
@@ -47,12 +46,11 @@ fun SearchScreen(
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier.padding(8.dp)
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(20.dp))
                     Text(
-                        "Calculate\nROI",
+                        "ROI",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            lineHeight = 11.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold
                         ),
                         textAlign = TextAlign.Center
@@ -116,9 +114,7 @@ fun NavyugaExposedDropdown(
         modifier = Modifier.fillMaxWidth()
     ) {
         OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             readOnly = true,
             value = selected,
             onValueChange = {},
@@ -138,19 +134,12 @@ fun NavyugaExposedDropdown(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .background(Color(0xFF1E293B))
-                .fillMaxWidth()
+            modifier = Modifier.background(Color(0xFF1E293B)).fillMaxWidth()
         ) {
             options.forEach { selectionOption ->
                 DropdownMenuItem(
                     text = {
-                        Text(
-                            selectionOption,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                        Text(selectionOption, style = MaterialTheme.typography.bodyLarge, color = Color.White, modifier = Modifier.padding(vertical = 4.dp))
                     },
                     onClick = { onSelectionChange(selectionOption); expanded = false },
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)

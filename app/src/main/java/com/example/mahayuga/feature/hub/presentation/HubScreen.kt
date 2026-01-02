@@ -41,8 +41,7 @@ import kotlinx.coroutines.launch
 
 private val BackgroundBlack = Color(0xFF050505)
 private val CardDarkSurface = Color(0xFF0A0F14)
-// private val NavyugaBlue = Color(0xFF2979FF) // Removed usage for Hub Card
-private val HubGrey = Color(0xFF424242) // New Grey for Hub
+private val HubGrey = Color(0xFF424242)
 
 @Composable
 fun HubScreen(
@@ -203,7 +202,7 @@ fun YugaContent(onNavyugaClick: () -> Unit) {
             }
         }
 
-        // 2. CENTERED CARDS
+        // 2. CENTERED CARDS (VERTICAL COLUMN)
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -214,18 +213,18 @@ fun YugaContent(onNavyugaClick: () -> Unit) {
                 visible = cardsVisible,
                 enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { 100 }
             ) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally // ⚡ Centered items
                 ) {
                     HubCard(
                         title = "NAVYUGA",
-                        // 2. Subtitles CAPITALIZED
                         subtitle = "OWNERSHIP FOR ALL",
                         iconRes = R.drawable.navyuga,
                         isActive = true,
                         onClick = onNavyugaClick,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth(0.70f) // ⚡ Reduced Width to 85%
                     )
                     HubCard(
                         title = "ARTHYUGA",
@@ -233,7 +232,7 @@ fun YugaContent(onNavyugaClick: () -> Unit) {
                         iconRes = R.drawable.arthyuga,
                         isActive = true,
                         onClick = { },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth(0.70f) // ⚡ Reduced Width to 85%
                     )
                 }
             }
@@ -255,17 +254,16 @@ fun HubCard(
     val containerColor = if (isActive) CardDarkSurface else Color(0xFF080808)
     val contentColor = if (isActive) Color.White else Color.Gray
 
-    // 1. Hub Card Greyish Background (Replaced NavyugaBlue with Color.Gray)
     val borderBrush = if (isActive) Brush.verticalGradient(
         listOf(
             Color.Transparent,
-            Color.Gray.copy(alpha = 0.2f) // Greyish glow
+            Color.Gray.copy(alpha = 0.2f)
         )
     ) else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent))
 
     Card(
         modifier = modifier
-            .height(180.dp)
+            .height(220.dp)
             .clickable(enabled = isActive, onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
@@ -284,14 +282,14 @@ fun HubCard(
                     painter = painterResource(id = iconRes),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(100.dp)
                         .alpha(if (isActive) 1f else 0.3f),
                     colorFilter = if (!isActive) ColorFilter.tint(Color.Gray) else null
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
+                    style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = contentColor
                     )
@@ -299,7 +297,7 @@ fun HubCard(
                 if (subtitle != null) {
                     Spacer(modifier = Modifier.height(4.dp)); Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.labelSmall.copy(
+                        style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -329,10 +327,10 @@ fun HubBottomBar(selectedTab: String, onTabSelected: (String) -> Unit) {
             },
             label = { Text("Yugas") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color.White, // 3. White Logo Selected
+                selectedIconColor = Color.White,
                 selectedTextColor = Color.White,
-                indicatorColor = HubGrey, // 3. Grey Background Box
-                unselectedIconColor = Color.White, // White Logo Unselected (slightly dim)
+                indicatorColor = HubGrey,
+                unselectedIconColor = Color.White,
                 unselectedTextColor = Color.White
             )
         )

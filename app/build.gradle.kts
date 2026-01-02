@@ -8,6 +8,7 @@ plugins {
     id("com.google.dagger.hilt.android") // Hilt Plugin
     id("kotlin-parcelize")
     alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.google.firebase.crashlytics)
 }
 
 android {
@@ -71,6 +72,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.googleid)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.crashlytics)
     kapt(libs.hilt.android.compiler)
 
     // 5. Image Loading (Coil - best for Compose)

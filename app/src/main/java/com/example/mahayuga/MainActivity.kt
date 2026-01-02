@@ -21,10 +21,13 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+
+
         val initialDarkMode = preferenceManager.isDarkMode
         val initialLoggedIn = preferenceManager.isLoggedIn
 
         setContent {
+
             var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
             // ⚡ CHANGED: Start at "welcome" instead of "login" if not logged in
@@ -42,5 +45,6 @@ class MainActivity : FragmentActivity() {
                 )
             }
         }
+
     }
 }

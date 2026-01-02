@@ -32,7 +32,8 @@ fun NavyugaSplashScreen(
     val alpha = remember { Animatable(0f) }
 
     val userName = if (currentUserState is UiState.Success) {
-        (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
+        val fullName = (currentUserState as UiState.Success).data.name
+        if (fullName.isNotBlank()) fullName.trim().substringBefore(" ") else "User"
     } else "User"
 
     LaunchedEffect(Unit) {
@@ -44,24 +45,25 @@ fun NavyugaSplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF050505))
+            .background(Color(0xFF050505)),
+        contentAlignment = Alignment.Center
     ) {
-        // 1. Top Left Greeting
-        Text(
-            text = "Hi $userName!!",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = Color.White,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 48.dp, start = 24.dp)
-                .alpha(alpha.value)
-        )
-
-        // 2. Center Content
         Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            // 1. Top Text: Greeting
+            Text(
+                text = "Hi $userName!",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+                modifier = Modifier.alpha(alpha.value)
+            )
+
+            // ⚡ INCREASED SPACING (48.dp -> 90.dp)
+            Spacer(modifier = Modifier.height(90.dp))
+
+            // 2. Center Content: Logo & Title
             Image(
                 painter = painterResource(id = R.drawable.navyuga),
                 contentDescription = null,
@@ -87,17 +89,17 @@ fun NavyugaSplashScreen(
                 color = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.alpha(alpha.value)
             )
-        }
 
-        // 3. Bottom Text
-        Text(
-            text = "A New Era Of Real Estate Investing",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
-                .alpha(alpha.value)
-        )
+            // ⚡ INCREASED SPACING (48.dp -> 90.dp)
+            Spacer(modifier = Modifier.height(90.dp))
+
+            // 3. Bottom Text: Tagline
+            Text(
+                text = "A New Era Of Real Estate Investing",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                modifier = Modifier.alpha(alpha.value)
+            )
+        }
     }
 }

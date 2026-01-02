@@ -137,6 +137,7 @@ class AdminViewModel @Inject constructor(
                 userName = user.name,
                 propertyId = property.id,
                 propertyTitle = property.title,
+                assetId = property.assetId, // Ensure this is passed
                 amount = amount,
                 paymentMode = mode,
                 paymentReference = reference
@@ -145,7 +146,8 @@ class AdminViewModel @Inject constructor(
             when (result) {
                 is UiState.Success -> {
                     _propertyUploadState.value = UiState.Success(result.data)
-                    _investmentStatus.emit("Success: ${result.data}")
+                    // ⚡ UPDATED: Include Asset ID in success message
+                    _investmentStatus.emit("Success: Investment registered for Asset ${property.assetId}")
                 }
 
                 is UiState.Failure -> {

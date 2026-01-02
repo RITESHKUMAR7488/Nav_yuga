@@ -65,7 +65,8 @@ fun ProfileScreen(
     val ownedProperties by viewModel.ownedProperties.collectAsState()
 
     val userName = if (currentUserState is UiState.Success) {
-        (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
+        val fullName = (currentUserState as UiState.Success).data.name
+        if (fullName.isNotBlank()) fullName.trim().substringBefore(" ") else "User"
     } else "User"
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
@@ -167,11 +168,12 @@ fun ProfileMenuScreen(
     val context = LocalContext.current
 
     val userName = if (currentUserState is UiState.Success) {
-        (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
+        val fullName = (currentUserState as UiState.Success).data.name
+        if (fullName.isNotBlank()) fullName.trim().substringBefore(" ") else "User"
     } else "User"
+
     val userInitials = if (userName.isNotEmpty()) userName.take(2).uppercase() else "YO"
 
-    // Helper function to open URLs
     fun openUrl(url: String) {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -357,31 +359,24 @@ fun ProfileMenuScreen(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. Instagram
                 SocialIcon(
                     iconRes = R.drawable.ic_instagram,
                     contentDescription = "Instagram",
                     onClick = { openUrl("https://www.instagram.com/mahayuga_bharat?igsh=MTR3MXJqMzY5NTU5aw%3D%3D&utm_source=qr") }
                 )
                 Spacer(modifier = Modifier.width(16.dp))
-
-                // 2. LinkedIn (App)
                 SocialIcon(
                     iconRes = R.drawable.ic_linkedin,
                     contentDescription = "LinkedIn",
                     onClick = { openUrl("https://www.linkedin.com/company/brahmaestates/") }
                 )
                 Spacer(modifier = Modifier.width(16.dp))
-
-                // 3. YouTube (Toast)
                 SocialIcon(
                     iconRes = R.drawable.ic_youtube,
                     contentDescription = "YouTube",
                     onClick = { Toast.makeText(context, "Coming Soon", Toast.LENGTH_SHORT).show() }
                 )
                 Spacer(modifier = Modifier.width(16.dp))
-
-                // 4. X (Toast)
                 SocialIcon(
                     iconRes = R.drawable.ic_x,
                     contentDescription = "X",
@@ -389,7 +384,6 @@ fun ProfileMenuScreen(
                 )
             }
 
-            // ⚡ UPDATED: Version Info
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "App Version 1.0.0",
@@ -425,13 +419,14 @@ fun SocialIcon(
     }
 }
 
-// Reusable Components
 @Composable
 fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DrawerCardBg)
+        colors = CardDefaults.cardColors(containerColor = DrawerCardBg),
+        // ⚡ ADDED BORDER HERE
+        border = BorderStroke(1.dp, Color(0xFF1F2B36))
     ) { Column(modifier = Modifier.padding(vertical = 4.dp)) { content() } }
 }
 

@@ -74,7 +74,7 @@ fun HomeScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(75.dp)
+                    .size(60.dp) // ⚡ REDUCED SIZE (from 75.dp)
                     .offset(y = 20.dp)
             ) {
                 Column(
@@ -82,12 +82,11 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier.padding(8.dp)
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(20.dp))
                     Text(
-                        "Calculate\nROI",
+                        "ROI",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            lineHeight = 11.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold
                         ),
                         textAlign = TextAlign.Center
@@ -107,10 +106,7 @@ fun HomeScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                item {
-                    // Exported Search Bar to be reusable
-                    SearchBarRow(onFilterClick = { showFilterSheet = true })
-                }
+                item { SearchBarRow(onFilterClick = { showFilterSheet = true }) }
 
                 item {
                     Row(
@@ -149,23 +145,27 @@ fun HomeScreen(
                                 action = Intent.ACTION_SEND
                                 putExtra(
                                     Intent.EXTRA_TEXT,
-                                    "Check out this property: ${property.title} in ${property.city}. Expected ROI: ${property.roi}%"
+                                    "Check out this property: ${property.title}"
                                 )
                                 type = "text/plain"
                             }
-                            val shareIntent = Intent.createChooser(sendIntent, null)
-                            context.startActivity(shareIntent)
+                            context.startActivity(Intent.createChooser(sendIntent, null))
                         },
                         onInvestClick = {
                             try {
-                                val message = "Hello, I am interested in investing in *${property.title}*."
-                                val url = "https://api.whatsapp.com/send?phone=$supportNumber&text=${Uri.encode(message)}"
+                                val message =
+                                    "Hello, I am interested in investing in *${property.title}*."
+                                val url =
+                                    "https://api.whatsapp.com/send?phone=$supportNumber&text=${
+                                        Uri.encode(message)
+                                    }"
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
                                     data = Uri.parse(url); setPackage("com.whatsapp")
                                 }
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         },
                         modifier = Modifier
@@ -173,7 +173,6 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp)
                     )
                 }
-
                 item { Spacer(Modifier.height(16.dp)) }
             }
         }
@@ -183,6 +182,7 @@ fun HomeScreen(
                 onDismissRequest = { showFilterSheet = false },
                 containerColor = Color(0xFF1E1E1E)
             ) {
+                // ... Filter content remains same ...
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text(
                         "Filter Properties",
@@ -196,7 +196,6 @@ fun HomeScreen(
                         color = Color.White.copy(0.1f),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
-                    // 3. UPDATED Budget options
                     FilterOptionRow("Budget", listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"))
                     HorizontalDivider(
                         color = Color.White.copy(0.1f),
@@ -226,7 +225,7 @@ fun HomeScreen(
     }
 }
 
-// ⚡ REUSABLE SEARCH BAR
+// ... SearchBarRow and FilterOptionRow remain the same ...
 @Composable
 fun SearchBarRow(onFilterClick: () -> Unit) {
     Row(
@@ -254,13 +253,9 @@ fun SearchBarRow(onFilterClick: () -> Unit) {
             ) {
                 Icon(Icons.Default.Search, null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Search properties...",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text("Search properties...", style = MaterialTheme.typography.bodyMedium)
             }
         }
-
         Box(
             modifier = Modifier
                 .size(50.dp)
@@ -290,7 +285,9 @@ fun FilterOptionRow(title: String, options: List<String>) {
                     onClick = { },
                     label = { Text(option, color = Color.White) },
                     colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = Color.White.copy(alpha = 0.05f)
+                        containerColor = Color.White.copy(
+                            alpha = 0.05f
+                        )
                     ),
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                 )
@@ -351,13 +348,11 @@ fun InstagramStylePropertyCard(
                 Icon(Icons.Default.MoreVert, "Options", tint = MaterialTheme.colorScheme.onSurface)
             }
 
-            // Image Container
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .height(320.dp)
-            ) {
+            // Image
+            Box(Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .height(320.dp)) {
                 AsyncImage(
                     model = property.mainImage,
                     contentDescription = "Property Image",
@@ -366,13 +361,12 @@ fun InstagramStylePropertyCard(
                         .fillMaxSize()
                         .clip(RoundedCornerShape(16.dp))
                 )
-
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(12.dp)
-                        .size(50.dp)
-                        .background(Color.Black, CircleShape),
+                        .size(60.dp)
+                        .background(Color.Black.copy(alpha = 0.8f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
@@ -382,59 +376,97 @@ fun InstagramStylePropertyCard(
                         trackColor = Color.White.copy(alpha = 0.2f),
                         strokeWidth = 4.dp
                     )
-                    Text(
-                        text = "${property.fundedPercent}%",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${property.fundedPercent}%",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Funded",
+                            color = Color.White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp)
+                        )
+                    }
                 }
             }
 
-            // 4. SWAPPED ROWS
-            // TOP ROW (Previously Bottom): Tenant, Area, Tenure
+            // ⚡ ALIGNED ROWS USING WEIGHTS
+            // TOP ROW
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp, bottom = 8.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PropertyStat("Tenant", property.tenantName.ifEmpty { "-" })
+                Box(
+                    Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) { PropertyStat("Tenant", property.tenantName.ifEmpty { "-" }) }
                 VerticalBar()
-                PropertyStat("Sq ft", property.area.ifEmpty { "-" })
+                Box(
+                    Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) { PropertyStat("Sq ft", property.area.ifEmpty { "-" }) }
                 VerticalBar()
-                PropertyStat(
-                    "Tenure",
-                    if (property.occupationPeriod.isNotEmpty()) "${property.occupationPeriod} Yrs" else "-"
-                )
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    PropertyStat(
+                        "Tenure",
+                        if (property.occupationPeriod.isNotEmpty()) "${property.occupationPeriod} Yrs" else "-"
+                    )
+                }
             }
 
-            // BOTTOM ROW (Previously Top): Price, Rent, ROI
+            // BOTTOM ROW
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (isExited) {
-                    PropertyStat("Entry", "₹${formatIndian(property.totalValuation)}")
+                    Box(
+                        Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) { PropertyStat("Entry", "₹${formatIndian(property.totalValuation)}") }
                     VerticalBar()
-                    PropertyStat("Exit", "₹${formatIndian(property.exitPrice)}")
+                    Box(
+                        Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) { PropertyStat("Exit", "₹${formatIndian(property.exitPrice)}") }
                     VerticalBar()
-                    PropertyStat("Profit", "₹${formatIndian(property.totalProfit)}", true)
+                    Box(
+                        Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) { PropertyStat("Profit", "₹${formatIndian(property.totalProfit)}", true) }
                 } else {
-                    PropertyStat("Price", "₹${formatIndian(property.totalValuation)}")
+                    Box(
+                        Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) { PropertyStat("Price", "₹${formatIndian(property.totalValuation)}") }
                     VerticalBar()
-                    val rentToShow = if (property.monthlyRent.isNotEmpty()) property.monthlyRent else "0"
-                    PropertyStat("Rent", "₹${formatIndian(rentToShow)}")
+
+                    // Rent Calculation
+                    val annualRent =
+                        if (property.grossAnnualRent.isNotEmpty()) property.grossAnnualRent else {
+                            val monthly =
+                                property.monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
+                            (monthly * 12).toString()
+                        }
+                    Box(
+                        Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) { PropertyStat("Rent/Year", "₹${formatIndian(annualRent)}") }
+
                     VerticalBar()
-                    PropertyStat("ROI", "${property.roi}%", true)
+                    Box(
+                        Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) { PropertyStat("ROI", "${property.roi}%", true) }
                 }
             }
 
-            // 5. Updated Text
             if (property.status == "Funding") {
                 Text(
                     text = "Min Investment - ₹${formatIndian(property.minInvest)}",
@@ -449,7 +481,6 @@ fun InstagramStylePropertyCard(
 
             HorizontalDivider(color = Color.White.copy(0.1f))
 
-            // Action Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -469,7 +500,6 @@ fun InstagramStylePropertyCard(
                         modifier = Modifier.scale(scale)
                     )
                 }
-
                 if (!isExited && showInvestButton && property.status != "Funded") {
                     Box(
                         modifier = Modifier
@@ -487,7 +517,6 @@ fun InstagramStylePropertyCard(
                 } else {
                     Spacer(Modifier.weight(1f))
                 }
-
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -508,7 +537,6 @@ fun InstagramStylePropertyCard(
     }
 }
 
-// Helpers
 @Composable
 fun VerticalBar() {
     Box(Modifier
@@ -527,8 +555,9 @@ fun FilterButton(
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) FabColor else Color.White.copy(0.1f),
-            contentColor = Color.White
+            containerColor = if (isSelected) FabColor else Color.White.copy(
+                0.1f
+            ), contentColor = Color.White
         ),
         shape = RoundedCornerShape(12.dp),
         contentPadding = PaddingValues(0.dp),

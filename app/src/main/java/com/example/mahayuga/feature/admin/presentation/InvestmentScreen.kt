@@ -155,7 +155,21 @@ fun AdminSelectPropertyScreen(
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(property.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(property.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                        // ⚡ UPDATED: Show Asset ID
+                                        if (property.assetId.isNotEmpty()) {
+                                            Text(
+                                                "ID: ${property.assetId}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = BrandBlue
+                                            )
+                                        }
+                                    }
+
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
@@ -250,6 +264,14 @@ fun AdminInvestmentFormScreen(
                             Column {
                                 Text("Property", style = MaterialTheme.typography.labelSmall)
                                 Text(viewModel.selectedProperty?.title ?: "Unknown Property", fontWeight = FontWeight.Bold)
+                                // ⚡ UPDATED: Show Asset ID in Summary
+                                if (!viewModel.selectedProperty?.assetId.isNullOrEmpty()) {
+                                    Text(
+                                        "ID: ${viewModel.selectedProperty?.assetId}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = BrandBlue
+                                    )
+                                }
                             }
                         }
                     }
