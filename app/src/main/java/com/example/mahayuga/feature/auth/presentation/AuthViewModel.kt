@@ -38,22 +38,24 @@ class AuthViewModel @Inject constructor(
             repository.loginUser(email, pass).collect { state ->
                 _loginState.value = state
                 if (state is UiState.Success) {
+                    val user = state.data
                     preferenceManager.saveLoginState(true)
+                    // ⚡ NEW: Save role
+                    preferenceManager.saveUserRole(user.role)
                 }
             }
         }
     }
 
-    // ⚡ UPDATE: Added phone parameter
     fun register(name: String, email: String, pass: String, dob: String, phone: String) {
         viewModelScope.launch {
             val user = UserModel(
                 name = name,
                 email = email,
                 dob = dob,
-                phone = phone, // ⚡ Storing phone in Firebase
+                phone = phone,
                 role = "user",
-                isApproved = false // Default for new users
+                isApproved = false
             )
             repository.registerUser(user, pass).collect { state ->
                 _registerState.value = state

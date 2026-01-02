@@ -37,15 +37,14 @@ fun AddPropertyScreen(
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Office") }
     var status by remember { mutableStateOf("Funding") }
-
-    // ⚡ NEW: Asset Manager
     var assetManager by remember { mutableStateOf("") }
-
     var isTrendingSelection by remember { mutableStateOf("No") }
 
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
+    // ⚡ REQUEST 1: Add Country
+    var country by remember { mutableStateOf("India") }
 
     var age by remember { mutableStateOf("") }
     var area by remember { mutableStateOf("") }
@@ -54,7 +53,8 @@ fun AddPropertyScreen(
 
     var legalWrapper by remember { mutableStateOf("SPV") }
     var totalUnits by remember { mutableStateOf("") }
-    var liquidityRules by remember { mutableStateOf("3 Year Lock-in") }
+    // ⚡ REQUEST 4: Rename "Liquidity Rules" to "Tenant Lock-in"
+    var liquidityRules by remember { mutableStateOf("3 Years") }
 
     var tenantName by remember { mutableStateOf("") }
     var occupationPeriod by remember { mutableStateOf("") }
@@ -73,6 +73,16 @@ fun AddPropertyScreen(
 
     var roi by remember { mutableStateOf("") }
     var grossAnnualRent by remember { mutableStateOf("") }
+
+    // ⚡ REQUEST 3: Auto-calculate Min Investment based on Units
+    LaunchedEffect(totalValuation, totalUnits) {
+        val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
+        val units = totalUnits.replace(",", "").toIntOrNull() ?: 0
+        if (price > 0 && units > 0) {
+            val calculatedMin = price / units
+            minInvest = String.format("%.0f", calculatedMin)
+        }
+    }
 
     LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
         val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
@@ -131,6 +141,7 @@ fun AddPropertyScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ... Image Picker (Keep existing code) ...
             if (selectedImageUris.isEmpty()) {
                 Card(
                     modifier = Modifier
@@ -147,11 +158,7 @@ fun AddPropertyScreen(
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.AddPhotoAlternate,
-                                null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            Icon(Icons.Default.AddPhotoAlternate, null, tint = MaterialTheme.colorScheme.primary)
                             Text("Add Photos (Max 10)")
                         }
                     }
@@ -159,19 +166,10 @@ fun AddPropertyScreen(
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .height(120.dp)
-                        .padding(vertical = 8.dp)
+                    modifier = Modifier.height(120.dp).padding(vertical = 8.dp)
                 ) {
                     items(selectedImageUris) { uri ->
-                        AsyncImage(
-                            model = uri,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .width(160.dp)
-                                .fillMaxHeight(),
-                            contentScale = ContentScale.Crop
-                        )
+                        AsyncImage(model = uri, contentDescription = null, modifier = Modifier.width(160.dp).fillMaxHeight(), contentScale = ContentScale.Crop)
                     }
                 }
             }
@@ -186,7 +184,6 @@ fun AddPropertyScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⚡ NEW: Asset Manager Field
             NavyugaTextField(
                 value = assetManager,
                 onValueChange = { assetManager = it },
@@ -222,6 +219,15 @@ fun AddPropertyScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
+            // ⚡ REQUEST 1: Country Field
+            NavyugaDropdown(
+                label = "Country",
+                options = listOf("India", "UAE", "USA", "UK"),
+                selected = country,
+                onSelectionChange = { country = it }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
             NavyugaDropdown(
                 label = "Asset Type",
                 options = listOf("Office", "Retail", "Warehouse", "Industrial"),
@@ -255,6 +261,7 @@ fun AddPropertyScreen(
                 selected = legalWrapper,
                 onSelectionChange = { legalWrapper = it })
             Spacer(modifier = Modifier.height(8.dp))
+
             NavyugaTextField(
                 value = totalUnits,
                 onValueChange = { totalUnits = it },
@@ -263,10 +270,12 @@ fun AddPropertyScreen(
                 isNumber = true
             )
             Spacer(modifier = Modifier.height(8.dp))
+
+            // ⚡ REQUEST 4: Label Changed
             NavyugaTextField(
                 value = liquidityRules,
                 onValueChange = { liquidityRules = it },
-                label = "Liquidity Rules (Lock-in/Exit)",
+                label = "Tenant Lock-in", // Changed from Liquidity Rules
                 icon = Icons.Default.Rule
             )
 
@@ -298,6 +307,7 @@ fun AddPropertyScreen(
             }
 
             SectionHeader("Specifications")
+            // ... (Keep Area, Floor, Age, Car Park rows - Same as original)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) {
                     NavyugaTextField(
@@ -392,7 +402,7 @@ fun AddPropertyScreen(
                     NavyugaTextField(
                         value = minInvest,
                         onValueChange = { minInvest = it },
-                        label = "Min Invest",
+                        label = "Min Invest (Auto)", // Changed label to indicate auto
                         icon = Icons.Default.AttachMoney,
                         isNumber = true
                     )
@@ -467,6 +477,7 @@ fun AddPropertyScreen(
                             address = address,
                             city = city,
                             state = state,
+                            country = country, // ⚡ PASS COUNTRY
                             age = age,
                             area = area,
                             floor = floor,
@@ -487,7 +498,7 @@ fun AddPropertyScreen(
                             totalUnits = totalUnits,
                             liquidityRules = liquidityRules,
                             isTrending = isTrendingSelection == "Yes",
-                            assetManager = assetManager, // ⚡ Pass new field
+                            assetManager = assetManager,
                             imageUris = selectedImageUris
                         )
                     } else {

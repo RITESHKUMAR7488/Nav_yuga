@@ -17,6 +17,14 @@ class PreferenceManager @Inject constructor(
     val isLoggedIn: Boolean
         get() = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
 
+    // ⚡ NEW: Save User Role (admin/user)
+    fun saveUserRole(role: String) {
+        sharedPreferences.edit().putString(KEY_USER_ROLE, role).apply()
+    }
+
+    val userRole: String
+        get() = sharedPreferences.getString(KEY_USER_ROLE, "user") ?: "user"
+
     // Theme: true = Dark, false = Light, null = System Default
     fun saveThemeMode(isDark: Boolean) {
         sharedPreferences.edit().putBoolean(KEY_IS_DARK_MODE, isDark).apply()
@@ -33,5 +41,6 @@ class PreferenceManager @Inject constructor(
     companion object {
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_IS_DARK_MODE = "is_dark_mode"
+        private const val KEY_USER_ROLE = "user_role"
     }
 }

@@ -11,6 +11,7 @@ import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.example.mahayuga.feature.profile.data.remote.ImageUploadApi
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.async
@@ -28,17 +29,17 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.random.Random
 
 @HiltViewModel
 class AdminViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val propertyRepository: PropertyRepository,
     private val api: ImageUploadApi,
+    private val firestore: FirebaseFirestore, // ⚡ Needed for syncing stats
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    // --- STATES ---
+    // ... (Keep existing states) ...
     private val _usersState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val usersState: StateFlow<UiState<List<UserModel>>> = _usersState
 
@@ -51,10 +52,8 @@ class AdminViewModel @Inject constructor(
     private val _requestsState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val requestsState: StateFlow<UiState<List<UserModel>>> = _requestsState
 
-    private val _selectedUserInvestments =
-        MutableStateFlow<UiState<List<InvestmentModel>>>(UiState.Loading)
-    val selectedUserInvestments: StateFlow<UiState<List<InvestmentModel>>> =
-        _selectedUserInvestments
+    private val _selectedUserInvestments = MutableStateFlow<UiState<List<InvestmentModel>>>(UiState.Loading)
+    val selectedUserInvestments: StateFlow<UiState<List<InvestmentModel>>> = _selectedUserInvestments
 
     private val _deleteOperationState = MutableSharedFlow<UiState<String>>()
     val deleteOperationState: SharedFlow<UiState<String>> = _deleteOperationState
@@ -62,7 +61,6 @@ class AdminViewModel @Inject constructor(
     private val _investmentStatus = MutableSharedFlow<String>()
     val investmentStatus: SharedFlow<String> = _investmentStatus
 
-    // Temporary variables
     var selectedUser: UserModel? = null
         private set
     var selectedProperty: PropertyModel? = null
@@ -76,24 +74,64 @@ class AdminViewModel @Inject constructor(
 
     private fun fetchUsers() {
         viewModelScope.launch {
-            adminRepository.getAllUsers().collect { state -> _usersState.value = state }
+            adminRepository.getAllUsers().collect { state ->
+                _usersState.value = state
+                if (state is UiState.Success) syncSystemStats() // ⚡ Trigger sync
+            }
         }
     }
 
     private fun fetchProperties() {
         viewModelScope.launch {
-            propertyRepository.getAllProperties()
-                .collect { state -> _propertiesState.value = state }
+            propertyRepository.getAllProperties().collect { state ->
+                _propertiesState.value = state
+                if (state is UiState.Success) syncSystemStats() // ⚡ Trigger sync
+            }
         }
     }
 
+    // ⚡ REQUEST 6: Sync Admin Stats to Public "About" Page
+    private fun syncSystemStats() {
+        val uState = _usersState.value
+        val pState = _propertiesState.value
+
+        if (uState is UiState.Success && pState is UiState.Success) {
+            val users = uState.data
+            val properties = pState.data
+
+            val totalUsers = users.size
+            // Count funding events or exited properties as transactions
+            val transactions = properties.filter { it.status == "Funded" || it.status == "Exited" }.size
+
+            // Just count 'India' vs others for now, or distinct countries found in properties/users
+            // Simple logic: Assuming mostly India for now, using dummy placeholder for nationalities to increase
+            val nationalities = 1
+
+            // Calc avg return of Active/Funded properties
+            val roiList = properties.filter { it.roi > 0 }.map { it.roi }
+            val avgReturn = if (roiList.isNotEmpty()) String.format("%.2f%%", roiList.average()) else "0%"
+
+            val statsMap = mapOf(
+                "registeredUsers" to totalUsers.toString(),
+                "propertyTransactions" to transactions.toString(),
+                "userNationalities" to nationalities.toString(),
+                "rentalIncomePaid" to "0", // Hard to calc without ledger, keep 0 or manual
+                "avgReturns" to avgReturn
+            )
+
+            firestore.collection("app_settings").document("about_stats")
+                .set(statsMap)
+                .addOnFailureListener { e -> e.printStackTrace() }
+        }
+    }
+
+    // ... (Rest of the ViewModel methods remain unchanged: fetchPendingRequests, deleteUser, submitInvestment, etc.) ...
     private fun fetchPendingRequests() {
         viewModelScope.launch {
             adminRepository.getPendingRequests().collect { state -> _requestsState.value = state }
         }
     }
 
-    // --- USER DETAIL & DELETE LOGIC ---
     fun fetchInvestmentsForUser(userId: String) {
         viewModelScope.launch {
             _selectedUserInvestments.value = UiState.Loading
@@ -118,7 +156,6 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // --- INVESTMENT FLOW LOGIC ---
     fun selectUserForInvestment(user: UserModel) {
         selectedUser = user
     }
@@ -137,7 +174,7 @@ class AdminViewModel @Inject constructor(
                 userName = user.name,
                 propertyId = property.id,
                 propertyTitle = property.title,
-                assetId = property.assetId, // Ensure this is passed
+                assetId = property.assetId,
                 amount = amount,
                 paymentMode = mode,
                 paymentReference = reference
@@ -146,21 +183,17 @@ class AdminViewModel @Inject constructor(
             when (result) {
                 is UiState.Success -> {
                     _propertyUploadState.value = UiState.Success(result.data)
-                    // ⚡ UPDATED: Include Asset ID in success message
                     _investmentStatus.emit("Success: Investment registered for Asset ${property.assetId}")
                 }
-
                 is UiState.Failure -> {
                     _propertyUploadState.value = UiState.Failure(result.message)
                     _investmentStatus.emit("Error: ${result.message}")
                 }
-
                 else -> {}
             }
         }
     }
 
-    // --- USER MANAGEMENT ---
     fun toggleUserBlock(uid: String, currentStatus: Boolean) {
         viewModelScope.launch { adminRepository.toggleUserStatus(uid, !currentStatus) }
     }
@@ -173,7 +206,6 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch { adminRepository.rejectUserRequest(uid) }
     }
 
-    // --- PROPERTY MANAGEMENT ---
     fun deleteProperty(propertyId: String) {
         viewModelScope.launch {
             propertyRepository.deleteProperty(propertyId)
@@ -222,10 +254,9 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ UPDATED: Accept assetManager
     fun listNewProperty(
         title: String, description: String, type: String, status: String,
-        address: String, city: String, state: String,
+        address: String, city: String, state: String, country: String,
         age: String, area: String, floor: String, carPark: String,
         totalValuation: String, minInvest: String, roi: Double, fundedPercent: Int,
         monthlyRent: String, grossAnnualRent: String, annualPropertyTax: String,
@@ -233,7 +264,7 @@ class AdminViewModel @Inject constructor(
         exitPrice: String, totalProfit: String,
         legalWrapper: String, totalUnits: String, liquidityRules: String,
         isTrending: Boolean,
-        assetManager: String, // ⚡ NEW PARAM
+        assetManager: String,
         imageUris: List<Uri>
     ) {
         viewModelScope.launch {
@@ -260,6 +291,7 @@ class AdminViewModel @Inject constructor(
                     address = address,
                     city = city,
                     state = state,
+                    country = country, // ⚡ Save Country
                     location = "$city, $state",
                     age = age,
                     area = area,
@@ -281,14 +313,13 @@ class AdminViewModel @Inject constructor(
                     totalUnits = totalUnits,
                     liquidityRules = liquidityRules,
                     isTrending = isTrending,
-                    assetManager = assetManager, // ⚡ SAVING TO DB
+                    assetManager = assetManager,
                     imageUrls = uploadedImageUrls
                 )
 
                 val result = propertyRepository.addProperty(newProperty)
                 if (result is UiState.Success) {
-                    _propertyUploadState.value =
-                        UiState.Success("Listed! Asset ID: $generatedAssetId")
+                    _propertyUploadState.value = UiState.Success("Listed! Asset ID: $generatedAssetId")
                     fetchProperties()
                 } else {
                     _propertyUploadState.value = UiState.Failure("Failed to save to DB")
@@ -304,8 +335,7 @@ class AdminViewModel @Inject constructor(
             val file = getFileFromUri(uri) ?: return null
             val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
             val body = MultipartBody.Part.createFormData("source", file.name, requestFile)
-            val key =
-                "6d207e02198a847aa98d0a2a901485a5".toRequestBody("text/plain".toMediaTypeOrNull())
+            val key = "6d207e02198a847aa98d0a2a901485a5".toRequestBody("text/plain".toMediaTypeOrNull())
             val format = "json".toRequestBody("text/plain".toMediaTypeOrNull())
 
             val response = api.uploadImage(key, body, format)

@@ -21,17 +21,20 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-
-
         val initialDarkMode = preferenceManager.isDarkMode
         val initialLoggedIn = preferenceManager.isLoggedIn
+        // ⚡ NEW: Check role for routing
+        val userRole = preferenceManager.userRole
 
         setContent {
-
             var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
-            // ⚡ CHANGED: Start at "welcome" instead of "login" if not logged in
-            val startDestination = if (initialLoggedIn) "super_app_hub" else "welcome"
+            // ⚡ REQUEST 5: Direct routing based on Role
+            val startDestination = if (initialLoggedIn) {
+                if (userRole == "admin") "admin_dashboard" else "super_app_hub"
+            } else {
+                "welcome"
+            }
 
             NavyugaTheme(darkTheme = isDarkTheme) {
                 AppNavigation(
@@ -45,6 +48,5 @@ class MainActivity : FragmentActivity() {
                 )
             }
         }
-
     }
 }

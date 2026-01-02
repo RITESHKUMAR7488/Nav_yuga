@@ -15,10 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mahayuga.R
+import com.google.firebase.firestore.FirebaseFirestore
 
 // Navyuga Theme Colors
 private val ScreenBg = Color(0xFF050505)
@@ -46,7 +46,7 @@ data class Founder(
     val title: String,
     val description: String,
     val imageRes: Int,
-    val linkedinUrl: String // ⚡ Added LinkedIn URL
+    val linkedinUrl: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,14 +54,43 @@ data class Founder(
 fun AboutNavyugaScreen(
     onBackClick: () -> Unit
 ) {
-    // 1. Stats Data
-    val stats = listOf(
-        StatItem("0", "Registered Users"),
-        StatItem("0", "Property Transactions"),
-        StatItem("0", "User Nationalities"),
-        StatItem("0", "Rental Income Paid"),
-        StatItem("0%", "Avg Returns")
-    )
+    // ⚡ REQUEST 6: Fetch Stats Real-time
+    var stats by remember {
+        mutableStateOf(
+            listOf(
+                StatItem("0", "Registered Users"),
+                StatItem("0", "Property Transactions"),
+                StatItem("0", "User Nationalities"),
+                StatItem("0", "Rental Income Paid"),
+                StatItem("0%", "Avg Returns")
+            )
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        val firestore = FirebaseFirestore.getInstance()
+        firestore.collection("app_settings").document("about_stats")
+            .addSnapshotListener { snapshot, e ->
+                if (e == null && snapshot != null && snapshot.exists()) {
+                    stats = listOf(
+                        StatItem(snapshot.getString("registeredUsers") ?: "0", "Registered Users"),
+                        StatItem(
+                            snapshot.getString("propertyTransactions") ?: "0",
+                            "Property Transactions"
+                        ),
+                        StatItem(
+                            snapshot.getString("userNationalities") ?: "0",
+                            "User Nationalities"
+                        ),
+                        StatItem(
+                            snapshot.getString("rentalIncomePaid") ?: "0",
+                            "Rental Income Paid"
+                        ),
+                        StatItem(snapshot.getString("avgReturns") ?: "0%", "Avg Returns")
+                    )
+                }
+            }
+    }
 
     // 2. Founders Data
     val founders = listOf(
@@ -69,14 +98,14 @@ fun AboutNavyugaScreen(
             name = "Yaman Ondhia",
             title = "Founder and CEO",
             description = "“Navyuga is a vision to make Real Assets accessible. Building an infrastructure that enables Asset Managers to digitalise real estate and help investors reach the level of transparency it needs to own a part of the world. The vision is clearly stated in the tagline- Ownership For All”",
-            imageRes = R.drawable.ic_founder, // TODO: Replace with R.drawable.yaman
+            imageRes = R.drawable.ic_founder,
             linkedinUrl = "https://www.linkedin.com/in/yaman-ondhia-873310224?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app"
         ),
         Founder(
             name = "Eashani Sengupta",
             title = "Co-Founder and COO",
             description = "“Navyuga is a technology driven real estate finance infrastructure. It enables asset managers to digitally manage properties, track returns and manage investors. The long term vision is freedom.”",
-            imageRes = R.drawable.ic_cofounder, // TODO: Replace with R.drawable.eashani
+            imageRes = R.drawable.ic_cofounder,
             linkedinUrl = "https://www.linkedin.com/in/eashani-sengupta-2a116a208?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app"
         )
     )
@@ -199,7 +228,6 @@ fun FounderCard(founder: Founder) {
             .padding(bottom = 8.dp)
     ) {
         Column {
-            // 1. BIG IMAGE SECTION
             Box {
                 Image(
                     painter = painterResource(id = founder.imageRes),
@@ -211,7 +239,6 @@ fun FounderCard(founder: Founder) {
                         .height(280.dp)
                 )
 
-                // Floating LinkedIn Icon (Top Right)
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -220,17 +247,17 @@ fun FounderCard(founder: Founder) {
                         .background(Color.Black.copy(alpha = 0.4f), CircleShape)
                         .clickable {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(founder.linkedinUrl))
+                                val intent =
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(founder.linkedinUrl))
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                         .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // ⚡ CHANGED: Using Image instead of Icon to preserve original logo colors
-                    // and removed tint to ensure visibility.
                     Image(
                         painter = painterResource(id = R.drawable.ic_linkedin),
                         contentDescription = "LinkedIn",
@@ -240,7 +267,6 @@ fun FounderCard(founder: Founder) {
                 }
             }
 
-            // 2. INFO SECTION
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
                     text = founder.name,
@@ -257,7 +283,6 @@ fun FounderCard(founder: Founder) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Quote Box
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

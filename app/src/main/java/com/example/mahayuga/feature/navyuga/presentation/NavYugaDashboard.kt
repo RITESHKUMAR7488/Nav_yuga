@@ -1,6 +1,7 @@
 package com.example.mahayuga.feature.navyuga.presentation
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -128,7 +129,10 @@ fun NavYugaDashboard(
         NavHost(
             navController = navController,
             startDestination = "ay_home",
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
+                .padding(innerPadding)
+                // ⚡ FIX: Consume insets so inner Scaffolds don't add the navigation bar height again
+                .consumeWindowInsets(innerPadding)
         ) {
             composable("ay_home") {
                 HomeScreen(
