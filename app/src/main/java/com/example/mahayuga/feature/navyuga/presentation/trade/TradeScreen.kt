@@ -1,5 +1,6 @@
 package com.example.mahayuga.feature.navyuga.presentation.trade
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -18,17 +19,28 @@ fun TradeScreen() {
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            TopAppBar(
-                title = { Text("Trade", fontWeight = FontWeight.Bold, color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
-            )
+            // ⚡ UPDATED: Matched Discover Page Header Style
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black)
+                    .padding(vertical = 16.dp, horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "Trade",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
         }
     ) { padding ->
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(padding)
             .padding(16.dp)) {
-            // ⚡ BIGGER CHIPS, EQUAL WIDTH
+            // BIGGER CHIPS, EQUAL WIDTH
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.weight(1f)) {
                     FilterChip(

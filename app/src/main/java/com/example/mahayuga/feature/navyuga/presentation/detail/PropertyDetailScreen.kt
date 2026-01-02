@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -91,12 +91,14 @@ fun PropertyDetailScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
             ) {
+                // --- IMAGE SLIDER SECTION ---
                 Box(modifier = Modifier
                     .height(300.dp)
                     .fillMaxWidth()) {
-                    val images =
-                        if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
+
+                    val images = if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
                     val pagerState = rememberPagerState(pageCount = { images.size })
+
                     HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                         AsyncImage(
                             model = images[page],
@@ -105,6 +107,8 @@ fun PropertyDetailScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     }
+
+                    // Top Shadow Gradient (For Back Button & Counter visibility)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -119,15 +123,76 @@ fun PropertyDetailScreen(
                                 )
                             )
                     )
+
+                    // Bottom Shadow Gradient (For Dots visibility)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .align(Alignment.BottomCenter)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.6f)
+                                    )
+                                )
+                            )
+                    )
+
+                    // Back Button
                     IconButton(
                         onClick = onNavigateBack,
                         modifier = Modifier
                             .padding(top = 16.dp, start = 8.dp)
                             .align(Alignment.TopStart)
                     ) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    }
+
+                    // ⚡ MULTI-IMAGE INDICATORS
+                    if (images.size > 1) {
+                        // 1. "1/3" Counter (Top Right)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "${pagerState.currentPage + 1}/${images.size}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        // 2. Dots Carousel (Bottom Center)
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 12.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            repeat(images.size) { iteration ->
+                                val isSelected = pagerState.currentPage == iteration
+                                val color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f)
+                                val size = if (isSelected) 8.dp else 6.dp
+
+                                Box(
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .size(size)
+                                )
+                            }
+                        }
                     }
                 }
+
+                // --- CONTENT SECTION ---
                 Column(modifier = Modifier.padding(24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -239,7 +304,7 @@ fun PropertyDetailScreen(
                                 color = Color.White.copy(alpha = 0.1f)
                             )
 
-                            // ⚡ UPDATED: Show Rent/Year
+                            // Show Rent/Year
                             val rentToShow = if (property.grossAnnualRent.isNotEmpty()) {
                                 property.grossAnnualRent
                             } else {

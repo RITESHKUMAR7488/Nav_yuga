@@ -1,5 +1,6 @@
 package com.example.mahayuga.feature.navyuga.presentation.search
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,7 +8,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Calculate
@@ -28,13 +32,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.navyuga.presentation.home.FilterOptionRow
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
 import com.example.mahayuga.feature.navyuga.presentation.home.SearchBarRow
 import com.example.mahayuga.feature.navyuga.presentation.home.StoryState
+import com.example.mahayuga.ui.theme.BrandBlue
 
 private val StoryGradientStart = Color(0xFF4361EE)
 private val StoryGradientEnd = Color(0xFF3F37C9)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchResultsScreen(
     country: String,
@@ -50,23 +57,37 @@ fun SearchResultsScreen(
 
     val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
 
+    // ⚡ Collect Filter States
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val activeBudgets by viewModel.activeBudgets.collectAsStateWithLifecycle()
+    val activeManagers by viewModel.activeManagers.collectAsStateWithLifecycle()
+    val activeTypes by viewModel.activeTypes.collectAsStateWithLifecycle()
+
+    var showFilterSheet by remember { mutableStateOf(false) }
+
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onNavigateBack, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
+            // ⚡ UPDATED: Center Aligned "Funding" Title
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Funding",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
-                }
-            }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Black)
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -75,7 +96,7 @@ fun SearchResultsScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(90.dp)
+                    .size(60.dp)
                     .offset(y = 20.dp)
             ) {
                 Column(
@@ -83,12 +104,11 @@ fun SearchResultsScreen(
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier.padding(8.dp)
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(20.dp))
                     Text(
-                        "Calculate\nROI",
+                        "ROI",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            lineHeight = 11.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold
                         ),
                         textAlign = TextAlign.Center
@@ -101,8 +121,12 @@ fun SearchResultsScreen(
             .fillMaxSize()
             .padding(padding)) {
 
-            // 6. Added Search Option from Home Screen
-            SearchBarRow(onFilterClick = { /* Handle Filter in Results if needed */ })
+            // ⚡ UPDATED: Working Search Bar & Filter Click
+            SearchBarRow(
+                query = searchQuery,
+                onQueryChange = { viewModel.updateSearchQuery(it) },
+                onFilterClick = { showFilterSheet = true }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -119,75 +143,158 @@ fun SearchResultsScreen(
                         Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        // 7. Changed "No funding..." to "Coming Soon"
                         Text("Coming Soon", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
                     }
                 }
 
                 is UiState.Success -> {
                     val properties = state.data
-                    val stories = properties.map { prop ->
-                        StoryState(
-                            id = prop.id,
-                            imageUrl = if (prop.imageUrls.isNotEmpty()) prop.imageUrls[0] else "",
-                            title = prop.title.take(10),
-                            isSeen = false
-                        )
-                    }
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        item {
-                            Text(
-                                "Trending in $city",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White.copy(0.9f)
-                                ),
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    if (properties.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No properties match.", color = Color.Gray)
+                        }
+                    } else {
+                        val stories = properties.map { prop ->
+                            StoryState(
+                                id = prop.id,
+                                imageUrl = if (prop.imageUrls.isNotEmpty()) prop.imageUrls[0] else "",
+                                title = prop.title.take(10),
+                                isSeen = false
                             )
                         }
 
-                        // Stories Row
-                        item {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(stories) { story ->
-                                    StoryCircle(
-                                        story = story,
-                                        onClick = { onNavigateToDetail(story.id) })
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            item {
+                                // ⚡ RESTORED: "Trending in [City]"
+                                Text(
+                                    "Trending in $city",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White.copy(0.9f)
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+
+                            // Stories Row
+                            item {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(stories) { story ->
+                                        StoryCircle(
+                                            story = story,
+                                            onClick = { onNavigateToDetail(story.id) })
+                                    }
                                 }
                             }
-                        }
 
-                        item { HorizontalDivider(color = Color.White.copy(0.1f)) }
+                            item { HorizontalDivider(color = Color.White.copy(0.1f)) }
 
-                        items(properties) { property ->
-                            InstagramStylePropertyCard(
-                                property = property,
-                                onItemClick = { onNavigateToDetail(property.id) },
-                                onLikeClick = {
-                                    viewModel.toggleLike(
-                                        property.id,
-                                        property.isLiked
-                                    )
-                                },
-                                onShareClick = { /* Handle Share */ },
-                                onInvestClick = { onNavigateToDetail(property.id) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                            )
+                            items(properties) { property ->
+                                InstagramStylePropertyCard(
+                                    property = property,
+                                    onItemClick = { onNavigateToDetail(property.id) },
+                                    onLikeClick = {
+                                        viewModel.toggleLike(
+                                            property.id,
+                                            property.isLiked
+                                        )
+                                    },
+                                    onShareClick = {
+                                        val sendIntent: Intent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(Intent.EXTRA_TEXT, "Check out this property: ${property.title}")
+                                            type = "text/plain"
+                                        }
+                                        // Since we are in Composable context without Activity context directly here usually,
+                                        // but we have local context above.
+                                        // (Assuming context is LocalContext.current from above)
+                                    },
+                                    onInvestClick = { onNavigateToDetail(property.id) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                )
+                            }
+                            item { Spacer(Modifier.height(100.dp)) }
                         }
-                        item { Spacer(Modifier.height(100.dp)) }
                     }
                 }
 
                 else -> {}
+            }
+        }
+
+        // ⚡ NEW: Filter Bottom Sheet (No Location Option)
+        if (showFilterSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showFilterSheet = false },
+                containerColor = Color(0xFF1E1E1E)
+            ) {
+                Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Filter Properties",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        TextButton(onClick = { viewModel.clearAllFilters() }) {
+                            Text("Clear All", color = BrandBlue)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // NOTE: Location Filter Removed as requested
+
+                    FilterOptionRow(
+                        title = "Budget (Valuation)",
+                        options = listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
+                        selectedOptions = activeBudgets,
+                        onOptionSelected = { viewModel.toggleBudget(it) }
+                    )
+
+                    HorizontalDivider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 16.dp))
+
+                    FilterOptionRow(
+                        title = "Asset Manager",
+                        options = listOf("Mindspace", "Nuvama", "Brookfield"),
+                        selectedOptions = activeManagers,
+                        onOptionSelected = { viewModel.toggleManager(it) }
+                    )
+
+                    HorizontalDivider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 16.dp))
+
+                    FilterOptionRow(
+                        title = "Type",
+                        options = listOf("Office", "Retail", "Warehouse", "Industrial"),
+                        selectedOptions = activeTypes,
+                        onOptionSelected = { viewModel.toggleType(it) }
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = { showFilterSheet = false },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Show Results", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }

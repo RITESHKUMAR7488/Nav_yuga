@@ -10,8 +10,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -74,7 +76,7 @@ fun HomeScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(60.dp) // ⚡ REDUCED SIZE (from 75.dp)
+                    .size(60.dp)
                     .offset(y = 20.dp)
             ) {
                 Column(
@@ -106,7 +108,13 @@ fun HomeScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                item { SearchBarRow(onFilterClick = { showFilterSheet = true }) }
+                item {
+                    SearchBarRow(
+                        query = uiState.searchQuery,
+                        onQueryChange = { viewModel.updateSearchQuery(it) },
+                        onFilterClick = { showFilterSheet = true }
+                    )
+                }
 
                 item {
                     Row(
@@ -135,43 +143,43 @@ fun HomeScreen(
 
                 item { HorizontalDivider(color = Color.White.copy(0.1f)) }
 
-                items(uiState.properties, key = { it.id }) { property ->
-                    InstagramStylePropertyCard(
-                        property = property,
-                        onItemClick = { onNavigateToDetail(property.id) },
-                        onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
-                        onShareClick = {
-                            val sendIntent: Intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    "Check out this property: ${property.title}"
-                                )
-                                type = "text/plain"
-                            }
-                            context.startActivity(Intent.createChooser(sendIntent, null))
-                        },
-                        onInvestClick = {
-                            try {
-                                val message =
-                                    "Hello, I am interested in investing in *${property.title}*."
-                                val url =
-                                    "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                        Uri.encode(message)
-                                    }"
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = Uri.parse(url); setPackage("com.whatsapp")
+                if (uiState.properties.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                            Text("No properties match your filters.", color = Color.Gray)
+                        }
+                    }
+                } else {
+                    items(uiState.properties, key = { it.id }) { property ->
+                        InstagramStylePropertyCard(
+                            property = property,
+                            onItemClick = { onNavigateToDetail(property.id) },
+                            onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
+                            onShareClick = {
+                                val sendIntent: Intent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, "Check out this property: ${property.title}")
+                                    type = "text/plain"
                                 }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    )
+                                context.startActivity(Intent.createChooser(sendIntent, null))
+                            },
+                            onInvestClick = {
+                                try {
+                                    val message = "Hello, I am interested in investing in *${property.title}*."
+                                    val url = "https://api.whatsapp.com/send?phone=$supportNumber&text=${Uri.encode(message)}"
+                                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                                        data = Uri.parse(url); setPackage("com.whatsapp")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        )
+                    }
                 }
                 item { Spacer(Modifier.height(16.dp)) }
             }
@@ -182,41 +190,68 @@ fun HomeScreen(
                 onDismissRequest = { showFilterSheet = false },
                 containerColor = Color(0xFF1E1E1E)
             ) {
-                // ... Filter content remains same ...
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(
-                        "Filter Properties",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Filter Properties",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        TextButton(onClick = { viewModel.clearAllFilters() }) {
+                            Text("Clear All", color = FabColor)
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    FilterOptionRow("Location", listOf("Mumbai", "Bangalore", "Delhi"))
-                    HorizontalDivider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 16.dp)
+
+                    FilterOptionRow(
+                        title = "Location",
+                        options = listOf("Mumbai", "Bangalore", "Delhi", "Kolkata", "Gurugram"),
+                        selectedOptions = uiState.activeLocations,
+                        onOptionSelected = { viewModel.toggleLocation(it) }
                     )
-                    FilterOptionRow("Budget", listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"))
-                    HorizontalDivider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 16.dp)
+
+                    HorizontalDivider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 16.dp))
+
+                    FilterOptionRow(
+                        title = "Budget (Valuation)",
+                        options = listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
+                        selectedOptions = uiState.activeBudgets,
+                        onOptionSelected = { viewModel.toggleBudget(it) }
                     )
-                    FilterOptionRow("Asset Manager", listOf("Mindspace", "Nuvama"))
-                    HorizontalDivider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 16.dp)
+
+                    HorizontalDivider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 16.dp))
+
+                    FilterOptionRow(
+                        title = "Asset Manager",
+                        options = listOf("Mindspace", "Nuvama", "Brookfield"),
+                        selectedOptions = uiState.activeManagers,
+                        onOptionSelected = { viewModel.toggleManager(it) }
                     )
-                    FilterOptionRow("Type", listOf("Commercial", "Retail", "Warehousing"))
+
+                    HorizontalDivider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 16.dp))
+
+                    FilterOptionRow(
+                        title = "Type",
+                        options = listOf("Office", "Retail", "Warehouse", "Industrial"),
+                        selectedOptions = uiState.activeTypes,
+                        onOptionSelected = { viewModel.toggleType(it) }
+                    )
+
                     Spacer(modifier = Modifier.height(32.dp))
+
                     Button(
                         onClick = { showFilterSheet = false },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FabColor),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Apply Filters", fontWeight = FontWeight.Bold)
+                        Text("Show Results", fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -225,9 +260,51 @@ fun HomeScreen(
     }
 }
 
-// ... SearchBarRow and FilterOptionRow remain the same ...
+// ... SearchBarRow (Already Correct from previous turn) ...
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SearchBarRow(onFilterClick: () -> Unit) {
+fun FilterOptionRow(
+    title: String,
+    options: List<String>,
+    selectedOptions: Set<String>,
+    onOptionSelected: (String) -> Unit
+) {
+    Column {
+        Text(
+            title,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.forEach { option ->
+                val isSelected = selectedOptions.contains(option)
+                SuggestionChip(
+                    onClick = { onOptionSelected(option) },
+                    label = { Text(option, color = if(isSelected) Color.White else Color.White.copy(0.7f)) },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = if (isSelected) FabColor else Color.White.copy(alpha = 0.05f)
+                    ),
+                    border = if (isSelected) null else BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                )
+            }
+        }
+    }
+}
+
+// ... InstagramStylePropertyCard, VerticalBar, FilterButton, HomeTopBar, PropertyStat ...
+// (These remain unchanged from previous correct versions)
+@Composable
+fun SearchBarRow(
+    query: String = "",
+    onQueryChange: (String) -> Unit = {},
+    onFilterClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -235,27 +312,26 @@ fun SearchBarRow(onFilterClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Button(
-            onClick = { },
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
             modifier = Modifier
                 .weight(1f)
                 .height(50.dp),
+            placeholder = { Text("Search properties...", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.6f)) },
+            leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.White.copy(alpha = 0.6f)) },
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White.copy(alpha = 0.1f),
-                contentColor = Color.White.copy(alpha = 0.6f)
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Search, null, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Search properties...", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+            singleLine = true
+        )
+
         Box(
             modifier = Modifier
                 .size(50.dp)
@@ -270,28 +346,66 @@ fun SearchBarRow(onFilterClick: () -> Unit) {
 }
 
 @Composable
-fun FilterOptionRow(title: String, options: List<String>) {
-    Column {
+fun FilterButton(
+    text: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) FabColor else Color.White.copy(
+                0.1f
+            ), contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(12.dp),
+        contentPadding = PaddingValues(0.dp),
+        modifier = modifier.height(50.dp)
+    ) {
         Text(
-            title,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            text = text,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            options.forEach { option ->
-                SuggestionChip(
-                    onClick = { },
-                    label = { Text(option, color = Color.White) },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = Color.White.copy(
-                            alpha = 0.05f
-                        )
-                    ),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
-                )
-            }
+    }
+}
+
+@Composable
+fun HomeTopBar(onBackClick: () -> Unit, onNotificationClick: () -> Unit) {
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text(
+            text = "Navyuga",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            ),
+            modifier = Modifier.align(Alignment.Center)
+        )
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterStart)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White
+            )
+        }
+        IconButton(
+            onClick = onNotificationClick,
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Notifications,
+                contentDescription = "Notifications",
+                tint = Color.White
+            )
         }
     }
 }
@@ -316,7 +430,6 @@ fun InstagramStylePropertyCard(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column {
-            // Header
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -348,7 +461,6 @@ fun InstagramStylePropertyCard(
                 Icon(Icons.Default.MoreVert, "Options", tint = MaterialTheme.colorScheme.onSurface)
             }
 
-            // Image
             Box(Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
@@ -392,8 +504,6 @@ fun InstagramStylePropertyCard(
                 }
             }
 
-            // ⚡ ALIGNED ROWS USING WEIGHTS
-            // TOP ROW
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -418,7 +528,6 @@ fun InstagramStylePropertyCard(
                 }
             }
 
-            // BOTTOM ROW
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -447,7 +556,6 @@ fun InstagramStylePropertyCard(
                     ) { PropertyStat("Price", "₹${formatIndian(property.totalValuation)}") }
                     VerticalBar()
 
-                    // Rent Calculation
                     val annualRent =
                         if (property.grossAnnualRent.isNotEmpty()) property.grossAnnualRent else {
                             val monthly =
@@ -543,71 +651,6 @@ fun VerticalBar() {
         .width(1.dp)
         .height(32.dp)
         .background(Color.Gray.copy(0.2f)))
-}
-
-@Composable
-fun FilterButton(
-    text: String,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) FabColor else Color.White.copy(
-                0.1f
-            ), contentColor = Color.White
-        ),
-        shape = RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(0.dp),
-        modifier = modifier.height(50.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
-        )
-    }
-}
-
-@Composable
-fun HomeTopBar(onBackClick: () -> Unit, onNotificationClick: () -> Unit) {
-    Box(modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Text(
-            text = "Navyuga",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            ),
-            modifier = Modifier.align(Alignment.Center)
-        )
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .size(40.dp)
-                .align(Alignment.CenterStart)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
-        }
-        IconButton(
-            onClick = onNotificationClick,
-            modifier = Modifier
-                .size(40.dp)
-                .align(Alignment.CenterEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "Notifications",
-                tint = Color.White
-            )
-        }
-    }
 }
 
 @Composable

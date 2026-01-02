@@ -69,36 +69,38 @@ fun ProfileScreen(
         if (fullName.isNotBlank()) fullName.trim().substringBefore(" ") else "User"
     } else "User"
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            // ⚡ UPDATED: Matched Discover Page Header Style
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp, horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "$userName's Portfolio",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                IconButton(onClick = { onNavigateToMenu?.invoke() }) {
+                    Icon(
+                        Icons.Default.Menu,
+                        "Menu",
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
+        }) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, end = 12.dp, top = 24.dp, bottom = 24.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "$userName's Portfolio",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    IconButton(onClick = { onNavigateToMenu?.invoke() }) {
-                        Icon(
-                            Icons.Default.Menu,
-                            "Menu",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-            }
             item {
                 val displayStats = if (stats.size >= 6) stats else List(6) {
                     ProfileStat("Loading", "-", 0f, 0xFF888888)
@@ -425,7 +427,6 @@ fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = DrawerCardBg),
-        // ⚡ ADDED BORDER HERE
         border = BorderStroke(1.dp, Color(0xFF1F2B36))
     ) { Column(modifier = Modifier.padding(vertical = 4.dp)) { content() } }
 }

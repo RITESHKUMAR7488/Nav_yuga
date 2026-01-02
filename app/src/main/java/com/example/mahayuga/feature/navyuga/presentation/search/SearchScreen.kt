@@ -31,6 +31,23 @@ fun SearchScreen(
 
     Scaffold(
         containerColor = Color.Black,
+        topBar = {
+            // ⚡ UPDATED: Matched Discover Page Header Style
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black)
+                    .padding(vertical = 16.dp, horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "Find Properties",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onRoiClick,
@@ -38,7 +55,7 @@ fun SearchScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(60.dp) // ⚡ REDUCED SIZE
+                    .size(60.dp) // ⚡ Reduced Size
                     .offset(y = 20.dp)
             ) {
                 Column(
@@ -65,12 +82,6 @@ fun SearchScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Find Properties",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 24.dp, top = 16.dp)
-            )
             NavyugaExposedDropdown(
                 "Country",
                 viewModel.countries,
