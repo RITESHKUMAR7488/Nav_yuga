@@ -32,7 +32,6 @@ fun SearchScreen(
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            // ⚡ UPDATED: Matched Discover Page Header Style
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -55,8 +54,9 @@ fun SearchScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(60.dp) // ⚡ Reduced Size
-                    .offset(y = 20.dp)
+                    .size(60.dp)
+                    // ⚡ FIX: Use offset to lift button safely
+                    .offset(y = (-10).dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,

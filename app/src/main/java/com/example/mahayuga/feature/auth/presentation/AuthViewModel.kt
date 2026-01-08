@@ -6,6 +6,7 @@ import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.core.data.local.PreferenceManager
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val auth: FirebaseAuth // ⚡ Inject FirebaseAuth
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow<UiState<UserModel>>(UiState.Idle)
@@ -40,7 +42,6 @@ class AuthViewModel @Inject constructor(
                 if (state is UiState.Success) {
                     val user = state.data
                     preferenceManager.saveLoginState(true)
-                    // ⚡ NEW: Save role
                     preferenceManager.saveUserRole(user.role)
                 }
             }
@@ -61,5 +62,12 @@ class AuthViewModel @Inject constructor(
                 _registerState.value = state
             }
         }
+    }
+
+    // ⚡ NEW: Logout function to clear prefs
+    fun logout() {
+        auth.signOut()
+        preferenceManager.saveLoginState(false)
+        preferenceManager.clear() // Optional: Clears all prefs to be safe
     }
 }

@@ -1,6 +1,7 @@
 package com.example.mahayuga.feature.navyuga.presentation.search
 
 import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,7 +33,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.navyuga.presentation.home.FilterOptionRow
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
 import com.example.mahayuga.feature.navyuga.presentation.home.SearchBarRow
 import com.example.mahayuga.feature.navyuga.presentation.home.StoryState
@@ -57,7 +57,6 @@ fun SearchResultsScreen(
 
     val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
 
-    // ⚡ Collect Filter States
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val activeBudgets by viewModel.activeBudgets.collectAsStateWithLifecycle()
     val activeManagers by viewModel.activeManagers.collectAsStateWithLifecycle()
@@ -68,7 +67,6 @@ fun SearchResultsScreen(
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            // ⚡ UPDATED: Center Aligned "Funding" Title
             CenterAlignedTopAppBar(
                 title = {
                     Text(
@@ -97,7 +95,8 @@ fun SearchResultsScreen(
                 shape = CircleShape,
                 modifier = Modifier
                     .size(60.dp)
-                    .offset(y = 20.dp)
+                    // ⚡ FIX: Use offset to lift button safely
+                    .offset(y = (-10).dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -121,7 +120,6 @@ fun SearchResultsScreen(
             .fillMaxSize()
             .padding(padding)) {
 
-            // ⚡ UPDATED: Working Search Bar & Filter Click
             SearchBarRow(
                 query = searchQuery,
                 onQueryChange = { viewModel.updateSearchQuery(it) },
@@ -169,7 +167,6 @@ fun SearchResultsScreen(
                             verticalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
                             item {
-                                // ⚡ RESTORED: "Trending in [City]"
                                 Text(
                                     "Trending in $city",
                                     style = MaterialTheme.typography.titleMedium.copy(
@@ -180,7 +177,6 @@ fun SearchResultsScreen(
                                 )
                             }
 
-                            // Stories Row
                             item {
                                 LazyRow(
                                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -200,22 +196,8 @@ fun SearchResultsScreen(
                                 InstagramStylePropertyCard(
                                     property = property,
                                     onItemClick = { onNavigateToDetail(property.id) },
-                                    onLikeClick = {
-                                        viewModel.toggleLike(
-                                            property.id,
-                                            property.isLiked
-                                        )
-                                    },
-                                    onShareClick = {
-                                        val sendIntent: Intent = Intent().apply {
-                                            action = Intent.ACTION_SEND
-                                            putExtra(Intent.EXTRA_TEXT, "Check out this property: ${property.title}")
-                                            type = "text/plain"
-                                        }
-                                        // Since we are in Composable context without Activity context directly here usually,
-                                        // but we have local context above.
-                                        // (Assuming context is LocalContext.current from above)
-                                    },
+                                    onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
+                                    onShareClick = { /* Share Logic */ },
                                     onInvestClick = { onNavigateToDetail(property.id) },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -231,7 +213,6 @@ fun SearchResultsScreen(
             }
         }
 
-        // ⚡ NEW: Filter Bottom Sheet (No Location Option)
         if (showFilterSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showFilterSheet = false },
@@ -255,8 +236,6 @@ fun SearchResultsScreen(
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    // NOTE: Location Filter Removed as requested
 
                     FilterOptionRow(
                         title = "Budget (Valuation)",
@@ -342,5 +321,40 @@ fun StoryCircle(story: StoryState, onClick: () -> Unit) {
             modifier = Modifier.width(70.dp),
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun FilterOptionRow(
+    title: String,
+    options: List<String>,
+    selectedOptions: Set<String>,
+    onOptionSelected: (String) -> Unit
+) {
+    Column {
+        Text(
+            title,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.forEach { option ->
+                val isSelected = selectedOptions.contains(option)
+                SuggestionChip(
+                    onClick = { onOptionSelected(option) },
+                    label = { Text(option, color = if(isSelected) Color.White else Color.White.copy(0.7f)) },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = if (isSelected) BrandBlue else Color.White.copy(alpha = 0.05f)
+                    ),
+                    border = if (isSelected) null else BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                )
+            }
+        }
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.Book
@@ -69,9 +70,9 @@ fun ProfileScreen(
         if (fullName.isNotBlank()) fullName.trim().substringBefore(" ") else "User"
     } else "User"
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background,
+    // ⚡ CHANGED: Container color to Color.Black to match Home/Search/Trade tabs
+    Scaffold(containerColor = Color.Black,
         topBar = {
-            // ⚡ UPDATED: Matched Discover Page Header Style
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,14 +84,14 @@ fun ProfileScreen(
                     text = "$userName's Portfolio",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = Color.White // Explicitly White on Black
                 )
                 IconButton(onClick = { onNavigateToMenu?.invoke() }) {
                     Icon(
                         Icons.Default.Menu,
                         "Menu",
                         modifier = Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = Color.White // Explicitly White on Black
                     )
                 }
             }
@@ -130,7 +131,7 @@ fun ProfileScreen(
                         "Your Property",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = Color.White, // Explicitly White
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                     )
                 }
@@ -164,6 +165,7 @@ fun ProfileMenuScreen(
     onNavigateToHelp: () -> Unit,
     onNavigateToWallet: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    onLogout: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val currentUserState by viewModel.currentUser.collectAsState()
@@ -349,6 +351,14 @@ fun ProfileMenuScreen(
                     onClick = {
                         Toast.makeText(context, "Guide Coming Soon", Toast.LENGTH_SHORT).show()
                     })
+                DrawerItem(
+                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    title = "Logout",
+                    textColor = Color(0xFFFF5252), // Red text
+                    iconColor = Color(0xFFFF5252),
+                    showChevron = false,
+                    onClick = onLogout
+                )
             }
 
             Spacer(modifier = Modifier.weight(1f))

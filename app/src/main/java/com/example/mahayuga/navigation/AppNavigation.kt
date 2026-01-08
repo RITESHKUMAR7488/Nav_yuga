@@ -38,7 +38,7 @@ import com.example.mahayuga.feature.profile.presentation.ProfileMenuScreen
 import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.profile.presentation.WalletScreen
-import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen // ⚡ IMPORT ADDED
+import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
 
 @Composable
@@ -93,7 +93,6 @@ fun AppNavigation(
                 onNavigateToSecurity = { navController.navigate("security_privacy") },
                 onNavigateToHelp = { navController.navigate("help_center") },
                 onNavigateToWallet = { navController.navigate("wallet_screen") },
-                // ⚡ Navigate to About Screen
                 onNavigateToAbout = { navController.navigate("about_navyuga") }
             )
         }
@@ -129,7 +128,6 @@ fun AppNavigation(
             WalletScreen(onBackClick = { navController.popBackStack() })
         }
 
-        // ⚡ NEW: About Navyuga Route
         composable("about_navyuga") {
             AboutNavyugaScreen(onBackClick = { navController.popBackStack() })
         }
@@ -161,7 +159,14 @@ fun AppNavigation(
             val isAdmin = (currentUserState as? UiState.Success<UserModel>)?.data?.role == "admin"
 
             if (isAdmin) {
-                AdminDashboardScreen(navController = navController, onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } })
+                AdminDashboardScreen(
+                    navController = navController,
+                    // ⚡ FIX: Call ViewModel logout to clear prefs
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate("welcome") { popUpTo(0) { inclusive = true } }
+                    }
+                )
             } else {
                 PlaceholderScreen("Verifying Admin Privileges...")
             }
