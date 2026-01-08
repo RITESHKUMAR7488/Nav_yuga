@@ -38,7 +38,7 @@ data class HomeUiState(
     val activeManagers: Set<String> = emptySet(),
     val activeTypes: Set<String> = emptySet(),
 
-    // ⚡ 11. Added Counts
+    // Counts
     val fundingCount: Int = 0,
     val fundedCount: Int = 0,
     val exitedCount: Int = 0,
@@ -106,7 +106,7 @@ class HomeViewModel @Inject constructor(
     private fun updateUiWithUserData() {
         val s = _uiState.value
 
-        // ⚡ 11. Calculate Counts
+        // Calculate Counts
         val fundingC = allPropertiesCache.count { it.status.equals("Funding", true) }
         val fundedC = allPropertiesCache.count { it.status.equals("Funded", true) }
         val exitedC = allPropertiesCache.count { it.status.equals("Exited", true) }
@@ -181,7 +181,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // ... (Actions and Helpers remain unchanged) ...
     fun updateFilter(filter: String) {
         _uiState.update { it.copy(selectedFilter = filter) }; updateUiWithUserData()
     }

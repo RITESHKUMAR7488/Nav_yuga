@@ -23,15 +23,14 @@ class MainActivity : FragmentActivity() {
 
         val initialDarkMode = preferenceManager.isDarkMode
         val initialLoggedIn = preferenceManager.isLoggedIn
-        // ⚡ NEW: Check role for routing
         val userRole = preferenceManager.userRole
 
         setContent {
             var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
-            // ⚡ REQUEST 5: Direct routing based on Role
+            // ⚡ FIX: Logged-in users start at Splash (for Biometrics), not Dashboard
             val startDestination = if (initialLoggedIn) {
-                if (userRole == "admin") "admin_dashboard" else "super_app_hub"
+                if (userRole == "admin") "admin_dashboard" else "navyuga_splash"
             } else {
                 "welcome"
             }

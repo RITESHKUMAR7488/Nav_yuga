@@ -3,6 +3,10 @@ package com.example.mahayuga.feature.navyuga.presentation.trade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,28 +23,36 @@ fun TradeScreen() {
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            // ⚡ UPDATED: Matched Discover Page Header Style
-            Column(
+            // Header with Icons
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.Black)
-                    .padding(vertical = 16.dp, horizontal = 16.dp)
+                    .padding(vertical = 16.dp, horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Trade",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    color = Color.White
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Icon(Icons.Default.AccountBalanceWallet, "Wallet", tint = Color.White)
+                    Icon(Icons.Default.CurrencyRupee, "Currency", tint = Color.White)
+                    Icon(Icons.Default.Notifications, "Notif", tint = Color.White)
+                }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(16.dp)) {
-            // BIGGER CHIPS, EQUAL WIDTH
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.weight(1f)) {
                     FilterChip(

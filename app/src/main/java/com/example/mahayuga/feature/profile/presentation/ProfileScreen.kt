@@ -19,7 +19,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.Book
 import androidx.compose.material3.*
@@ -70,8 +73,8 @@ fun ProfileScreen(
         if (fullName.isNotBlank()) fullName.trim().substringBefore(" ") else "User"
     } else "User"
 
-    // ⚡ CHANGED: Container color to Color.Black to match Home/Search/Trade tabs
-    Scaffold(containerColor = Color.Black,
+    Scaffold(
+        containerColor = Color.Black,
         topBar = {
             Row(
                 modifier = Modifier
@@ -80,18 +83,38 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "$userName's Portfolio",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White // Explicitly White on Black
-                )
+                // Header (Icons on Left per request for other pages, but Profile usually has title)
+                // Request 12 says "profile page left top".
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.AccountBalanceWallet,
+                        "Wallet",
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
+                    Icon(
+                        Icons.Default.CurrencyRupee,
+                        "Currency",
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
+                    Icon(
+                        Icons.Default.Notifications,
+                        "Notifications",
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+
                 IconButton(onClick = { onNavigateToMenu?.invoke() }) {
                     Icon(
                         Icons.Default.Menu,
                         "Menu",
                         modifier = Modifier.size(28.dp),
-                        tint = Color.White // Explicitly White on Black
+                        tint = Color.White
                     )
                 }
             }
@@ -103,6 +126,14 @@ fun ProfileScreen(
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             item {
+                Text(
+                    text = "$userName's Portfolio",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                )
+
                 val displayStats = if (stats.size >= 6) stats else List(6) {
                     ProfileStat("Loading", "-", 0f, 0xFF888888)
                 }
@@ -131,7 +162,7 @@ fun ProfileScreen(
                         "Your Property",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White, // Explicitly White
+                        color = Color.White,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                     )
                 }
@@ -191,16 +222,14 @@ fun ProfileMenuScreen(
         containerColor = DrawerBg,
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Profile",
-                        fontWeight = FontWeight.Bold,
-                        color = TextWhite
-                    )
-                },
+                title = { Text("Profile", fontWeight = FontWeight.Bold, color = TextWhite) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextWhite)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            "Back",
+                            tint = TextWhite
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = DrawerBg)
@@ -228,7 +257,8 @@ fun ProfileMenuScreen(
                     modifier = Modifier
                         .size(50.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1A2835)), contentAlignment = Alignment.Center
+                        .background(Color(0xFF1A2835)),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = userInitials,
@@ -244,11 +274,12 @@ fun ProfileMenuScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextWhite
-                    ); Text(
-                    text = "Your account details",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextGrey
-                )
+                    )
+                    Text(
+                        text = "Your account details",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGrey
+                    )
                 }
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -269,22 +300,20 @@ fun ProfileMenuScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(40.dp)
-                    ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp)) {
                         CircularProgressIndicator(
                             progress = { 0.0f },
                             modifier = Modifier.fillMaxSize(),
                             color = ProgressGreen,
                             trackColor = Color.White.copy(alpha = 0.1f),
                             strokeWidth = 3.dp
-                        ); Text(
-                        "0/4",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ProgressGreen,
-                        fontWeight = FontWeight.Bold
-                    )
+                        )
+                        Text(
+                            "0/4",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ProgressGreen,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -293,11 +322,12 @@ fun ProfileMenuScreen(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = TextWhite
-                        ); Text(
-                        "Coming Soon",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextGrey
-                    )
+                        )
+                        Text(
+                            "Coming Soon",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextGrey
+                        )
                     }
                 }
             }
@@ -333,28 +363,22 @@ fun ProfileMenuScreen(
                     title = "About Navyuga",
                     onClick = onNavigateToAbout
                 )
-
                 DrawerItem(
                     icon = Icons.Outlined.HelpOutline,
                     title = "Help center",
                     onClick = onNavigateToHelp
                 )
-
                 DrawerItem(
                     icon = Icons.Outlined.Description,
                     title = "Documents",
                     badge = "NEW",
                     onClick = { })
-                DrawerItem(
-                    icon = Icons.Rounded.Book,
-                    title = "10 Step Guide",
-                    onClick = {
-                        Toast.makeText(context, "Guide Coming Soon", Toast.LENGTH_SHORT).show()
-                    })
+
+                // Logout
                 DrawerItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     title = "Logout",
-                    textColor = Color(0xFFFF5252), // Red text
+                    textColor = Color(0xFFFF5252),
                     iconColor = Color(0xFFFF5252),
                     showChevron = false,
                     onClick = onLogout
@@ -374,26 +398,19 @@ fun ProfileMenuScreen(
                 SocialIcon(
                     iconRes = R.drawable.ic_instagram,
                     contentDescription = "Instagram",
-                    onClick = { openUrl("https://www.instagram.com/mahayuga_bharat?igsh=MTR3MXJqMzY5NTU5aw%3D%3D&utm_source=qr") }
-                )
+                    onClick = { openUrl("https://www.instagram.com/mahayuga_bharat") })
                 Spacer(modifier = Modifier.width(16.dp))
                 SocialIcon(
                     iconRes = R.drawable.ic_linkedin,
                     contentDescription = "LinkedIn",
-                    onClick = { openUrl("https://www.linkedin.com/company/brahmaestates/") }
-                )
+                    onClick = { openUrl("https://www.linkedin.com/company/brahmaestates/") })
                 Spacer(modifier = Modifier.width(16.dp))
                 SocialIcon(
                     iconRes = R.drawable.ic_youtube,
                     contentDescription = "YouTube",
-                    onClick = { Toast.makeText(context, "Coming Soon", Toast.LENGTH_SHORT).show() }
-                )
+                    onClick = { })
                 Spacer(modifier = Modifier.width(16.dp))
-                SocialIcon(
-                    iconRes = R.drawable.ic_x,
-                    contentDescription = "X",
-                    onClick = { Toast.makeText(context, "Coming Soon", Toast.LENGTH_SHORT).show() }
-                )
+                SocialIcon(iconRes = R.drawable.ic_x, contentDescription = "X", onClick = { })
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -409,11 +426,7 @@ fun ProfileMenuScreen(
 }
 
 @Composable
-fun SocialIcon(
-    @DrawableRes iconRes: Int,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
+fun SocialIcon(@DrawableRes iconRes: Int, contentDescription: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(40.dp)
@@ -463,32 +476,36 @@ fun DrawerItem(
             contentDescription = null,
             tint = iconColor.copy(alpha = 0.7f),
             modifier = Modifier.size(20.dp)
-        ); Spacer(modifier = Modifier.width(16.dp)); Text(
-        text = title,
-        style = MaterialTheme.typography.bodyMedium,
-        color = textColor,
-        modifier = Modifier.weight(1f)
-    ); if (badge != null) {
-        Surface(
-            color = Color(0xFF1B5E20),
-            shape = RoundedCornerShape(4.dp),
-            modifier = Modifier.padding(end = 8.dp)
-        ) {
-            Text(
-                text = badge,
-                color = Color(0xFF69F0AE),
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            modifier = Modifier.weight(1f)
+        )
+        if (badge != null) {
+            Surface(
+                color = Color(0xFF1B5E20),
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                Text(
+                    text = badge,
+                    color = Color(0xFF69F0AE),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+        if (showChevron) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = Color.Gray.copy(alpha = 0.5f),
+                modifier = Modifier.size(16.dp)
             )
         }
-    }; if (showChevron) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
-            tint = Color.Gray.copy(alpha = 0.5f),
-            modifier = Modifier.size(16.dp)
-        )
-    }
     }
 }
 
@@ -520,27 +537,30 @@ fun CompactStatCard(stat: ProfileStat, modifier: Modifier = Modifier) {
                     color = Color(0xFF2A3441),
                     strokeWidth = 5.dp,
                     trackColor = Color.Transparent
-                ); CircularProgressIndicator(
-                progress = { stat.progress },
-                modifier = Modifier.fillMaxSize(),
-                color = Color(stat.colorHex),
-                strokeWidth = 5.dp,
-                strokeCap = StrokeCap.Round,
-                trackColor = Color.Transparent
+                )
+                CircularProgressIndicator(
+                    progress = { stat.progress },
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color(stat.colorHex),
+                    strokeWidth = 5.dp,
+                    strokeCap = StrokeCap.Round,
+                    trackColor = Color.Transparent
+                )
+            }
+            Text(
+                text = stat.title,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                maxLines = 1
             )
-            }; Text(
-            text = stat.title,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            maxLines = 1
-        ); Text(
-            text = stat.value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+            Text(
+                text = stat.value,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }

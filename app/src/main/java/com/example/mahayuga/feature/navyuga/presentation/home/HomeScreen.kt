@@ -3,19 +3,14 @@ package com.example.mahayuga.feature.navyuga.presentation.home
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -56,7 +51,7 @@ private val FabColor = Color(0xFF4361EE)
 fun HomeScreen(
     onNavigateToDetail: (String) -> Unit,
     onRoiClick: () -> Unit,
-    scrollToTopTrigger: Boolean, // ⚡ 3. Trigger from Dashboard
+    scrollToTopTrigger: Boolean, // ⚡ Trigger from Dashboard
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,8 +62,8 @@ fun HomeScreen(
     val listState = rememberLazyListState()
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    // ⚡ 16. Header Hiding Logic
-    val headerHeight = 130.dp // Approx height of TopBar + Filter Row
+    // ⚡ Header Hiding Logic (Collapsing Toolbar)
+    val headerHeight = 140.dp // Approx height of TopBar + Filter Row
     val headerHeightPx = with(LocalDensity.current) { headerHeight.toPx() }
     var headerOffsetHeightPx by remember { mutableFloatStateOf(0f) }
 
@@ -83,11 +78,11 @@ fun HomeScreen(
         }
     }
 
-    // ⚡ 3. Handle Scroll to Top Trigger
+    // ⚡ Handle Scroll to Top Trigger
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
-            // Ideally trigger a refresh here if needed in ViewModel
+            headerOffsetHeightPx = 0f // Reset header
         }
     }
 
@@ -124,7 +119,7 @@ fun HomeScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .padding(bottom = paddingValues.calculateBottomPadding()) // Respect Bottom Nav
+                .padding(bottom = paddingValues.calculateBottomPadding())
                 .nestedScroll(nestedScrollConnection)
         ) {
             if (uiState.isLoading) {
@@ -134,11 +129,12 @@ fun HomeScreen(
             } else {
                 LazyColumn(
                     state = listState,
-                    contentPadding = PaddingValues(top = headerHeight), // Push content down
+                    // Push content down by header height to avoid overlap initially
+                    contentPadding = PaddingValues(top = headerHeight + 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // ⚡ 17. Search Bar (Scrolls with cards)
+                    // ⚡ Search Bar (Scrolls with cards)
                     item {
                         SearchBarRow(
                             query = uiState.searchQuery,
@@ -212,7 +208,7 @@ fun HomeScreen(
                 }
             }
 
-            // ⚡ 16. Collapsible Header (Fixed at top, but slides up)
+            // ⚡ Collapsible Header
             Box(
                 modifier = Modifier
                     .height(headerHeight)
@@ -257,7 +253,6 @@ fun HomeScreen(
         }
 
         if (showFilterSheet) {
-            // (Keep Filter Sheet Logic - Removed for brevity, same as previous)
             ModalBottomSheet(
                 onDismissRequest = { showFilterSheet = false },
                 containerColor = Color(0xFF1E1E1E)
@@ -281,7 +276,6 @@ fun HomeScreen(
     }
 }
 
-// ⚡ 8, 12, 1. Updated Top Bar
 @Composable
 fun HomeTopBar() {
     Row(
@@ -291,7 +285,7 @@ fun HomeTopBar() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // 8. Left Aligned Title (No Back Button)
+        // Left Aligned Title
         Text(
             text = "Navyuga",
             style = MaterialTheme.typography.headlineSmall.copy(
@@ -305,22 +299,18 @@ fun HomeTopBar() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 12. Wallet
             Icon(
                 Icons.Default.AccountBalanceWallet,
                 "Wallet",
                 tint = Color.White,
                 modifier = Modifier.size(26.dp)
             )
-
-            // 1. Currency
             Icon(
                 Icons.Default.CurrencyRupee,
                 "Currency",
                 tint = Color.White,
                 modifier = Modifier.size(26.dp)
             )
-
             Icon(
                 Icons.Default.Notifications,
                 "Notifications",
@@ -331,7 +321,6 @@ fun HomeTopBar() {
     }
 }
 
-// ⚡ 10 & 11. Outlined Filter Button with Counts
 @Composable
 fun FilterButtonOutline(
     text: String,
@@ -347,7 +336,7 @@ fun FilterButtonOutline(
             contentColor = if (isSelected) Color.White else Color.Gray
         ),
         border = BorderStroke(1.dp, if (isSelected) FabColor else Color.Gray.copy(alpha = 0.5f)),
-        shape = RoundedCornerShape(8.dp), // 10. Good shape
+        shape = RoundedCornerShape(8.dp),
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
         modifier = modifier.height(40.dp)
     ) {
@@ -356,8 +345,7 @@ fun FilterButtonOutline(
                 text = text,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            // 11. Count
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = count.toString(),
                 style = MaterialTheme.typography.labelSmall,
@@ -376,7 +364,7 @@ fun SearchBarRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {

@@ -38,10 +38,11 @@ fun LoginScreen(
         if (loginState is UiState.Success) {
             val user = (loginState as UiState.Success<UserModel>).data
 
+            // ⚡ FIX: Navigate to correct dashboard, 'super_app_hub' was deleted
             val destination = if (user.role == "admin") {
                 "admin_dashboard"
             } else {
-                "super_app_hub"
+                "navyuga_dashboard"
             }
 
             navController.navigate(destination) {
@@ -62,7 +63,6 @@ fun LoginScreen(
     ) {
         Spacer(modifier = Modifier.height(60.dp))
 
-        // ⚡ CHANGED: Text to "Log in"
         Text(
             text = "Log in",
             style = MaterialTheme.typography.headlineMedium.copy(

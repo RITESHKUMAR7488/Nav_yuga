@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,19 +35,26 @@ fun SearchScreen(
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            Column(
+            // Header with Icons
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.Black)
-                    .padding(vertical = 16.dp, horizontal = 16.dp)
+                    .padding(vertical = 16.dp, horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Find Properties",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    color = Color.White
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Icon(Icons.Default.AccountBalanceWallet, "Wallet", tint = Color.White)
+                    Icon(Icons.Default.CurrencyRupee, "Currency", tint = Color.White)
+                    Icon(Icons.Default.Notifications, "Notif", tint = Color.White)
+                }
             }
         },
         floatingActionButton = {
@@ -55,7 +65,6 @@ fun SearchScreen(
                 shape = CircleShape,
                 modifier = Modifier
                     .size(60.dp)
-                    // ⚡ FIX: Use offset to lift button safely
                     .offset(y = (-10).dp)
             ) {
                 Column(
@@ -125,7 +134,9 @@ fun NavyugaExposedDropdown(
         modifier = Modifier.fillMaxWidth()
     ) {
         OutlinedTextField(
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
             readOnly = true,
             value = selected,
             onValueChange = {},
@@ -145,12 +156,19 @@ fun NavyugaExposedDropdown(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color(0xFF1E293B)).fillMaxWidth()
+            modifier = Modifier
+                .background(Color(0xFF1E293B))
+                .fillMaxWidth()
         ) {
             options.forEach { selectionOption ->
                 DropdownMenuItem(
                     text = {
-                        Text(selectionOption, style = MaterialTheme.typography.bodyLarge, color = Color.White, modifier = Modifier.padding(vertical = 4.dp))
+                        Text(
+                            selectionOption,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
                     },
                     onClick = { onSelectionChange(selectionOption); expanded = false },
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)

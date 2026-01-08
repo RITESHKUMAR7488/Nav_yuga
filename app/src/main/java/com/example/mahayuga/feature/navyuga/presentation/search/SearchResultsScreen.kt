@@ -1,6 +1,9 @@
 package com.example.mahayuga.feature.navyuga.presentation.search
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +42,7 @@ import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStyleProp
 import com.example.mahayuga.feature.navyuga.presentation.home.SearchBarRow
 import com.example.mahayuga.feature.navyuga.presentation.home.StoryState
 import com.example.mahayuga.ui.theme.BrandBlue
+import kotlinx.coroutines.launch
 
 private val StoryGradientStart = Color(0xFF4361EE)
 private val StoryGradientEnd = Color(0xFF3F37C9)
@@ -56,62 +62,80 @@ fun SearchResultsScreen(
     }
 
     val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
-
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val activeBudgets by viewModel.activeBudgets.collectAsStateWithLifecycle()
-    val activeManagers by viewModel.activeManagers.collectAsStateWithLifecycle()
-    val activeTypes by viewModel.activeTypes.collectAsStateWithLifecycle()
-
     var showFilterSheet by remember { mutableStateOf(false) }
+
+    // Scroll to Top Logic
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val showScrollToTop by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
+    }
 
     Scaffold(
         containerColor = Color.Black,
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Funding",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                },
+                title = { Text("Funding", fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Black)
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onRoiClick,
-                containerColor = Color(0xFF4361EE).copy(alpha = 0.8f),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier
-                    .size(60.dp)
-                    // ⚡ FIX: Use offset to lift button safely
-                    .offset(y = (-10).dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(8.dp)
+            Column(horizontalAlignment = Alignment.End) {
+                // Scroll to Top FAB
+                AnimatedVisibility(
+                    visible = showScrollToTop,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(20.dp))
-                    Text(
-                        "ROI",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        textAlign = TextAlign.Center
-                    )
+                    FloatingActionButton(
+                        onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                        containerColor = Color.DarkGray,
+                        contentColor = Color.White,
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .size(50.dp)
+                            .padding(bottom = 16.dp)
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowUp, "Scroll Top")
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                FloatingActionButton(
+                    onClick = onRoiClick,
+                    containerColor = Color(0xFF4361EE).copy(alpha = 0.8f),
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .offset(y = (-10).dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Calculate,
+                            "Calculate ROI",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            "ROI",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
@@ -119,7 +143,6 @@ fun SearchResultsScreen(
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(padding)) {
-
             SearchBarRow(
                 query = searchQuery,
                 onQueryChange = { viewModel.updateSearchQuery(it) },
@@ -129,29 +152,29 @@ fun SearchResultsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             when (val state = searchState) {
-                is UiState.Loading -> {
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator(color = Color(0xFF60A5FA)) }
-                }
+                is UiState.Loading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = Color(0xFF60A5FA)) }
 
-                is UiState.Failure -> {
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Coming Soon", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
-                    }
+                is UiState.Failure -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Coming Soon",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
 
                 is UiState.Success -> {
                     val properties = state.data
-
                     if (properties.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No properties match.", color = Color.Gray)
-                        }
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) { Text("No properties match.", color = Color.Gray) }
                     } else {
                         val stories = properties.map { prop ->
                             StoryState(
@@ -163,6 +186,7 @@ fun SearchResultsScreen(
                         }
 
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
@@ -176,7 +200,6 @@ fun SearchResultsScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
-
                             item {
                                 LazyRow(
                                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -189,15 +212,18 @@ fun SearchResultsScreen(
                                     }
                                 }
                             }
-
                             item { HorizontalDivider(color = Color.White.copy(0.1f)) }
-
                             items(properties) { property ->
                                 InstagramStylePropertyCard(
                                     property = property,
                                     onItemClick = { onNavigateToDetail(property.id) },
-                                    onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
-                                    onShareClick = { /* Share Logic */ },
+                                    onLikeClick = {
+                                        viewModel.toggleLike(
+                                            property.id,
+                                            property.isLiked
+                                        )
+                                    },
+                                    onShareClick = { },
                                     onInvestClick = { onNavigateToDetail(property.id) },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -218,55 +244,21 @@ fun SearchResultsScreen(
                 onDismissRequest = { showFilterSheet = false },
                 containerColor = Color(0xFF1E1E1E)
             ) {
-                Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Filter Properties",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        TextButton(onClick = { viewModel.clearAllFilters() }) {
-                            Text("Clear All", color = BrandBlue)
-                        }
-                    }
-
+                Column(modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())) {
+                    Text(
+                        "Filter Properties",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    FilterOptionRow(
-                        title = "Budget (Valuation)",
-                        options = listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
-                        selectedOptions = activeBudgets,
-                        onOptionSelected = { viewModel.toggleBudget(it) }
-                    )
-
-                    HorizontalDivider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 16.dp))
-
-                    FilterOptionRow(
-                        title = "Asset Manager",
-                        options = listOf("Mindspace", "Nuvama", "Brookfield"),
-                        selectedOptions = activeManagers,
-                        onOptionSelected = { viewModel.toggleManager(it) }
-                    )
-
-                    HorizontalDivider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 16.dp))
-
-                    FilterOptionRow(
-                        title = "Type",
-                        options = listOf("Office", "Retail", "Warehouse", "Industrial"),
-                        selectedOptions = activeTypes,
-                        onOptionSelected = { viewModel.toggleType(it) }
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
                     Button(
                         onClick = { showFilterSheet = false },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -321,40 +313,5 @@ fun StoryCircle(story: StoryState, onClick: () -> Unit) {
             modifier = Modifier.width(70.dp),
             textAlign = TextAlign.Center
         )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun FilterOptionRow(
-    title: String,
-    options: List<String>,
-    selectedOptions: Set<String>,
-    onOptionSelected: (String) -> Unit
-) {
-    Column {
-        Text(
-            title,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            options.forEach { option ->
-                val isSelected = selectedOptions.contains(option)
-                SuggestionChip(
-                    onClick = { onOptionSelected(option) },
-                    label = { Text(option, color = if(isSelected) Color.White else Color.White.copy(0.7f)) },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = if (isSelected) BrandBlue else Color.White.copy(alpha = 0.05f)
-                    ),
-                    border = if (isSelected) null else BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
-                )
-            }
-        }
     }
 }

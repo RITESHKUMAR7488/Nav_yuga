@@ -1,7 +1,5 @@
 package com.example.mahayuga.feature.navyuga.presentation
 
-import android.widget.Toast
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -16,9 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -27,7 +23,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.mahayuga.core.common.BiometricAuthenticator
 import com.example.mahayuga.feature.navyuga.presentation.home.HomeScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
@@ -53,43 +48,22 @@ fun NavYugaDashboard(
     onNavigateToMenu: () -> Unit
 ) {
     val navController = rememberNavController()
-    val context = LocalContext.current
-
-    // ⚡ 6. Biometric Check on App Launch
-    var isAuthenticated by remember { mutableStateOf(false) }
-    val biometricAuth = remember { BiometricAuthenticator(context) }
-
-    LaunchedEffect(Unit) {
-        val activity = context as? FragmentActivity
-        if (activity != null) {
-            biometricAuth.authenticate(
-                activity = activity,
-                title = "Unlock Navyuga",
-                onSuccess = { isAuthenticated = true },
-                onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
-            )
-        } else {
-            isAuthenticated = true
-        }
-    }
-
-    if (!isAuthenticated) {
-        // Show blank or lock screen until authenticated
-        Scaffold(containerColor = Color.Black) { Box(Modifier.padding(it)) }
-        return
-    }
+    // ⚡ FIX: Removed Biometric check here. It is now handled in NavyugaSplashScreen.
 
     val items = listOf(
-        // ⚡ 5. Renamed Home -> Invest
         BottomNavItem("Invest", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
         BottomNavItem("Search", "ay_search", Icons.Filled.Search, Icons.Outlined.Search),
-        // Keep Trade center
-        BottomNavItem("Trade", "ay_trade", Icons.AutoMirrored.Filled.TrendingUp, Icons.AutoMirrored.Outlined.TrendingUp),
+        BottomNavItem(
+            "Trade",
+            "ay_trade",
+            Icons.AutoMirrored.Filled.TrendingUp,
+            Icons.AutoMirrored.Outlined.TrendingUp
+        ),
         BottomNavItem("Discover", "ay_reels", Icons.Filled.Category, Icons.Outlined.Category),
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
-    // ⚡ 3. State to trigger scroll up
+    // State to trigger scroll up
     var homeScrollTrigger by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -114,7 +88,6 @@ fun NavYugaDashboard(
                                 Icon(
                                     imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                                     contentDescription = item.label,
-                                    // ⚡ 9. Closer Icon/Text (Reduced vertical padding)
                                     modifier = Modifier.size(24.dp)
                                 )
                             },
@@ -129,13 +102,14 @@ fun NavYugaDashboard(
                             ),
                             onClick = {
                                 if (isSelected) {
-                                    // ⚡ 3. Scroll to Top logic
                                     if (item.route == "ay_home") {
-                                        homeScrollTrigger = !homeScrollTrigger // Toggle to trigger LaunchedEffect
+                                        homeScrollTrigger = !homeScrollTrigger
                                     }
                                 } else {
                                     navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -157,9 +131,9 @@ fun NavYugaDashboard(
             composable("ay_home") {
                 HomeScreen(
                     onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    onNavigateBack = { rootNavController.popBackStack() },
+                    // Removed onNavigateBack as it's not needed for Home tab
                     onRoiClick = { rootNavController.navigate("roi_calculator") },
-                    scrollToTopTrigger = homeScrollTrigger // Pass trigger
+                    scrollToTopTrigger = homeScrollTrigger
                 )
             }
             composable("ay_search") {

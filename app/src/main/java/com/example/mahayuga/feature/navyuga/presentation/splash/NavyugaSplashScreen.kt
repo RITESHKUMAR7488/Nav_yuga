@@ -1,5 +1,6 @@
 package com.example.mahayuga.feature.navyuga.presentation.splash
 
+import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -12,13 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.R
+import com.example.mahayuga.core.common.BiometricAuthenticator
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.delay
@@ -30,6 +34,8 @@ fun NavyugaSplashScreen(
 ) {
     val currentUserState by profileViewModel.currentUser.collectAsState()
     val alpha = remember { Animatable(0f) }
+    val context = LocalContext.current
+    val biometricAuth = remember { BiometricAuthenticator(context) }
 
     val userName = if (currentUserState is UiState.Success) {
         val fullName = (currentUserState as UiState.Success).data.name
@@ -37,9 +43,26 @@ fun NavyugaSplashScreen(
     } else "User"
 
     LaunchedEffect(Unit) {
+        // 1. Animate Logo
         alpha.animateTo(1f, animationSpec = tween(800))
-        delay(1500)
-        onSplashFinished()
+        delay(1500) // Keep logo visible for 1.5s
+
+        // 2. Trigger Biometrics (if Activity available)
+        val activity = context as? FragmentActivity
+        if (activity != null) {
+            biometricAuth.authenticate(
+                activity = activity,
+                title = "Unlock Navyuga",
+                onSuccess = { onSplashFinished() },
+                onError = { errorMsg ->
+                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                    // Optional: You might want to finish the app or allow retry here
+                }
+            )
+        } else {
+            // Fallback if not fragment activity (shouldn't happen)
+            onSplashFinished()
+        }
     }
 
     Box(
@@ -52,7 +75,6 @@ fun NavyugaSplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 1. Top Text: Greeting
             Text(
                 text = "Hi $userName!",
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
@@ -60,10 +82,8 @@ fun NavyugaSplashScreen(
                 modifier = Modifier.alpha(alpha.value)
             )
 
-            // ⚡ INCREASED SPACING (48.dp -> 90.dp)
             Spacer(modifier = Modifier.height(90.dp))
 
-            // 2. Center Content: Logo & Title
             Image(
                 painter = painterResource(id = R.drawable.navyuga),
                 contentDescription = null,
@@ -90,10 +110,8 @@ fun NavyugaSplashScreen(
                 modifier = Modifier.alpha(alpha.value)
             )
 
-            // ⚡ INCREASED SPACING (48.dp -> 90.dp)
             Spacer(modifier = Modifier.height(90.dp))
 
-            // 3. Bottom Text: Tagline
             Text(
                 text = "A New Era Of Real Estate Investing",
                 style = MaterialTheme.typography.bodyMedium,

@@ -56,26 +56,19 @@ fun AppNavigation(
         composable("login") { LoginScreen(navController = navController) }
         composable("register") { RegisterScreen(navController = navController) }
 
-        // --- HUB ---
-        composable("super_app_hub") {
-            HubScreen(
-                navController = navController,
-                onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } },
-                isDarkTheme = isDarkTheme,
-                onThemeToggle = onThemeToggle,
-                onNavigateToSettings = { navController.navigate("settings_screen") },
-                onNavigateToSecurity = { navController.navigate("security_privacy") },
-                onNavigateToHelp = { navController.navigate("help_center") }
-            )
-        }
-
-        // --- NAVYUGA DASHBOARD ---
+        // --- NAVYUGA DASHBOARD (Main Entry) ---
         composable("navyuga_dashboard") {
             NavYugaDashboard(
                 rootNavController = navController,
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
-                onLogout = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } },
+                onLogout = {
+                    navController.navigate("welcome") {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                },
                 onNavigateToSettings = { navController.navigate("settings_screen") },
                 onNavigateToSecurity = { navController.navigate("security_privacy") },
                 onNavigateToHelp = { navController.navigate("help_center") },
@@ -85,6 +78,7 @@ fun AppNavigation(
 
         // --- PROFILE MENU (FULL PAGE) ---
         composable("profile_menu") {
+            val authViewModel: AuthViewModel = hiltViewModel()
             ProfileMenuScreen(
                 onBackClick = { navController.popBackStack() },
                 onNavigateToLiked = { navController.navigate("liked_properties") },
@@ -93,7 +87,11 @@ fun AppNavigation(
                 onNavigateToSecurity = { navController.navigate("security_privacy") },
                 onNavigateToHelp = { navController.navigate("help_center") },
                 onNavigateToWallet = { navController.navigate("wallet_screen") },
-                onNavigateToAbout = { navController.navigate("about_navyuga") }
+                onNavigateToAbout = { navController.navigate("about_navyuga") },
+                onLogout = {
+                    authViewModel.logout()
+                    navController.navigate("welcome") { popUpTo(0) { inclusive = true } }
+                }
             )
         }
 
@@ -101,46 +99,47 @@ fun AppNavigation(
         composable("account_details") {
             AccountDetailsScreen(
                 onBackClick = { navController.popBackStack() },
-                onAccountDeleted = { navController.navigate("welcome") { popUpTo(0) { inclusive = true } } }
+                onAccountDeleted = {
+                    navController.navigate("welcome") {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
 
-        composable("settings_screen") {
-            SettingsScreen(onBackClick = { navController.popBackStack() })
-        }
-
-        composable("security_privacy") {
-            SecurityPrivacyScreen(onBackClick = { navController.popBackStack() })
-        }
-
-        composable("help_center") {
-            HelpCenterScreen(onBackClick = { navController.popBackStack() })
-        }
-
+        composable("settings_screen") { SettingsScreen(onBackClick = { navController.popBackStack() }) }
+        composable("security_privacy") { SecurityPrivacyScreen(onBackClick = { navController.popBackStack() }) }
+        composable("help_center") { HelpCenterScreen(onBackClick = { navController.popBackStack() }) }
         composable("liked_properties") {
             LikedPropertiesScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { id -> navController.navigate("property_detail/$id") }
             )
         }
-
-        composable("wallet_screen") {
-            WalletScreen(onBackClick = { navController.popBackStack() })
-        }
-
-        composable("about_navyuga") {
-            AboutNavyugaScreen(onBackClick = { navController.popBackStack() })
-        }
+        composable("wallet_screen") { WalletScreen(onBackClick = { navController.popBackStack() }) }
+        composable("about_navyuga") { AboutNavyugaScreen(onBackClick = { navController.popBackStack() }) }
 
         // --- PROPERTY DETAILS & SEARCH ---
-        composable("property_detail/{propertyId}", arguments = listOf(navArgument("propertyId") { type = NavType.StringType })) { backStackEntry ->
+        composable(
+            "property_detail/{propertyId}",
+            arguments = listOf(navArgument("propertyId") { type = NavType.StringType })
+        ) { backStackEntry ->
             val propertyId = backStackEntry.arguments?.getString("propertyId") ?: ""
-            PropertyDetailScreen(propertyId = propertyId, onNavigateBack = { navController.popBackStack() })
+            PropertyDetailScreen(
+                propertyId = propertyId,
+                onNavigateBack = { navController.popBackStack() })
         }
 
         composable("roi_calculator") { RoiScreen(onBackClick = { navController.popBackStack() }) }
 
-        composable("search_results/{country}/{city}", arguments = listOf(navArgument("country") { type = NavType.StringType }, navArgument("city") { type = NavType.StringType })) { backStackEntry ->
+        composable(
+            "search_results/{country}/{city}",
+            arguments = listOf(
+                navArgument("country") { type = NavType.StringType },
+                navArgument("city") { type = NavType.StringType })
+        ) { backStackEntry ->
             val country = backStackEntry.arguments?.getString("country") ?: "India"
             val city = backStackEntry.arguments?.getString("city") ?: "All Cities"
             SearchResultsScreen(
@@ -161,7 +160,6 @@ fun AppNavigation(
             if (isAdmin) {
                 AdminDashboardScreen(
                     navController = navController,
-                    // ⚡ FIX: Call ViewModel logout to clear prefs
                     onLogout = {
                         authViewModel.logout()
                         navController.navigate("welcome") { popUpTo(0) { inclusive = true } }
@@ -177,7 +175,10 @@ fun AppNavigation(
         composable("admin_manage_users") { ManageUsersScreen(navController) }
         composable("admin_add_property") { AddPropertyScreen(navController) }
 
-        composable("admin_edit_property/{propertyId}", arguments = listOf(navArgument("propertyId") { type = NavType.StringType })) { backStackEntry ->
+        composable(
+            "admin_edit_property/{propertyId}",
+            arguments = listOf(navArgument("propertyId") { type = NavType.StringType })
+        ) { backStackEntry ->
             val propertyId = backStackEntry.arguments?.getString("propertyId") ?: ""
             EditPropertyScreen(navController = navController, propertyId = propertyId)
         }
@@ -185,21 +186,27 @@ fun AppNavigation(
         // Investment Flow
         navigation(startDestination = "admin_register_investment", route = "investment_flow") {
             composable("admin_register_investment") { entry ->
-                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val parentEntry =
+                    remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
                 AdminSelectUserScreen(navController, viewModel = sharedViewModel)
             }
             composable("admin_inv_select_property") { entry ->
-                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val parentEntry =
+                    remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
                 AdminSelectPropertyScreen(navController, viewModel = sharedViewModel)
             }
             composable("admin_inv_form") { entry ->
-                val parentEntry = remember(entry) { navController.getBackStackEntry("investment_flow") }
+                val parentEntry =
+                    remember(entry) { navController.getBackStackEntry("investment_flow") }
                 val sharedViewModel: AdminViewModel = hiltViewModel(parentEntry)
                 AdminInvestmentFormScreen(navController, viewModel = sharedViewModel)
             }
-            composable("admin_user_detail/{userId}", arguments = listOf(navArgument("userId") { type = NavType.StringType })) { backStackEntry ->
+            composable(
+                "admin_user_detail/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 AdminUserDetailScreen(navController = navController, userId = userId)
             }
@@ -208,7 +215,13 @@ fun AppNavigation(
         // --- SPLASH ---
         composable("navyuga_splash") {
             NavyugaSplashScreen(
-                onSplashFinished = { navController.navigate("navyuga_dashboard") { popUpTo("navyuga_splash") { inclusive = true } } }
+                onSplashFinished = {
+                    navController.navigate("navyuga_dashboard") {
+                        popUpTo("navyuga_splash") {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
     }
@@ -217,7 +230,9 @@ fun AppNavigation(
 @Composable
 fun PlaceholderScreen(title: String) {
     Box(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Text(text = title, color = MaterialTheme.colorScheme.onBackground)

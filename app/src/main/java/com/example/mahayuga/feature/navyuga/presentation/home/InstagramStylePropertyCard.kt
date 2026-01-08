@@ -1,7 +1,5 @@
 package com.example.mahayuga.feature.navyuga.presentation.home
 
-import android.content.Intent
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
@@ -46,7 +43,6 @@ fun InstagramStylePropertyCard(
     showInvestButton: Boolean = true
 ) {
     val isExited = property.status == "Exited"
-    val isFunded = property.status == "Funded"
     val isFunding = property.status == "Funding"
 
     var showMenu by remember { mutableStateOf(false) }
@@ -113,7 +109,7 @@ fun InstagramStylePropertyCard(
                                 )
                             }
                         )
-                        // ⚡ 15. Shifted Like Option Inside Menu
+                        // Moved Like Option Inside Menu
                         DropdownMenuItem(
                             text = {
                                 Text(
@@ -139,7 +135,7 @@ fun InstagramStylePropertyCard(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    // ⚡ 13. Reduced Height (320dp -> 270dp)
+                    // Reduced Height
                     .height(270.dp)
             ) {
                 AsyncImage(
@@ -151,7 +147,7 @@ fun InstagramStylePropertyCard(
                         .clip(RoundedCornerShape(16.dp))
                 )
 
-                // ⚡ 14. Only show Funded Circle if Funding
+                // Only show Funded Circle if Funding
                 if (isFunding) {
                     Box(
                         modifier = Modifier
@@ -197,7 +193,7 @@ fun InstagramStylePropertyCard(
                 }
                 VerticalBar()
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    // ⚡ 2. Format Sq Ft with commas
+                    // Format Sq Ft
                     val areaFormatted = try {
                         formatIndian(property.area.replace(",", "").toDouble())
                     } catch (e: Exception) {
@@ -281,9 +277,8 @@ fun InstagramStylePropertyCard(
 
             HorizontalDivider(color = Color.White.copy(0.1f))
 
-            // ⚡ 15. Action Button OR Status Bar
+            // Action Button OR Status Bar
             if (isFunding && showInvestButton) {
-                // Original "Share + Invest" Row for Funding
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -305,7 +300,7 @@ fun InstagramStylePropertyCard(
                     }
                 }
             } else {
-                // ⚡ 15. Green/Red Block for Funded/Sold
+                // Green/Red Block for Funded/Sold
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
