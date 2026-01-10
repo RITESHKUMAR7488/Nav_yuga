@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
+import com.example.mahayuga.ui.theme.BrandBlue
 import kotlin.math.roundToInt
 
 private val DeepDarkBlue = Color(0xFF0F172A)
@@ -51,7 +52,7 @@ private val FabColor = Color(0xFF4361EE)
 fun HomeScreen(
     onNavigateToDetail: (String) -> Unit,
     onRoiClick: () -> Unit,
-    scrollToTopTrigger: Boolean, // ⚡ Trigger from Dashboard
+    scrollToTopTrigger: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,8 +63,8 @@ fun HomeScreen(
     val listState = rememberLazyListState()
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    // ⚡ Header Hiding Logic (Collapsing Toolbar)
-    val headerHeight = 140.dp // Approx height of TopBar + Filter Row
+    // Header Hiding Logic (Collapsing Toolbar)
+    val headerHeight = 140.dp
     val headerHeightPx = with(LocalDensity.current) { headerHeight.toPx() }
     var headerOffsetHeightPx by remember { mutableFloatStateOf(0f) }
 
@@ -78,11 +79,11 @@ fun HomeScreen(
         }
     }
 
-    // ⚡ Handle Scroll to Top Trigger
+    // Handle Scroll to Top Trigger
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
-            headerOffsetHeightPx = 0f // Reset header
+            headerOffsetHeightPx = 0f
         }
     }
 
@@ -134,7 +135,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // ⚡ Search Bar (Scrolls with cards)
+                    // Search Bar (Scrolls with cards)
                     item {
                         SearchBarRow(
                             query = uiState.searchQuery,
@@ -184,7 +185,9 @@ fun HomeScreen(
                                             "Hello, I am interested in investing in *${property.title}*."
                                         val url =
                                             "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                                Uri.encode(message)
+                                                Uri.encode(
+                                                    message
+                                                )
                                             }"
                                         val intent = Intent(Intent.ACTION_VIEW).apply {
                                             data = Uri.parse(url); setPackage("com.whatsapp")
@@ -208,7 +211,7 @@ fun HomeScreen(
                 }
             }
 
-            // ⚡ Collapsible Header
+            // Collapsible Header
             Box(
                 modifier = Modifier
                     .height(headerHeight)
@@ -257,19 +260,85 @@ fun HomeScreen(
                 onDismissRequest = { showFilterSheet = false },
                 containerColor = Color(0xFF1E1E1E)
             ) {
-                Column(modifier = Modifier
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState())) {
-                    Text(
-                        "Filter Properties",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Filter Properties",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        TextButton(onClick = { viewModel.clearAllFilters() }) {
+                            Text("Clear All", color = FabColor)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    FilterOptionRow(
+                        title = "Location",
+                        options = listOf("Mumbai", "Bangalore", "Delhi", "Kolkata", "Gurugram"),
+                        selectedOptions = uiState.activeLocations,
+                        onOptionSelected = { viewModel.toggleLocation(it) }
                     )
+
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    FilterOptionRow(
+                        title = "Budget (Valuation)",
+                        options = listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
+                        selectedOptions = uiState.activeBudgets,
+                        onOptionSelected = { viewModel.toggleBudget(it) }
+                    )
+
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    FilterOptionRow(
+                        title = "Asset Manager",
+                        options = listOf("Mindspace", "Nuvama", "Brookfield"),
+                        selectedOptions = uiState.activeManagers,
+                        onOptionSelected = { viewModel.toggleManager(it) }
+                    )
+
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    FilterOptionRow(
+                        title = "Type",
+                        options = listOf("Office", "Retail", "Warehouse", "Industrial"),
+                        selectedOptions = uiState.activeTypes,
+                        onOptionSelected = { viewModel.toggleType(it) }
+                    )
+
                     Spacer(modifier = Modifier.height(32.dp))
+
                     Button(
                         onClick = { showFilterSheet = false },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Apply") }
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = FabColor),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Show Results", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -335,7 +404,10 @@ fun FilterButtonOutline(
             containerColor = if (isSelected) FabColor else Color.Transparent,
             contentColor = if (isSelected) Color.White else Color.Gray
         ),
-        border = BorderStroke(1.dp, if (isSelected) FabColor else Color.Gray.copy(alpha = 0.5f)),
+        border = BorderStroke(
+            1.dp,
+            if (isSelected) FabColor else Color.Gray.copy(alpha = 0.5f)
+        ),
         shape = RoundedCornerShape(8.dp),
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
         modifier = modifier.height(40.dp)
@@ -364,7 +436,7 @@ fun SearchBarRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -409,6 +481,49 @@ fun SearchBarRow(
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Default.FilterList, "Filter", tint = Color.White)
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun FilterOptionRow(
+    title: String,
+    options: List<String>,
+    selectedOptions: Set<String>,
+    onOptionSelected: (String) -> Unit
+) {
+    Column {
+        Text(
+            title,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.forEach { option ->
+                val isSelected = selectedOptions.contains(option)
+                SuggestionChip(
+                    onClick = { onOptionSelected(option) },
+                    label = {
+                        Text(
+                            option,
+                            color = if (isSelected) Color.White else Color.White.copy(0.7f)
+                        )
+                    },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = if (isSelected) FabColor else Color.White.copy(alpha = 0.05f)
+                    ),
+                    border = if (isSelected) null else BorderStroke(
+                        1.dp,
+                        Color.White.copy(alpha = 0.2f)
+                    )
+                )
+            }
         }
     }
 }

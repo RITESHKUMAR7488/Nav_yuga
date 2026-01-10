@@ -41,6 +41,7 @@ import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
 import com.example.mahayuga.feature.navyuga.presentation.home.SearchBarRow
 import com.example.mahayuga.feature.navyuga.presentation.home.StoryState
+import com.example.mahayuga.feature.navyuga.presentation.home.FilterOptionRow
 import com.example.mahayuga.ui.theme.BrandBlue
 import kotlinx.coroutines.launch
 
@@ -63,6 +64,10 @@ fun SearchResultsScreen(
 
     val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val activeBudgets by viewModel.activeBudgets.collectAsStateWithLifecycle()
+    val activeManagers by viewModel.activeManagers.collectAsStateWithLifecycle()
+    val activeTypes by viewModel.activeTypes.collectAsStateWithLifecycle()
+
     var showFilterSheet by remember { mutableStateOf(false) }
 
     // Scroll to Top Logic
@@ -76,10 +81,20 @@ fun SearchResultsScreen(
         containerColor = Color.Black,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Funding", fontWeight = FontWeight.Bold, color = Color.White) },
+                title = {
+                    Text(
+                        "Funding",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Black)
@@ -140,9 +155,12 @@ fun SearchResultsScreen(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+
             SearchBarRow(
                 query = searchQuery,
                 onQueryChange = { viewModel.updateSearchQuery(it) },
@@ -152,29 +170,33 @@ fun SearchResultsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             when (val state = searchState) {
-                is UiState.Loading -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = Color(0xFF60A5FA)) }
+                is UiState.Loading -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator(color = Color(0xFF60A5FA)) }
+                }
 
-                is UiState.Failure -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Coming Soon",
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                is UiState.Failure -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Coming Soon",
+                            color = Color.Gray,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                 }
 
                 is UiState.Success -> {
                     val properties = state.data
+
                     if (properties.isEmpty()) {
-                        Box(
-                            Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) { Text("No properties match.", color = Color.Gray) }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No properties match.", color = Color.Gray)
+                        }
                     } else {
                         val stories = properties.map { prop ->
                             StoryState(
@@ -200,6 +222,7 @@ fun SearchResultsScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
+
                             item {
                                 LazyRow(
                                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -212,7 +235,9 @@ fun SearchResultsScreen(
                                     }
                                 }
                             }
+
                             item { HorizontalDivider(color = Color.White.copy(0.1f)) }
+
                             items(properties) { property ->
                                 InstagramStylePropertyCard(
                                     property = property,
@@ -223,7 +248,7 @@ fun SearchResultsScreen(
                                             property.isLiked
                                         )
                                     },
-                                    onShareClick = { },
+                                    onShareClick = { /* Share Logic */ },
                                     onInvestClick = { onNavigateToDetail(property.id) },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -244,16 +269,62 @@ fun SearchResultsScreen(
                 onDismissRequest = { showFilterSheet = false },
                 containerColor = Color(0xFF1E1E1E)
             ) {
-                Column(modifier = Modifier
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState())) {
-                    Text(
-                        "Filter Properties",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Filter Properties",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        TextButton(onClick = { viewModel.clearAllFilters() }) {
+                            Text("Clear All", color = BrandBlue)
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    FilterOptionRow(
+                        title = "Budget (Valuation)",
+                        options = listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
+                        selectedOptions = activeBudgets,
+                        onOptionSelected = { viewModel.toggleBudget(it) }
+                    )
+
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    FilterOptionRow(
+                        title = "Asset Manager",
+                        options = listOf("Mindspace", "Nuvama", "Brookfield"),
+                        selectedOptions = activeManagers,
+                        onOptionSelected = { viewModel.toggleManager(it) }
+                    )
+
+                    HorizontalDivider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    FilterOptionRow(
+                        title = "Type",
+                        options = listOf("Office", "Retail", "Warehouse", "Industrial"),
+                        selectedOptions = activeTypes,
+                        onOptionSelected = { viewModel.toggleType(it) }
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
                     Button(
                         onClick = { showFilterSheet = false },
                         modifier = Modifier
