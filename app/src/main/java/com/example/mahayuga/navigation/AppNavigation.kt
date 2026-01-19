@@ -18,19 +18,20 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.mahayuga.core.common.PlaceholderScreen
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.admin.presentation.*
 import com.example.mahayuga.feature.auth.data.model.UserModel
+import com.example.mahayuga.feature.auth.presentation.AssetManagerOnboardingScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.auth.presentation.LoginScreen
 import com.example.mahayuga.feature.auth.presentation.RegisterScreen
 import com.example.mahayuga.feature.auth.presentation.WelcomeScreen
-import com.example.mahayuga.feature.hub.presentation.HubScreen
 import com.example.mahayuga.feature.navyuga.presentation.NavYugaDashboard
 import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.navyuga.presentation.splash.NavyugaSplashScreen
+import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen
 import com.example.mahayuga.feature.profile.presentation.AccountDetailsScreen
 import com.example.mahayuga.feature.profile.presentation.HelpCenterScreen
 import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
@@ -38,7 +39,6 @@ import com.example.mahayuga.feature.profile.presentation.ProfileMenuScreen
 import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.profile.presentation.WalletScreen
-import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
 
 @Composable
@@ -55,6 +55,11 @@ fun AppNavigation(
         composable("welcome") { WelcomeScreen(navController = navController) }
         composable("login") { LoginScreen(navController = navController) }
         composable("register") { RegisterScreen(navController = navController) }
+
+        // ⚡ NEW: Asset Manager Onboarding
+        composable(AssetManagerDestinations.ONBOARDING_INTRO) {
+            AssetManagerOnboardingScreen(navController = navController)
+        }
 
         // --- NAVYUGA DASHBOARD (Main Entry) ---
         composable("navyuga_dashboard") {
@@ -224,17 +229,10 @@ fun AppNavigation(
                 }
             )
         }
-    }
-}
 
-@Composable
-fun PlaceholderScreen(title: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = title, color = MaterialTheme.colorScheme.onBackground)
+        // ⚡ Placeholder for future Asset Manager Dashboard (Phase 4)
+        composable(AssetManagerDestinations.DASHBOARD) {
+            PlaceholderScreen("Asset Manager Dashboard (Coming Soon)")
+        }
     }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.core.data.local.PreferenceManager
+import com.example.mahayuga.feature.auth.data.model.AssetManagerModel
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -19,7 +20,7 @@ import javax.inject.Inject
 class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
     private val preferenceManager: PreferenceManager,
-    private val auth: FirebaseAuth // ⚡ Inject FirebaseAuth
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow<UiState<UserModel>>(UiState.Idle)
@@ -27,6 +28,10 @@ class AuthViewModel @Inject constructor(
 
     private val _registerState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val registerState: StateFlow<UiState<String>> = _registerState
+
+    // ⚡ NEW STATE for Asset Manager Registration
+    private val _amRegisterState = MutableStateFlow<UiState<String>>(UiState.Idle)
+    val amRegisterState: StateFlow<UiState<String>> = _amRegisterState
 
     val currentUser: StateFlow<UiState<UserModel>> = repository.getCurrentUser()
         .stateIn(
@@ -64,10 +69,22 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // ⚡ NEW: Logout function to clear prefs
+    // ⚡ NEW FUNCTION
+    fun registerAssetManager(amData: AssetManagerModel, password: String) {
+        viewModelScope.launch {
+            repository.registerAssetManager(amData, password).collect { state ->
+                _amRegisterState.value = state
+            }
+        }
+    }
+
     fun logout() {
         auth.signOut()
         preferenceManager.saveLoginState(false)
-        preferenceManager.clear() // Optional: Clears all prefs to be safe
+        preferenceManager.clear()
+    }
+
+    fun resetAmRegisterState() {
+        _amRegisterState.value = UiState.Idle
     }
 }

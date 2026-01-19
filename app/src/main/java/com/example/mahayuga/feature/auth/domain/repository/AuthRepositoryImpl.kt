@@ -2,6 +2,7 @@ package com.example.mahayuga.feature.auth.domain.repository
 
 import android.util.Log
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.auth.data.model.AssetManagerModel
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -24,20 +25,34 @@ class AuthRepositoryImpl @Inject constructor(
             val uid = result.user?.uid
 
             if (uid != null) {
-                // Fetch fresh data
-                val document = firestore.collection("users").document(uid).get().await()
-                val user = document.toObject(UserModel::class.java)
-
-                if (user != null) {
-                    // Check if approved (Note: Admin accounts set to true in DB will pass this)
-                    if (user.isApproved) {
+                // 1. Try fetching as User
+                val userDoc = firestore.collection("users").document(uid).get().await()
+                if (userDoc.exists()) {
+                    val user = userDoc.toObject(UserModel::class.java)
+                    if (user != null && user.isApproved) {
                         emit(UiState.Success(user))
                     } else {
                         emit(UiState.Failure("Account pending admin approval."))
                         auth.signOut()
                     }
                 } else {
-                    emit(UiState.Failure("User data not found"))
+                    // 2. Try fetching as Asset Manager
+                    val amDoc = firestore.collection("asset_managers").document(uid).get().await()
+                    if (amDoc.exists()) {
+                        // For login flow, we map AM to a basic UserModel structure to satisfy the return type
+                        // In a real app, you might want a sealed class for UserType
+                        val am = amDoc.toObject(AssetManagerModel::class.java)
+                        val mappedUser = UserModel(
+                            uid = uid,
+                            email = am?.email ?: "",
+                            name = am?.contactName ?: "Partner",
+                            role = "asset_manager",
+                            isApproved = am?.accountStatus == "VERIFIED"
+                        )
+                        emit(UiState.Success(mappedUser))
+                    } else {
+                        emit(UiState.Failure("User data not found"))
+                    }
                 }
             } else {
                 emit(UiState.Failure("Login failed"))
@@ -54,19 +69,34 @@ class AuthRepositoryImpl @Inject constructor(
             val uid = result.user?.uid
 
             if (uid != null) {
-                // ⚡ FORCE 'isApproved = false' for all new registrations
-                // The @PropertyName in UserModel ensures this saves correctly as "isApproved"
                 val newUser = user.copy(uid = uid, isApproved = false)
-
                 firestore.collection("users").document(uid).set(newUser).await()
-
-                Log.d("AuthRepo", "User Registered: ${newUser.email}, isApproved: ${newUser.isApproved}")
                 emit(UiState.Success("Request Sent! Waiting for Admin Approval."))
             } else {
                 emit(UiState.Failure("Registration failed: No UID returned"))
             }
         } catch (e: Exception) {
             Log.e("AuthRepo", "Registration Error", e)
+            emit(UiState.Failure(e.message ?: "Unknown error"))
+        }
+    }
+
+    // ⚡ NEW IMPLEMENTATION
+    override suspend fun registerAssetManager(am: AssetManagerModel, pass: String): Flow<UiState<String>> = flow {
+        emit(UiState.Loading)
+        try {
+            val result = auth.createUserWithEmailAndPassword(am.email, pass).await()
+            val uid = result.user?.uid
+
+            if (uid != null) {
+                // Save to 'asset_managers' collection
+                val newAm = am.copy(uid = uid, accountStatus = "PENDING")
+                firestore.collection("asset_managers").document(uid).set(newAm).await()
+                emit(UiState.Success("Partner Application Submitted Successfully!"))
+            } else {
+                emit(UiState.Failure("Registration failed: No UID returned"))
+            }
+        } catch (e: Exception) {
             emit(UiState.Failure(e.message ?: "Unknown error"))
         }
     }
@@ -79,15 +109,31 @@ class AuthRepositoryImpl @Inject constructor(
             close()
             return@callbackFlow
         }
-        val listener = firestore.collection("users").document(uid)
+
+        // Listener for Users
+        val userListener = firestore.collection("users").document(uid)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(UiState.Failure(error.message ?: "Sync error"))
-                    return@addSnapshotListener
+                if (snapshot != null && snapshot.exists()) {
+                    val user = snapshot.toObject(UserModel::class.java)
+                    if (user != null) trySend(UiState.Success(user))
+                } else {
+                    // Fallback check for Asset Managers if not found in users
+                    firestore.collection("asset_managers").document(uid).get()
+                        .addOnSuccessListener { amSnap ->
+                            if (amSnap.exists()) {
+                                val am = amSnap.toObject(AssetManagerModel::class.java)
+                                val mapped = UserModel(
+                                    uid = uid,
+                                    name = am?.contactName ?: "",
+                                    role = "asset_manager"
+                                )
+                                trySend(UiState.Success(mapped))
+                            } else {
+                                trySend(UiState.Failure("User not found"))
+                            }
+                        }
                 }
-                val user = snapshot?.toObject(UserModel::class.java)
-                if (user != null) trySend(UiState.Success(user)) else trySend(UiState.Failure("User not found"))
             }
-        awaitClose { listener.remove() }
+        awaitClose { userListener.remove() }
     }
 }
