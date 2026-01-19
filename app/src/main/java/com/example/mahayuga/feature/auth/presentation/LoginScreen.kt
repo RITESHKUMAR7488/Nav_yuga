@@ -15,11 +15,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.auth.data.model.UserModel // Import UserModel
+import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.components.GptTextField
 
-// Dark Theme Colors
-private val GptBlack = Color(0xFF000000)
+// ⚡ UPDATED: Navyuga Theme Colors
+private val NavyBackground = Color(0xFF0F172A) // Matches Welcome Screen
 private val GptTextWhite = Color(0xFFFFFFFF)
 private val GptTextGrey = Color(0xFFC5C5D2)
 private val GptBrandGreen = Color(0xFF10A37F)
@@ -36,17 +36,16 @@ fun LoginScreen(
 
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
-            // ⚡ FIXED: Check Role to determine destination
             val user = (loginState as UiState.Success<UserModel>).data
 
+            // ⚡ FIX: Navigate to correct dashboard, 'super_app_hub' was deleted
             val destination = if (user.role == "admin") {
                 "admin_dashboard"
             } else {
-                "super_app_hub"
+                "navyuga_dashboard"
             }
 
             navController.navigate(destination) {
-                // Clear back stack so they can't go back to login/welcome
                 popUpTo("welcome") { inclusive = true }
             }
         }
@@ -58,14 +57,14 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(GptBlack)
+            .background(NavyBackground) // ⚡ Uses NavyBackground
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(60.dp))
 
         Text(
-            text = "Welcome back",
+            text = "Log in",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = GptTextWhite
@@ -107,16 +106,18 @@ fun LoginScreen(
         // Continue Button
         Button(
             onClick = { viewModel.login(email, password) },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = GptTextWhite,
-                contentColor = GptBlack
+                contentColor = NavyBackground
             ),
             shape = MaterialTheme.shapes.medium,
             enabled = !isLoading
         ) {
             if (isLoading) {
-                CircularProgressIndicator(color = GptBlack, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(color = NavyBackground, modifier = Modifier.size(24.dp))
             } else {
                 Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }

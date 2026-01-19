@@ -27,6 +27,7 @@ data class RoiState(
     // Financials
     val acquisitionCost: String = "",
     val targetRoi: String = "",
+    val registryInput: String = "", // ⚡ NEW: Manual Registry Input
     val legalCharges: String = "",
     val electricityCharges: String = "",
     val dgCharges: String = "",

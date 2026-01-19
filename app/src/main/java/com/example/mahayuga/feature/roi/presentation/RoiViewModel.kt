@@ -18,20 +18,82 @@ class RoiViewModel @Inject constructor() : ViewModel() {
         _uiState.update { it.copy(isBuyerMode = isBuyer, currentStep = 1) }
     }
 
-    fun updatePropertyInfo(name: String? = null, address: String? = null, age: String? = null, type: String? = null, area: String? = null, floor: String? = null, carPark: String? = null) {
-        _uiState.update { it.copy(propertyName = name ?: it.propertyName, propertyAddress = address ?: it.propertyAddress, buildingAge = age ?: it.buildingAge, propertyType = type ?: it.propertyType, saleableArea = area ?: it.saleableArea, floor = floor ?: it.floor, carPark = carPark ?: it.carPark)}
+    fun updatePropertyInfo(
+        name: String? = null,
+        address: String? = null,
+        age: String? = null,
+        type: String? = null,
+        area: String? = null,
+        floor: String? = null,
+        carPark: String? = null
+    ) {
+        _uiState.update {
+            it.copy(
+                propertyName = name ?: it.propertyName,
+                propertyAddress = address ?: it.propertyAddress,
+                buildingAge = age ?: it.buildingAge,
+                propertyType = type ?: it.propertyType,
+                saleableArea = area ?: it.saleableArea,
+                floor = floor ?: it.floor,
+                carPark = carPark ?: it.carPark
+            )
+        }
     }
 
-    fun updateLeaseInfo(tenant: String? = null, occupation: String? = null, startDate: Long? = null, lockIn: String? = null, escPercent: String? = null, escYears: String? = null, rent: String? = null, deposit: String? = null) {
-        _uiState.update { it.copy(tenantName = tenant ?: it.tenantName, periodOfOccupation = occupation ?: it.periodOfOccupation, rentStartDate = startDate ?: it.rentStartDate, lockInPeriod = lockIn ?: it.lockInPeriod, escalationPercent = escPercent ?: it.escalationPercent, escalationYears = escYears ?: it.escalationYears, monthlyRent = rent ?: it.monthlyRent, securityDeposit = deposit ?: it.securityDeposit)}
+    fun updateLeaseInfo(
+        tenant: String? = null,
+        occupation: String? = null,
+        startDate: Long? = null,
+        lockIn: String? = null,
+        escPercent: String? = null,
+        escYears: String? = null,
+        rent: String? = null,
+        deposit: String? = null
+    ) {
+        _uiState.update {
+            it.copy(
+                tenantName = tenant ?: it.tenantName,
+                periodOfOccupation = occupation ?: it.periodOfOccupation,
+                rentStartDate = startDate ?: it.rentStartDate,
+                lockInPeriod = lockIn ?: it.lockInPeriod,
+                escalationPercent = escPercent ?: it.escalationPercent,
+                escalationYears = escYears ?: it.escalationYears,
+                monthlyRent = rent ?: it.monthlyRent,
+                securityDeposit = deposit ?: it.securityDeposit
+            )
+        }
     }
 
     fun updateExpenses(tax: String? = null, maint: String? = null, byLandlord: Boolean? = null) {
-        _uiState.update { it.copy(propertyTaxMonthly = tax ?: it.propertyTaxMonthly, maintenanceCost = maint ?: it.maintenanceCost, isMaintenanceByLandlord = byLandlord ?: it.isMaintenanceByLandlord)}
+        _uiState.update {
+            it.copy(
+                propertyTaxMonthly = tax ?: it.propertyTaxMonthly,
+                maintenanceCost = maint ?: it.maintenanceCost,
+                isMaintenanceByLandlord = byLandlord ?: it.isMaintenanceByLandlord
+            )
+        }
     }
 
-    fun updateFinancials(cost: String? = null, targetRoi: String? = null, legal: String? = null, elec: String? = null, dg: String? = null, fire: String? = null) {
-        _uiState.update { it.copy(acquisitionCost = cost ?: it.acquisitionCost, targetRoi = targetRoi ?: it.targetRoi, legalCharges = legal ?: it.legalCharges, electricityCharges = elec ?: it.electricityCharges, dgCharges = dg ?: it.dgCharges, fireFightingCharges = fire ?: it.fireFightingCharges)}
+    fun updateFinancials(
+        cost: String? = null,
+        targetRoi: String? = null,
+        registry: String? = null,
+        legal: String? = null,
+        elec: String? = null,
+        dg: String? = null,
+        fire: String? = null
+    ) {
+        _uiState.update {
+            it.copy(
+                acquisitionCost = cost ?: it.acquisitionCost,
+                targetRoi = targetRoi ?: it.targetRoi,
+                registryInput = registry ?: it.registryInput,
+                legalCharges = legal ?: it.legalCharges,
+                electricityCharges = elec ?: it.electricityCharges,
+                dgCharges = dg ?: it.dgCharges,
+                fireFightingCharges = fire ?: it.fireFightingCharges
+            )
+        }
     }
 
     fun nextStep() {
@@ -52,7 +114,12 @@ class RoiViewModel @Inject constructor() : ViewModel() {
             1 -> state.saleableArea.isNotBlank()
             2 -> state.monthlyRent.isNotBlank() && state.periodOfOccupation.isNotBlank()
             3 -> state.propertyTaxMonthly.isNotBlank() && state.maintenanceCost.isNotBlank()
-            4 -> if (state.isBuyerMode) state.acquisitionCost.isNotBlank() else state.targetRoi.isNotBlank()
+            4 -> {
+                val baseCheck =
+                    if (state.isBuyerMode) state.acquisitionCost.isNotBlank() else state.targetRoi.isNotBlank()
+                baseCheck && state.registryInput.isNotBlank() // ⚡ Registry is now mandatory
+            }
+
             else -> false
         }
     }
@@ -66,21 +133,55 @@ class RoiViewModel @Inject constructor() : ViewModel() {
         val monthlyMaint = s.maintenanceCost.toDoubleOrNull() ?: 0.0
         val annualMaint = if (s.isMaintenanceByLandlord) monthlyMaint * 12 else 0.0
         val netAnnualIncome = grossAnnualRent - annualTax - annualMaint
-        val otherCharges = (s.legalCharges.toDoubleOrNull() ?: 0.0) + (s.electricityCharges.toDoubleOrNull() ?: 0.0) + (s.dgCharges.toDoubleOrNull() ?: 0.0) + (s.fireFightingCharges.toDoubleOrNull() ?: 0.0)
+        val otherCharges =
+            (s.legalCharges.toDoubleOrNull() ?: 0.0) + (s.electricityCharges.toDoubleOrNull()
+                ?: 0.0) + (s.dgCharges.toDoubleOrNull()
+                ?: 0.0) + (s.fireFightingCharges.toDoubleOrNull() ?: 0.0)
+
+        // ⚡ Manual Registry Logic
+        val regPercent = s.registryInput.toDoubleOrNull() ?: 0.0
 
         if (s.isBuyerMode) {
             val acquisitionBase = s.acquisitionCost.toDoubleOrNull() ?: 0.0
-            val registry = acquisitionBase * 0.08
+            val registry = acquisitionBase * (regPercent / 100)
             val totalInvestment = acquisitionBase + registry + otherCharges
             val roi = if (totalInvestment > 0) (netAnnualIncome / totalInvestment) * 100 else 0.0
-            _uiState.update { it.copy(calculatedRoi = roi, totalInvestment = totalInvestment, netAnnualIncome = netAnnualIncome, grossAnnualRent = grossAnnualRent, totalPropertyTaxAnnually = annualTax, registryCost = registry, gstAmount = monthlyRent * 0.18, totalOtherCharges = otherCharges)}
+            _uiState.update {
+                it.copy(
+                    calculatedRoi = roi,
+                    totalInvestment = totalInvestment,
+                    netAnnualIncome = netAnnualIncome,
+                    grossAnnualRent = grossAnnualRent,
+                    totalPropertyTaxAnnually = annualTax,
+                    registryCost = registry,
+                    gstAmount = monthlyRent * 0.18,
+                    totalOtherCharges = otherCharges
+                )
+            }
         } else {
             val targetRoiVal = s.targetRoi.toDoubleOrNull() ?: 0.0
             if (targetRoiVal > 0) {
+                // Reverse calc: Net Income / ROI = Total Investment needed
                 val requiredTotalInvestment = netAnnualIncome / (targetRoiVal / 100)
-                val baseSellingPrice = (requiredTotalInvestment - otherCharges) / 1.08
-                val registry = baseSellingPrice * 0.08
-                _uiState.update { it.copy(calculatedSellingPrice = baseSellingPrice, calculatedRoi = targetRoiVal, totalInvestment = requiredTotalInvestment, netAnnualIncome = netAnnualIncome, grossAnnualRent = grossAnnualRent, totalPropertyTaxAnnually = annualTax, registryCost = registry, gstAmount = monthlyRent * 0.18, totalOtherCharges = otherCharges)}
+                // Total = Base + (Base * Reg%) + Other
+                // Total - Other = Base * (1 + Reg%)
+                // Base = (Total - Other) / (1 + Reg%)
+                val baseSellingPrice =
+                    (requiredTotalInvestment - otherCharges) / (1 + (regPercent / 100))
+                val registry = baseSellingPrice * (regPercent / 100)
+                _uiState.update {
+                    it.copy(
+                        calculatedSellingPrice = baseSellingPrice,
+                        calculatedRoi = targetRoiVal,
+                        totalInvestment = requiredTotalInvestment,
+                        netAnnualIncome = netAnnualIncome,
+                        grossAnnualRent = grossAnnualRent,
+                        totalPropertyTaxAnnually = annualTax,
+                        registryCost = registry,
+                        gstAmount = monthlyRent * 0.18,
+                        totalOtherCharges = otherCharges
+                    )
+                }
             }
         }
     }
@@ -91,7 +192,9 @@ class RoiViewModel @Inject constructor() : ViewModel() {
         val startRent = s.monthlyRent.toDoubleOrNull() ?: 0.0
         val escPercent = s.escalationPercent.toDoubleOrNull() ?: 0.0
         val escFreq = s.escalationYears.toIntOrNull() ?: 100
-        val expenses = (s.propertyTaxMonthly.toDoubleOrNull() ?: 0.0) * 12 + if (s.isMaintenanceByLandlord) (s.maintenanceCost.toDoubleOrNull() ?: 0.0) * 12 else 0.0
+        val expenses = (s.propertyTaxMonthly.toDoubleOrNull()
+            ?: 0.0) * 12 + if (s.isMaintenanceByLandlord) (s.maintenanceCost.toDoubleOrNull()
+            ?: 0.0) * 12 else 0.0
 
         val cashFlowList = ArrayList<CashFlowRow>()
         var currentMonthlyRent = startRent
@@ -107,7 +210,10 @@ class RoiViewModel @Inject constructor() : ViewModel() {
     fun calculateCounterOffer(desiredRoi: Double) {
         val s = _uiState.value
         if (desiredRoi <= 0) return
-        val counterPrice = ((s.netAnnualIncome / (desiredRoi / 100)) - s.totalOtherCharges) / 1.08
+        val regPercent = s.registryInput.toDoubleOrNull() ?: 0.0
+        // Same reverse logic as seller mode
+        val counterPrice =
+            ((s.netAnnualIncome / (desiredRoi / 100)) - s.totalOtherCharges) / (1 + (regPercent / 100))
         _uiState.update { it.copy(counterOfferPrice = counterPrice, counterOfferRoi = desiredRoi) }
     }
 }

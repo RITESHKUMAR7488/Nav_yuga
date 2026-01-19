@@ -35,7 +35,7 @@ fun AdminDashboardScreen(
     val usersState by viewModel.usersState.collectAsState()
     val propertiesState by viewModel.propertiesState.collectAsState()
 
-    // ⚡ REAL STATS CALCULATION
+    // ⚡ REAL STATS CALCULATION - ROW 1
     val activePropertiesCount = if (propertiesState is UiState.Success) {
         (propertiesState as UiState.Success).data.count { it.status != "Exited" }.toString()
     } else "..."
@@ -44,12 +44,32 @@ fun AdminDashboardScreen(
         (usersState as UiState.Success).data.size.toString()
     } else "..."
 
-    // Calculate Total Volume (Sum of totalValuation of all properties)
     val totalVolume = if (propertiesState is UiState.Success) {
         val total = (propertiesState as UiState.Success).data.sumOf {
-            it.totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
+            it.totalValuation.replace(",", "").replace("₹", "").trim().toDoubleOrNull() ?: 0.0
         }
         "₹${formatLargeNumber(total)}"
+    } else "..."
+
+    // ⚡ NEW STATS CALCULATION - ROW 2
+    val userNationalities = if (usersState is UiState.Success) {
+        // Placeholder logic: Assuming primarily India for now as address isn't structured
+        val count = (usersState as UiState.Success).data.size
+        if (count > 0) "1" else "0"
+    } else "..."
+
+    val rentalIncomePaid = "₹0" // No transaction ledger yet, matches AdminViewModel sync logic
+
+    val avgReturn = if (propertiesState is UiState.Success) {
+        val props = (propertiesState as UiState.Success).data
+        val activeProps = props.filter { it.status == "Funded" || it.status == "Funding" }
+        val roiList = activeProps.map { it.roi }.filter { it > 0 }
+
+        if (roiList.isNotEmpty()) {
+            String.format("%.1f%%", roiList.average())
+        } else {
+            "0%"
+        }
     } else "..."
 
     Scaffold(
@@ -77,7 +97,9 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. STATS ROW (REAL DATA)
+            // 2. STATS GRID
+
+            // ROW 1
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -85,6 +107,18 @@ fun AdminDashboardScreen(
                 AdminStatCard("Active Props", activePropertiesCount, SuccessGreen, Modifier.weight(1f))
                 AdminStatCard("Total Users", totalUsersCount, BrandBlue, Modifier.weight(1f))
                 AdminStatCard("Asset Vol", totalVolume, CyanAccent, Modifier.weight(1f))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ROW 2 (NEW)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                AdminStatCard("Nationalities", userNationalities, Color(0xFFFF9800), Modifier.weight(1f)) // Orange
+                AdminStatCard("Rent Paid", rentalIncomePaid, Color(0xFF9C27B0), Modifier.weight(1f))      // Purple
+                AdminStatCard("Avg Return", avgReturn, Color(0xFF00E676), Modifier.weight(1f))            // Green
             }
 
             Spacer(modifier = Modifier.height(32.dp))

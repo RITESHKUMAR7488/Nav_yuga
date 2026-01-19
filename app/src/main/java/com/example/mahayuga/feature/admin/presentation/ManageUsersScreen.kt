@@ -114,6 +114,24 @@ fun AdminUserItem(user: UserModel, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                // ⚡ UPDATED: Show Phone and DOB
+                if (user.phone.isNotEmpty()) {
+                    Text(
+                        text = "Phone: ${user.phone}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (user.dob.isNotEmpty()) {
+                    Text(
+                        text = "DOB: ${user.dob}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = "Invested: ₹${user.totalInvestment}",
                     style = MaterialTheme.typography.labelSmall,

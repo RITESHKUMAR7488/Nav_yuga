@@ -23,18 +23,27 @@ import java.util.Locale
 import kotlin.math.min
 
 // ==========================================
-// ⚡ UNIVERSAL HELPER FUNCTIONS (RESTORED)
+// ⚡ UNIVERSAL HELPER FUNCTIONS (UPDATED FOR Cr/L)
 // ==========================================
 
 fun formatIndian(amount: Double): String {
     return try {
-        val formatter = NumberFormat.getInstance(Locale("en", "IN"))
-        if (amount % 1.0 == 0.0) {
-            formatter.maximumFractionDigits = 0
-        } else {
-            formatter.maximumFractionDigits = 2
+        when {
+            amount >= 10000000 -> {
+                val cr = amount / 10000000
+                // If it's a whole number like 1.00 Cr, show 1 Cr, else 1.52 Cr
+                if (cr % 1.0 == 0.0) String.format("%.0f Cr", cr) else String.format("%.2f Cr", cr)
+            }
+            amount >= 100000 -> {
+                val l = amount / 100000
+                if (l % 1.0 == 0.0) String.format("%.0f L", l) else String.format("%.2f L", l)
+            }
+            else -> {
+                val formatter = NumberFormat.getInstance(Locale("en", "IN"))
+                formatter.maximumFractionDigits = 0
+                formatter.format(amount)
+            }
         }
-        formatter.format(amount)
     } catch (e: Exception) {
         String.format("%.0f", amount)
     }
@@ -44,13 +53,13 @@ fun formatIndian(amount: Double): String {
 fun formatIndian(amount: String?): String {
     if (amount.isNullOrBlank()) return "-"
     // Remove existing commas if any before parsing
-    val cleanString = amount.replace(",", "")
+    val cleanString = amount.replace(",", "").replace("₹", "").trim()
     val d = cleanString.toDoubleOrNull() ?: return amount
     return formatIndian(d)
 }
 
 // ==========================================
-// ⚡ VISUAL TRANSFORMATION (Auto-Commas) (RESTORED)
+// ⚡ VISUAL TRANSFORMATION (Auto-Commas)
 // ==========================================
 
 class IndianNumberVisualTransformation : VisualTransformation {
@@ -111,7 +120,7 @@ class IndianNumberVisualTransformation : VisualTransformation {
 }
 
 // ==========================================
-// ⚡ ORIGINAL UI COMPONENTS (RESTORED)
+// ⚡ ORIGINAL UI COMPONENTS
 // ==========================================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -221,7 +230,7 @@ fun NavyugaGradientButton(
 }
 
 // ==========================================
-// ⚡ NEW COMPONENT FOR CHATGPT STYLE UI (ADDED)
+// ⚡ NEW COMPONENT FOR CHATGPT STYLE UI
 // ==========================================
 
 @OptIn(ExperimentalMaterial3Api::class)

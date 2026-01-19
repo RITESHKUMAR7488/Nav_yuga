@@ -42,15 +42,18 @@ fun EditPropertyScreen(
     val uploadState by viewModel.propertyUploadState.collectAsState()
     val context = LocalContext.current
 
-    // State Fields (Matching AddPropertyScreen)
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Commercial") }
     var status by remember { mutableStateOf("Open") }
+    var isTrendingSelection by remember { mutableStateOf("No") }
+    var assetManager by remember { mutableStateOf("") }
 
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
+    // ⚡ REQUEST 1: Country
+    var country by remember { mutableStateOf("India") }
 
     var age by remember { mutableStateOf("") }
     var area by remember { mutableStateOf("") }
@@ -69,20 +72,19 @@ fun EditPropertyScreen(
     var tenantName by remember { mutableStateOf("") }
     var occupationPeriod by remember { mutableStateOf("") }
 
-    // ⚡ NEW: Exited Fields State
+    // ⚡ REQUEST 3: Need total units to auto-calc min invest in edit too
+    var totalUnits by remember { mutableStateOf("") }
+
     var exitPrice by remember { mutableStateOf("") }
     var totalProfit by remember { mutableStateOf("") }
 
-    // Escalation split fields
     var escalationPercent by remember { mutableStateOf("") }
     var escalationYears by remember { mutableStateOf("") }
 
-    // ⚡ IMAGE MANAGEMENT
     var keptImages by remember { mutableStateOf<List<String>>(emptyList()) }
     var newImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var originalProperty by remember { mutableStateOf<PropertyModel?>(null) }
 
-    // ⚡ LOAD DATA
     LaunchedEffect(propertyId, propertiesState) {
         if (propertiesState is UiState.Success) {
             val property = (propertiesState as UiState.Success).data.find { it.id == propertyId }
@@ -92,9 +94,13 @@ fun EditPropertyScreen(
                 description = it.description
                 type = it.type
                 status = it.status
+                isTrendingSelection = if (it.isTrending) "Yes" else "No"
+                assetManager = it.assetManager
+
                 address = it.address
                 city = it.city
                 state = it.state
+                country = it.country // Load Country
                 age = it.age
                 area = it.area
                 floor = it.floor
@@ -108,17 +114,22 @@ fun EditPropertyScreen(
                 annualPropertyTax = it.annualPropertyTax
                 tenantName = it.tenantName
                 occupationPeriod = it.occupationPeriod
-
-                // ⚡ LOAD EXITED FIELDS
                 exitPrice = it.exitPrice
                 totalProfit = it.totalProfit
+                totalUnits = it.totalUnits // Load Units
 
-                // Parse Escalation
-                val regex = """(\d+)% \(Every (\d+) Years\)""".toRegex()
-                val match = regex.find(it.escalation)
-                if (match != null) {
-                    escalationPercent = match.groupValues[1]
-                    escalationYears = match.groupValues[2]
+                // ⚡ REQUEST 2 FIX: Robust Regex Parsing for Escalation
+                // Supports "5% (Every 3 Years)" or just "5 (Every 3 Years)"
+                if(it.escalation.isNotEmpty()) {
+                    val regex = """(\d+)%? \(Every (\d+) Years\)""".toRegex()
+                    val match = regex.find(it.escalation)
+                    if (match != null) {
+                        escalationPercent = match.groupValues[1]
+                        escalationYears = match.groupValues[2]
+                    } else {
+                        // Fallback: Try to just parse numbers if format is weird
+                        // (Optional, but good for safety)
+                    }
                 }
 
                 keptImages = it.imageUrls
@@ -126,7 +137,17 @@ fun EditPropertyScreen(
         }
     }
 
-    // ================== ⚡ COROUTINE: AUTO-CALCULATION ==================
+    // ⚡ REQUEST 3: Auto-calculate Min Investment based on Units in Edit Mode
+    LaunchedEffect(totalValuation, totalUnits) {
+        val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
+        val units = totalUnits.replace(",", "").toIntOrNull() ?: 0
+        if (price > 0 && units > 0) {
+            val calculatedMin = price / units
+            minInvest = String.format("%.0f", calculatedMin)
+        }
+    }
+
+    // Auto-calculate logic (Financials)
     LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
         val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
@@ -144,9 +165,10 @@ fun EditPropertyScreen(
         }
     }
 
-    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetMultipleContents()) { uris ->
-        newImageUris = newImageUris + uris
-    }
+    val launcher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetMultipleContents()) { uris ->
+            newImageUris = newImageUris + uris
+        }
 
     LaunchedEffect(uploadState) {
         if (uploadState is UiState.Success) {
@@ -179,10 +201,9 @@ fun EditPropertyScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // IMAGES SECTION (Same as before)
+            // ... Images Section (Same as before) ...
             Text("Property Images", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(keptImages) { url ->
                     Box(modifier = Modifier.size(100.dp)) {
@@ -230,110 +251,286 @@ fun EditPropertyScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ================== 1. GENERAL INFO ==================
             SectionHeader("Basic Info")
-            NavyugaTextField(value = title, onValueChange = { title = it }, label = "Title", icon = Icons.Default.Title)
+            NavyugaTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = "Title",
+                icon = Icons.Default.Title
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = address, onValueChange = { address = it }, label = "Address", icon = Icons.Default.Place)
+
+            NavyugaTextField(
+                value = assetManager,
+                onValueChange = { assetManager = it },
+                label = "Asset Manager Name",
+                icon = Icons.Default.PersonOutline
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            NavyugaTextField(
+                value = address,
+                onValueChange = { address = it },
+                label = "Address",
+                icon = Icons.Default.Place
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = city, onValueChange = { city = it }, label = "City", icon = Icons.Default.LocationCity) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = state, onValueChange = { state = it }, label = "State", icon = Icons.Default.Map) }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = city,
+                        onValueChange = { city = it },
+                        label = "City",
+                        icon = Icons.Default.LocationCity
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = state,
+                        onValueChange = { state = it },
+                        label = "State",
+                        icon = Icons.Default.Map
+                    )
+                }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ⚡ REQUEST 1: Country Field in Edit
+            NavyugaDropdown(
+                label = "Country",
+                options = listOf("India", "UAE", "USA", "UK"),
+                selected = country,
+                onSelectionChange = { country = it }
+            )
             Spacer(modifier = Modifier.height(8.dp))
 
             NavyugaDropdown(
                 label = "Asset Type",
                 options = listOf("Office", "Retail", "Warehouse", "Industrial"),
                 selected = type,
-                onSelectionChange = { type = it }
-            )
+                onSelectionChange = { type = it })
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⚡ STATUS - Triggers Exited Logic
-            NavyugaDropdown(
-                label = "Status",
-                options = listOf("Funding", "Funded", "Exited"),
-                selected = status,
-                onSelectionChange = { status = it }
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaDropdown(
+                        label = "Status",
+                        options = listOf("Funding", "Funded", "Exited"),
+                        selected = status,
+                        onSelectionChange = { status = it })
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaDropdown(
+                        label = "Make Trending?",
+                        options = listOf("Yes", "No"),
+                        selected = isTrendingSelection,
+                        onSelectionChange = { isTrendingSelection = it })
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ⚡ EXITED PROPERTY FIELDS (EDIT MODE)
+            // Hidden Total Units field needed for calculation
+            NavyugaTextField(
+                value = totalUnits,
+                onValueChange = { totalUnits = it },
+                label = "Total Fractional Units",
+                icon = Icons.Default.PieChart,
+                isNumber = true
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader("Specifications")
+            // ... (Specs rows unchanged) ...
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = area,
+                        onValueChange = { area = it },
+                        label = "Area (sqft)",
+                        icon = Icons.Default.SquareFoot,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = floor,
+                        onValueChange = { floor = it },
+                        label = "Floor",
+                        icon = Icons.Default.Layers
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = age,
+                        onValueChange = { age = it },
+                        label = "Age",
+                        icon = Icons.Default.DateRange,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = carPark,
+                        onValueChange = { carPark = it },
+                        label = "Car Park",
+                        icon = Icons.Default.DirectionsCar
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader("Lease Information")
+            NavyugaTextField(
+                value = tenantName,
+                onValueChange = { tenantName = it },
+                label = "Tenant Name",
+                icon = Icons.Default.Person
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            NavyugaTextField(
+                value = occupationPeriod,
+                onValueChange = { occupationPeriod = it },
+                label = "Occupation Period (Years)",
+                icon = Icons.Default.Timer,
+                isNumber = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = escalationPercent,
+                        onValueChange = { escalationPercent = it },
+                        label = "Escalation %",
+                        icon = Icons.Default.TrendingUp,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = escalationYears,
+                        onValueChange = { escalationYears = it },
+                        label = "Every X Years",
+                        icon = Icons.Default.Update,
+                        isNumber = true
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader("Financial Analysis")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = totalValuation,
+                        onValueChange = { totalValuation = it },
+                        label = "Valuation (₹)",
+                        icon = Icons.Default.MonetizationOn,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = minInvest,
+                        onValueChange = { minInvest = it },
+                        label = "Min Invest (Auto)",
+                        icon = Icons.Default.AttachMoney,
+                        isNumber = true
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = monthlyRent,
+                        onValueChange = { monthlyRent = it },
+                        label = "Monthly Rent",
+                        icon = Icons.Default.Payments,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = grossAnnualRent,
+                        onValueChange = { grossAnnualRent = it },
+                        label = "Gross Annual",
+                        icon = Icons.Default.AccountBalanceWallet,
+                        isNumber = true
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = annualPropertyTax,
+                        onValueChange = { annualPropertyTax = it },
+                        label = "Annual Tax",
+                        icon = Icons.Default.ReceiptLong,
+                        isNumber = true
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    NavyugaTextField(
+                        value = roi,
+                        onValueChange = { roi = it },
+                        label = "ROI %",
+                        icon = Icons.Default.TrendingUp
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            NavyugaTextField(
+                value = fundedPercent,
+                onValueChange = { fundedPercent = it },
+                label = "Funded %",
+                icon = Icons.Default.PieChart,
+                isNumber = true
+            )
+
+            // ⚡ REQUEST 7: Exited details shifted BELOW Financial Analysis
             if (status == "Exited") {
+                Spacer(modifier = Modifier.height(16.dp))
                 SectionHeader("Exit Details")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.weight(1f)) {
-                        NavyugaTextField(value = exitPrice, onValueChange = { exitPrice = it }, label = "Exit Price", icon = Icons.Default.MonetizationOn, isNumber = true)
+                        NavyugaTextField(
+                            value = exitPrice,
+                            onValueChange = { exitPrice = it },
+                            label = "Exit Price",
+                            icon = Icons.Default.MonetizationOn,
+                            isNumber = true
+                        )
                     }
                     Box(Modifier.weight(1f)) {
-                        NavyugaTextField(value = totalProfit, onValueChange = { totalProfit = it }, label = "Total Profit", icon = Icons.Default.TrendingUp, isNumber = true)
+                        NavyugaTextField(
+                            value = totalProfit,
+                            onValueChange = { totalProfit = it },
+                            label = "Total Profit",
+                            icon = Icons.Default.TrendingUp,
+                            isNumber = true
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // ================== 2. SPECIFICATIONS ==================
-            SectionHeader("Specifications")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = area, onValueChange = { area = it }, label = "Area (sqft)", icon = Icons.Default.SquareFoot, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = floor, onValueChange = { floor = it }, label = "Floor", icon = Icons.Default.Layers) }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = age, onValueChange = { age = it }, label = "Age", icon = Icons.Default.DateRange, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = carPark, onValueChange = { carPark = it }, label = "Car Park", icon = Icons.Default.DirectionsCar) }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ================== 3. LEASE INFO ==================
-            SectionHeader("Lease Information")
-            NavyugaTextField(value = tenantName, onValueChange = { tenantName = it }, label = "Tenant Name", icon = Icons.Default.Person)
-            Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = occupationPeriod, onValueChange = { occupationPeriod = it }, label = "Occupation Period (Years)", icon = Icons.Default.Timer, isNumber = true)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    NavyugaTextField(value = escalationPercent, onValueChange = { escalationPercent = it }, label = "Escalation %", icon = Icons.Default.TrendingUp, isNumber = true)
-                }
-                Box(Modifier.weight(1f)) {
-                    NavyugaTextField(value = escalationYears, onValueChange = { escalationYears = it }, label = "Every X Years", icon = Icons.Default.Update, isNumber = true)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ================== 4. FINANCIALS ==================
-            SectionHeader("Financials")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = totalValuation, onValueChange = { totalValuation = it }, label = "Valuation (₹)", icon = Icons.Default.MonetizationOn, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = minInvest, onValueChange = { minInvest = it }, label = "Min Invest", icon = Icons.Default.AttachMoney, isNumber = true) }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = monthlyRent, onValueChange = { monthlyRent = it }, label = "Monthly Rent", icon = Icons.Default.Payments, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = grossAnnualRent, onValueChange = { grossAnnualRent = it }, label = "Gross Annual", icon = Icons.Default.AccountBalanceWallet, isNumber = true) }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = annualPropertyTax, onValueChange = { annualPropertyTax = it }, label = "Annual Tax", icon = Icons.Default.ReceiptLong, isNumber = true) }
-                Box(Modifier.weight(1f)) { NavyugaTextField(value = roi, onValueChange = { roi = it }, label = "ROI %", icon = Icons.Default.TrendingUp) }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            NavyugaTextField(value = fundedPercent, onValueChange = { fundedPercent = it }, label = "Funded %", icon = Icons.Default.PieChart, isNumber = true)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Description
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("Description") },
-                modifier = Modifier.fillMaxWidth().height(100.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
                 shape = RoundedCornerShape(12.dp)
             )
 
@@ -344,20 +541,38 @@ fun EditPropertyScreen(
                 isLoading = uploadState is UiState.Loading,
                 onClick = {
                     originalProperty?.let { orig ->
-                        val finalEscalation = if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
+                        val finalEscalation =
+                            if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
 
-                        // Create a temporary object to hold fields
                         val updatedFields = orig.copy(
-                            title = title, description = description, type = type, status = status,
-                            address = address, city = city, state = state, location = "$city, $state",
-                            age = age, area = area, floor = floor, carPark = carPark,
-                            totalValuation = totalValuation, minInvest = minInvest,
+                            title = title,
+                            description = description,
+                            type = type,
+                            status = status,
+                            address = address,
+                            city = city,
+                            state = state,
+                            country = country, // ⚡ Save Country
+                            location = "$city, $state",
+                            age = age,
+                            area = area,
+                            floor = floor,
+                            carPark = carPark,
+                            totalValuation = totalValuation,
+                            minInvest = minInvest,
                             roi = roi.toDoubleOrNull() ?: 0.0,
                             fundedPercent = fundedPercent.toIntOrNull() ?: 0,
-                            monthlyRent = monthlyRent, grossAnnualRent = grossAnnualRent, annualPropertyTax = annualPropertyTax,
-                            tenantName = tenantName, occupationPeriod = occupationPeriod, escalation = finalEscalation,
-                            // ⚡ UPDATE EXITED FIELDS
-                            exitPrice = exitPrice, totalProfit = totalProfit
+                            monthlyRent = monthlyRent,
+                            grossAnnualRent = grossAnnualRent,
+                            annualPropertyTax = annualPropertyTax,
+                            tenantName = tenantName,
+                            occupationPeriod = occupationPeriod,
+                            escalation = finalEscalation,
+                            exitPrice = exitPrice,
+                            totalProfit = totalProfit,
+                            totalUnits = totalUnits, // Save Units
+                            isTrending = isTrendingSelection == "Yes",
+                            assetManager = assetManager
                         )
 
                         viewModel.updateProperty(

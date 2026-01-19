@@ -23,12 +23,17 @@ class MainActivity : FragmentActivity() {
 
         val initialDarkMode = preferenceManager.isDarkMode
         val initialLoggedIn = preferenceManager.isLoggedIn
+        val userRole = preferenceManager.userRole
 
         setContent {
             var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
-            // ⚡ CHANGED: Start at "welcome" instead of "login" if not logged in
-            val startDestination = if (initialLoggedIn) "super_app_hub" else "welcome"
+            // ⚡ FIX: Logged-in users start at Splash (for Biometrics), not Dashboard
+            val startDestination = if (initialLoggedIn) {
+                if (userRole == "admin") "admin_dashboard" else "navyuga_splash"
+            } else {
+                "welcome"
+            }
 
             NavyugaTheme(darkTheme = isDarkTheme) {
                 AppNavigation(

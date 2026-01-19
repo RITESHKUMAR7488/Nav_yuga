@@ -7,15 +7,17 @@ data class UserModel(
     val email: String = "",
     val name: String = "",
     val dob: String = "",
+    // ⚡ ADDED PHONE FIELD
+    val phone: String = "",
     val role: String = "user",
 
     // Financial Overview
     val totalInvestment: Long = 0,
     val currentValue: Long = 0,
 
-    // ⚡ ADDED: Persist specific portfolio details here
-    val totalArea: Double = 0.0, // e.g., 50.5 Sqft owned
-    val totalRent: Long = 0,     // e.g., ₹5000/month income
+    // Portfolio details
+    val totalArea: Double = 0.0,
+    val totalRent: Long = 0,
 
     val isActive: Boolean = true,
 

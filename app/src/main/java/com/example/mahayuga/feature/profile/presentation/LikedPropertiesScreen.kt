@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
 
+private val NavyBlue = Color(0xFF0F172A)
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LikedPropertiesScreen(
@@ -26,7 +29,7 @@ fun LikedPropertiesScreen(
     val likedProperties by viewModel.likedProperties.collectAsState()
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = NavyBlue,
         topBar = {
             TopAppBar(
                 title = { Text("Liked Properties", color = Color.White) },
@@ -35,7 +38,7 @@ fun LikedPropertiesScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyBlue)
             )
         }
     ) { innerPadding ->
@@ -64,9 +67,10 @@ fun LikedPropertiesScreen(
                     InstagramStylePropertyCard(
                         property = property,
                         onItemClick = { onNavigateToDetail(property.id) },
-                        // ⚡ FIXED: Correctly calling the new function in ProfileViewModel
                         onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
                         onShareClick = { /* Handle share */ },
+                        // ⚡ FIX: Added missing parameter
+                        onInvestClick = { onNavigateToDetail(property.id) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)

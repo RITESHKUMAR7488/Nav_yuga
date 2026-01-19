@@ -9,18 +9,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -34,17 +35,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.R
 import com.example.mahayuga.core.common.BiometricAuthenticator
-import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-// 🎨 BRAND COLORS MATCHING IMAGE
 private val BackgroundBlack = Color(0xFF050505)
-private val CardDarkSurface = Color(0xFF0A0F14) // Very dark blue/black for cards
-private val NavyugaBlue = Color(0xFF2979FF)
-private val InactiveGrey = Color(0xFF424242)
+private val CardDarkSurface = Color(0xFF0A0F14)
+private val HubGrey = Color(0xFF424242)
 
 @Composable
 fun HubScreen(
@@ -52,62 +49,56 @@ fun HubScreen(
     onLogout: () -> Unit,
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
-    // ⚡ INJECT PROFILE VM TO GET USER NAME
+    onNavigateToSettings: () -> Unit,
+    onNavigateToSecurity: () -> Unit,
+    onNavigateToHelp: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf("Yuga") }
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // Get User Name
-    val currentUserState by profileViewModel.currentUser.collectAsState()
-    val userName = if (currentUserState is UiState.Success) {
-        (currentUserState as UiState.Success).data.name.ifEmpty { "User" }
-    } else "User"
-
-    // Initialize the authenticator
     val biometricAuth = remember { BiometricAuthenticator(context) }
 
     Scaffold(
         containerColor = BackgroundBlack,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
-            HubBottomBar(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
-            )
+            HubBottomBar(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             if (selectedTab == "Yuga") {
                 YugaContent(
-                    userName = userName,
                     onNavyugaClick = {
-                        // ⚡ SECURITY CHECK: Biometrics
                         val activity = context as? FragmentActivity
                         if (activity != null) {
                             biometricAuth.authenticate(
                                 activity = activity,
                                 title = "Unlock Navyuga",
-                                subtitle = "Scan your fingerprint to enter",
-                                onSuccess = { navController.navigate("navyuga_dashboard") },
+                                onSuccess = { navController.navigate("navyuga_splash") },
                                 onError = { errorMsg ->
-                                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        errorMsg,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             )
                         } else {
-                            navController.navigate("navyuga_dashboard")
+                            navController.navigate("navyuga_splash")
                         }
                     }
                 )
             } else {
-                ProfileScreen(
-                    onNavigateToLiked = { navController.navigate("liked_properties") },
-                    onLogout = onLogout
+                HubProfileScreen(
+                    onLogout = {
+                        profileViewModel.logout()
+                        onLogout()
+                    },
+                    onSettings = onNavigateToSettings,
+                    onAbout = { /* Handle About */ }
                 )
             }
         }
@@ -115,122 +106,139 @@ fun HubScreen(
 }
 
 @Composable
-fun YugaContent(
-    userName: String,
-    onNavyugaClick: () -> Unit
+fun HubProfileScreen(
+    onLogout: () -> Unit,
+    onSettings: () -> Unit,
+    onAbout: () -> Unit
 ) {
-    // ⚡ COROUTINE USAGE: 'rememberCoroutineScope' is used here to manage the entrance animation.
-    // We launch a coroutine to delay the appearance of the bottom cards slightly for a smooth effect.
-    val scope = rememberCoroutineScope()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundBlack)
+            .padding(24.dp)
+    ) {
+        Text(
+            text = "Profile",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(32.dp))
 
-    var cardsVisible by remember { mutableStateOf(false) }
+        HubProfileOptionItem(Icons.Outlined.Info, "About Mahayuga", onClick = onAbout)
+        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 12.dp))
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            delay(300) // Wait for main logo to settle slightly
-            cardsVisible = true
-        }
+        HubProfileOptionItem(Icons.Outlined.Settings, "Settings", onClick = onSettings)
+        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 12.dp))
+
+        HubProfileOptionItem(Icons.AutoMirrored.Filled.ExitToApp, "Log out", onClick = onLogout, textColor = Color.White)
     }
+}
+
+@Composable
+fun HubProfileOptionItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    onClick: () -> Unit,
+    textColor: Color = Color.White
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = textColor,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Color.Gray)
+    }
+}
+
+@Composable
+fun YugaContent(onNavyugaClick: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var cardsVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { scope.launch { delay(300); cardsVisible = true } }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp)
     ) {
-        Spacer(modifier = Modifier.height(60.dp))
-
-        // 1. WELCOME TEXT
-        Text(
-            text = "Welcome, $userName",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Medium,
-                color = Color.Gray
-            )
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // 2. CENTER MAHAYUGA LOGO (ROTATING)
-        RotatingMandala()
-
+        // 1. HEADER ROW (Center Text, Right Icon)
         Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = "MAHAYUGA",
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 4.sp,
-                color = Color.White
-            )
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // 3. BOTTOM CARDS (Navyuga & Arthyuga)
-        // Animated Visibility for Entrance
-        androidx.compose.animation.AnimatedVisibility(
-            visible = cardsVisible,
-            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { 100 }
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // NAVYUGA CARD (Active)
-                HubCard(
-                    title = "Navyuga",
-                    subtitle = null,
-                    iconRes = R.drawable.blue, // Using blue resource
-                    isActive = true,
-                    onClick = onNavyugaClick,
-                    modifier = Modifier.weight(1f)
-                )
+            // Title (Center)
+            Text(
+                text = "MAHAYUGA",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
+                    color = Color.White
+                ),
+                modifier = Modifier.align(Alignment.Center)
+            )
 
-                // ARTHYUGA CARD (Inactive/Coming Soon)
-                HubCard(
-                    title = "Arthyuga",
-                    subtitle = "COMING SOON",
-                    iconRes = R.drawable.gold, // Using white resource tinting it grey
-                    isActive = false,
-                    onClick = { },
-                    modifier = Modifier.weight(1f)
+            // Notification Icon (Right)
+            IconButton(
+                onClick = { /* Notification Action */ },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }
-    }
-}
 
-@Composable
-fun RotatingMandala() {
-    // Infinite rotation animation
-    val infiniteTransition = rememberInfiniteTransition(label = "mandala_spin")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(20000, easing = LinearEasing)
-        ),
-        label = "rotation"
-    )
-
-    Box(contentAlignment = Alignment.Center) {
-        Image(
-            painter = painterResource(id = R.drawable.white),
-            contentDescription = "Mahayuga",
-            modifier = Modifier
-                .size(280.dp)
-                .rotate(angle)
-                .alpha(0.9f)
-        )
-        // Center Dot/Core
+        // 2. CENTERED CARDS (VERTICAL COLUMN)
         Box(
             modifier = Modifier
-                .size(20.dp)
-                .background(Color.White, androidx.compose.foundation.shape.CircleShape)
-        )
+                .weight(1f)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = cardsVisible,
+                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { 100 }
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally // ⚡ Centered items
+                ) {
+                    HubCard(
+                        title = "NAVYUGA",
+                        subtitle = "OWNERSHIP FOR ALL",
+                        iconRes = R.drawable.navyuga,
+                        isActive = true,
+                        onClick = onNavyugaClick,
+                        modifier = Modifier.fillMaxWidth(0.70f) // ⚡ Reduced Width to 85%
+                    )
+                    HubCard(
+                        title = "ARTHYUGA",
+                        subtitle = "COMING SOON",
+                        iconRes = R.drawable.arthyuga,
+                        isActive = true,
+                        onClick = { },
+                        modifier = Modifier.fillMaxWidth(0.70f) // ⚡ Reduced Width to 85%
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -245,27 +253,24 @@ fun HubCard(
 ) {
     val containerColor = if (isActive) CardDarkSurface else Color(0xFF080808)
     val contentColor = if (isActive) Color.White else Color.Gray
-    val iconTint = if (isActive) Color.Unspecified else Color.DarkGray
 
-    // Glow effect for active card
-    val borderBrush = if (isActive) {
-        Brush.verticalGradient(listOf(Color.Transparent, NavyugaBlue.copy(alpha = 0.3f)))
-    } else {
-        Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent))
-    }
+    val borderBrush = if (isActive) Brush.verticalGradient(
+        listOf(
+            Color.Transparent,
+            Color.Gray.copy(alpha = 0.2f)
+        )
+    ) else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent))
 
     Card(
         modifier = modifier
-            .height(180.dp)
+            .height(220.dp)
             .clickable(enabled = isActive, onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(borderBrush)
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(borderBrush)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -277,28 +282,24 @@ fun HubCard(
                     painter = painterResource(id = iconRes),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(100.dp)
                         .alpha(if (isActive) 1f else 0.3f),
                     colorFilter = if (!isActive) ColorFilter.tint(Color.Gray) else null
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
+                Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
+                    style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = contentColor
                     )
                 )
-
                 if (subtitle != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
+                    Spacer(modifier = Modifier.height(4.dp)); Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.labelSmall.copy(
+                        style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = InactiveGrey
+                            color = Color.White
                         )
                     )
                 }
@@ -308,10 +309,7 @@ fun HubCard(
 }
 
 @Composable
-fun HubBottomBar(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit
-) {
+fun HubBottomBar(selectedTab: String, onTabSelected: (String) -> Unit) {
     NavigationBar(
         containerColor = BackgroundBlack,
         contentColor = Color.White,
@@ -322,7 +320,7 @@ fun HubBottomBar(
             onClick = { onTabSelected("Yuga") },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground), // Using app icon geometric shape
+                    imageVector = Icons.Default.Dashboard,
                     contentDescription = "Yugas",
                     modifier = Modifier.size(24.dp)
                 )
@@ -331,9 +329,9 @@ fun HubBottomBar(
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.White,
                 selectedTextColor = Color.White,
-                indicatorColor = Color.Transparent, // No pill background
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray
+                indicatorColor = HubGrey,
+                unselectedIconColor = Color.White,
+                unselectedTextColor = Color.White
             )
         )
         NavigationBarItem(
@@ -349,9 +347,9 @@ fun HubBottomBar(
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.White,
                 selectedTextColor = Color.White,
-                indicatorColor = Color.Transparent,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray
+                indicatorColor = HubGrey,
+                unselectedIconColor = Color.White,
+                unselectedTextColor = Color.White
             )
         )
     }
