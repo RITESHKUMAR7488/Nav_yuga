@@ -68,7 +68,7 @@ fun NavyugaSplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF050505)),
+            .background(Color(0xFF0F172A)),
         contentAlignment = Alignment.Center
     ) {
         Column(

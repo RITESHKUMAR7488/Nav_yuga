@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,7 +44,7 @@ fun InstagramStylePropertyCard(
     val isExited = property.status == "Exited"
     val isFunding = property.status == "Funding"
 
-    var showMenu by remember { mutableStateOf(false) }
+    // Removed showMenu state as menu is deleted
 
     Card(
         modifier = modifier.clickable { onItemClick() },
@@ -84,50 +83,7 @@ fun InstagramStylePropertyCard(
                     )
                 }
 
-                // 3 Dots Menu
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            "Options",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        containerColor = Color(0xFF1E1E1E)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Share", color = Color.White) },
-                            onClick = { showMenu = false; onShareClick() },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Send,
-                                    "Share",
-                                    tint = Color.White
-                                )
-                            }
-                        )
-                        // Moved Like Option Inside Menu
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    if (property.isLiked) "Unsave Property" else "Save Property",
-                                    color = Color.White
-                                )
-                            },
-                            onClick = { showMenu = false; onLikeClick() },
-                            leadingIcon = {
-                                Icon(
-                                    if (property.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    "Save",
-                                    tint = if (property.isLiked) Color.Red else Color.White
-                                )
-                            }
-                        )
-                    }
-                }
+                // ⚡ CHANGE: Removed the 3-Dots Menu entirely from here.
             }
 
             // Image Section
@@ -135,7 +91,6 @@ fun InstagramStylePropertyCard(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    // Reduced Height
                     .height(270.dp)
             ) {
                 AsyncImage(
@@ -286,9 +241,25 @@ fun InstagramStylePropertyCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    IconButton(onClick = onShareClick) {
-                        Icon(Icons.AutoMirrored.Filled.Send, "Share", tint = Color.White)
+                    // Left: Like & Share
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onLikeClick) {
+                            Icon(
+                                imageVector = if (property.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Like",
+                                tint = if (property.isLiked) Color.Red else Color.White
+                            )
+                        }
+                        IconButton(onClick = onShareClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Share",
+                                tint = Color.White
+                            )
+                        }
                     }
+
+                    // Right: Invest Button
                     Button(
                         onClick = onInvestClick,
                         colors = ButtonDefaults.buttonColors(containerColor = FabColor),
@@ -323,10 +294,12 @@ fun InstagramStylePropertyCard(
 
 @Composable
 fun VerticalBar() {
-    Box(Modifier
-        .width(1.dp)
-        .height(32.dp)
-        .background(Color.Gray.copy(0.2f)))
+    Box(
+        Modifier
+            .width(1.dp)
+            .height(32.dp)
+            .background(Color.Gray.copy(0.2f))
+    )
 }
 
 @Composable

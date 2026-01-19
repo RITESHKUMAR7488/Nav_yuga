@@ -2,6 +2,7 @@ package com.example.mahayuga.feature.navyuga.presentation
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,8 @@ import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
 import com.example.mahayuga.feature.navyuga.presentation.trade.TradeScreen
 
 private val NavBackground = Color.Black
+private val NavyBlue = Color(0xFF0F172A)
+
 private val UnselectedIconColor = Color.White
 private val SelectedIconColor = Color(0xFF2979FF)
 private val IndicatorColor = Color.Transparent
@@ -48,11 +51,16 @@ fun NavYugaDashboard(
     onNavigateToMenu: () -> Unit
 ) {
     val navController = rememberNavController()
-    // ⚡ FIX: Removed Biometric check here. It is now handled in NavyugaSplashScreen.
 
     val items = listOf(
-        BottomNavItem("Invest", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
-        BottomNavItem("Search", "ay_search", Icons.Filled.Search, Icons.Outlined.Search),
+        BottomNavItem("Asset", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
+        // ⚡ CHANGE (Request 12): Renamed Search to Funds and changed Icon
+        BottomNavItem(
+            "Funds",
+            "ay_search",
+            Icons.Filled.MonetizationOn,
+            Icons.Outlined.MonetizationOn
+        ),
         BottomNavItem(
             "Trade",
             "ay_trade",
@@ -63,16 +71,15 @@ fun NavYugaDashboard(
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
-    // State to trigger scroll up
     var homeScrollTrigger by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = NavyBlue,
         bottomBar = {
             Column {
                 HorizontalDivider(thickness = 0.5.dp, color = BorderColor)
                 NavigationBar(
-                    containerColor = NavBackground,
+                    containerColor = NavyBlue,
                     contentColor = Color.White,
                     tonalElevation = 0.dp
                 ) {
@@ -91,7 +98,13 @@ fun NavYugaDashboard(
                                     modifier = Modifier.size(24.dp)
                                 )
                             },
-                            label = { Text(item.label) },
+                            // ⚡ CHANGE (Request 10): Move title closer to icon
+                            label = {
+                                Text(
+                                    item.label,
+                                    modifier = Modifier.offset(y = (-4).dp) // Adjusted based on previous step
+                                )
+                            },
                             selected = isSelected,
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = SelectedIconColor,
@@ -131,9 +144,10 @@ fun NavYugaDashboard(
             composable("ay_home") {
                 HomeScreen(
                     onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    // Removed onNavigateBack as it's not needed for Home tab
                     onRoiClick = { rootNavController.navigate("roi_calculator") },
-                    scrollToTopTrigger = homeScrollTrigger
+                    scrollToTopTrigger = homeScrollTrigger,
+                    // ⚡ NEW: Pass navigation to Funds screen when Search Button on Home is clicked
+                    onNavigateToSearch = { navController.navigate("ay_search") }
                 )
             }
             composable("ay_search") {

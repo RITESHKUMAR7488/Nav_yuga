@@ -19,12 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.rounded.Book
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,7 +32,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,9 +40,10 @@ import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
 import com.example.mahayuga.feature.profile.data.model.ProfileStat
 
-private val DrawerBg = Color(0xFF050505)
-private val DrawerCardBg = Color(0xFF121212)
+private val DrawerBg = Color(0xFF0F172A)
+private val DrawerCardBg = Color(0xFF0F172A)
 private val BrandBlue = Color(0xFF2979FF)
+private val NavyBlue = Color(0xFF0F172A)
 private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF888888)
 private val ProgressGreen = Color(0xFF00E676)
@@ -74,8 +70,9 @@ fun ProfileScreen(
     } else "User"
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = NavyBlue,
         topBar = {
+            // ⚡ Clean Header: Title + Menu Icon
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,31 +80,12 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Header (Icons on Left per request for other pages, but Profile usually has title)
-                // Request 12 says "profile page left top".
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Icon(
-                        Icons.Default.AccountBalanceWallet,
-                        "Wallet",
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Icon(
-                        Icons.Default.CurrencyRupee,
-                        "Currency",
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Icon(
-                        Icons.Default.Notifications,
-                        "Notifications",
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
+                Text(
+                    text = "$userName's Portfolio",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
 
                 IconButton(onClick = { onNavigateToMenu?.invoke() }) {
                     Icon(
@@ -126,21 +104,13 @@ fun ProfileScreen(
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             item {
-                Text(
-                    text = "$userName's Portfolio",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-                )
-
                 val displayStats = if (stats.size >= 6) stats else List(6) {
                     ProfileStat("Loading", "-", 0f, 0xFF888888)
                 }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

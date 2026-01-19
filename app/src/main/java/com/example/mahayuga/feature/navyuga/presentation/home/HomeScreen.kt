@@ -44,7 +44,8 @@ import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.ui.theme.BrandBlue
 import kotlin.math.roundToInt
 
-private val DeepDarkBlue = Color(0xFF0F172A)
+
+private val NavyBlue = Color(0xFF0F172A)
 private val FabColor = Color(0xFF4361EE)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +53,7 @@ private val FabColor = Color(0xFF4361EE)
 fun HomeScreen(
     onNavigateToDetail: (String) -> Unit,
     onRoiClick: () -> Unit,
+    onNavigateToSearch: () -> Unit,
     scrollToTopTrigger: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -59,13 +61,19 @@ fun HomeScreen(
     val supportNumber by viewModel.supportNumber.collectAsState()
     val context = LocalContext.current
 
-    // Scroll Control
     val listState = rememberLazyListState()
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    // Header Hiding Logic (Collapsing Toolbar)
-    val headerHeight = 140.dp
-    val headerHeightPx = with(LocalDensity.current) { headerHeight.toPx() }
+    // ⚡ Sticky Search/Filter Logic
+    // Height of Title Bar (which collapses)
+    val titleHeight = 60.dp
+    val titleHeightPx = with(LocalDensity.current) { titleHeight.toPx() }
+
+    // Total Header Height (Title + Search + Filter + Padding) used for initial content padding
+    val searchRowHeight = 64.dp
+    val filterRowHeight = 56.dp
+    val totalHeaderHeight = titleHeight + searchRowHeight + filterRowHeight
+
     var headerOffsetHeightPx by remember { mutableFloatStateOf(0f) }
 
     val nestedScrollConnection = remember {
@@ -73,13 +81,13 @@ fun HomeScreen(
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 val delta = available.y
                 val newOffset = headerOffsetHeightPx + delta
-                headerOffsetHeightPx = newOffset.coerceIn(-headerHeightPx, 0f)
+                // ⚡ Only collapse up to the Title height, so Search+Filters remain visible
+                headerOffsetHeightPx = newOffset.coerceIn(-titleHeightPx, 0f)
                 return Offset.Zero
             }
         }
     }
 
-    // Handle Scroll to Top Trigger
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
@@ -88,7 +96,7 @@ fun HomeScreen(
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = NavyBlue,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onRoiClick,
@@ -130,22 +138,11 @@ fun HomeScreen(
             } else {
                 LazyColumn(
                     state = listState,
-                    // Push content down by header height to avoid overlap initially
-                    contentPadding = PaddingValues(top = headerHeight + 16.dp, bottom = 16.dp),
+                    // ⚡ Push list down by total header height
+                    contentPadding = PaddingValues(top = totalHeaderHeight + 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Search Bar (Scrolls with cards)
-                    item {
-                        SearchBarRow(
-                            query = uiState.searchQuery,
-                            onQueryChange = { viewModel.updateSearchQuery(it) },
-                            onFilterClick = { showFilterSheet = true }
-                        )
-                    }
-
-                    item { HorizontalDivider(color = Color.White.copy(0.1f)) }
-
                     if (uiState.properties.isEmpty()) {
                         item {
                             Box(
@@ -185,9 +182,7 @@ fun HomeScreen(
                                             "Hello, I am interested in investing in *${property.title}*."
                                         val url =
                                             "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                                Uri.encode(
-                                                    message
-                                                )
+                                                Uri.encode(message)
                                             }"
                                         val intent = Intent(Intent.ACTION_VIEW).apply {
                                             data = Uri.parse(url); setPackage("com.whatsapp")
@@ -211,28 +206,37 @@ fun HomeScreen(
                 }
             }
 
-            // Collapsible Header
+            // ⚡ COLLAPSIBLE + STICKY HEADER
+            // This Box contains Title, Search, and Filters
             Box(
                 modifier = Modifier
-                    .height(headerHeight)
                     .fillMaxWidth()
                     .offset { IntOffset(x = 0, y = headerOffsetHeightPx.roundToInt()) }
-                    .background(Color.Black)
+                    .background(NavyBlue)
             ) {
                 Column {
-                    // Row 1: Header (Left Align Title, Wallet, Currency, Notif)
-                    HomeTopBar()
+                    // 1. Title (Collapses away)
+                    HomeTopBar(modifier = Modifier.height(titleHeight))
 
-                    // Row 2: Filter Buttons (Outlined with Counts)
+                    // 2. Search Bar (Sticks)
+                    // ⚡ Search is now a BUTTON triggering navigation
+                    SearchBarButton(
+                        modifier = Modifier.height(searchRowHeight),
+                        onClick = onNavigateToSearch,
+                        onFilterClick = { showFilterSheet = true }
+                    )
+
+                    // 3. Filter Buttons (Sticks)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(filterRowHeight)
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         FilterButtonOutline(
                             text = "Funding",
-                            count = uiState.fundingCount,
+                            count = uiState.fundingCount, // ⚡ Dynamic filtered counts
                             isSelected = uiState.selectedFilter == "Funding",
                             modifier = Modifier.weight(1f)
                         ) { viewModel.updateFilter("Funding") }
@@ -277,57 +281,46 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold
                         )
                         TextButton(onClick = { viewModel.clearAllFilters() }) {
-                            Text("Clear All", color = FabColor)
+                            Text(
+                                "Clear All",
+                                color = FabColor
+                            )
                         }
                     }
-
                     Spacer(modifier = Modifier.height(24.dp))
-
                     FilterOptionRow(
-                        title = "Location",
-                        options = listOf("Mumbai", "Bangalore", "Delhi", "Kolkata", "Gurugram"),
-                        selectedOptions = uiState.activeLocations,
-                        onOptionSelected = { viewModel.toggleLocation(it) }
-                    )
-
+                        "Location",
+                        listOf("Mumbai", "Bangalore", "Delhi", "Kolkata", "Gurugram"),
+                        uiState.activeLocations
+                    ) { viewModel.toggleLocation(it) }
                     HorizontalDivider(
                         color = Color.White.copy(0.1f),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
-
                     FilterOptionRow(
-                        title = "Budget (Valuation)",
-                        options = listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
-                        selectedOptions = uiState.activeBudgets,
-                        onOptionSelected = { viewModel.toggleBudget(it) }
-                    )
-
+                        "Budget (Valuation)",
+                        listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
+                        uiState.activeBudgets
+                    ) { viewModel.toggleBudget(it) }
                     HorizontalDivider(
                         color = Color.White.copy(0.1f),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
-
                     FilterOptionRow(
-                        title = "Asset Manager",
-                        options = listOf("Mindspace", "Nuvama", "Brookfield"),
-                        selectedOptions = uiState.activeManagers,
-                        onOptionSelected = { viewModel.toggleManager(it) }
-                    )
-
+                        "Asset Manager",
+                        listOf("Mindspace", "Nuvama", "Brookfield"),
+                        uiState.activeManagers
+                    ) { viewModel.toggleManager(it) }
                     HorizontalDivider(
                         color = Color.White.copy(0.1f),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
-
                     FilterOptionRow(
-                        title = "Type",
-                        options = listOf("Office", "Retail", "Warehouse", "Industrial"),
-                        selectedOptions = uiState.activeTypes,
-                        onOptionSelected = { viewModel.toggleType(it) }
-                    )
-
+                        "Type",
+                        listOf("Office", "Retail", "Warehouse", "Industrial"),
+                        uiState.activeTypes
+                    ) { viewModel.toggleType(it) }
                     Spacer(modifier = Modifier.height(32.dp))
-
                     Button(
                         onClick = { showFilterSheet = false },
                         modifier = Modifier
@@ -335,9 +328,7 @@ fun HomeScreen(
                             .height(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FabColor),
                         shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Show Results", fontWeight = FontWeight.Bold)
-                    }
+                    ) { Text("Show Results", fontWeight = FontWeight.Bold) }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
@@ -346,46 +337,80 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeTopBar() {
+fun HomeTopBar(modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Left Aligned Title
         Text(
             text = "Navyuga",
-            style = MaterialTheme.typography.headlineSmall.copy(
+            style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
         )
+        // Only Notification Icon
+        Icon(
+            Icons.Default.Notifications,
+            "Notifications",
+            tint = Color.White,
+            modifier = Modifier.size(26.dp)
+        )
+    }
+}
 
-        // Icons: Wallet, Currency, Notification
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+@Composable
+fun SearchBarButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    onFilterClick: () -> Unit
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Mock Search Field (Clickable Box)
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .height(50.dp)
+                .clickable { onClick() },
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White.copy(alpha = 0.1f)
         ) {
-            Icon(
-                Icons.Default.AccountBalanceWallet,
-                "Wallet",
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
-            Icon(
-                Icons.Default.CurrencyRupee,
-                "Currency",
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
-            Icon(
-                Icons.Default.Notifications,
-                "Notifications",
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    null,
+                    tint = Color.White.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Search properties...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.6f)
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .size(50.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.1f))
+                .clickable { onFilterClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.FilterList, "Filter", tint = Color.White)
         }
     }
 }
@@ -423,64 +448,6 @@ fun FilterButtonOutline(
                 style = MaterialTheme.typography.labelSmall,
                 color = if (isSelected) Color.White.copy(0.9f) else Color.Gray
             )
-        }
-    }
-}
-
-@Composable
-fun SearchBarRow(
-    query: String = "",
-    onQueryChange: (String) -> Unit = {},
-    onFilterClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier
-                .weight(1f)
-                .height(50.dp),
-            placeholder = {
-                Text(
-                    "Search properties...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.6f)
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    Icons.Default.Search,
-                    null,
-                    tint = Color.White.copy(alpha = 0.6f)
-                )
-            },
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
-            ),
-            singleLine = true
-        )
-
-        Box(
-            modifier = Modifier
-                .size(50.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.White.copy(alpha = 0.1f))
-                .clickable { onFilterClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.FilterList, "Filter", tint = Color.White)
         }
     }
 }

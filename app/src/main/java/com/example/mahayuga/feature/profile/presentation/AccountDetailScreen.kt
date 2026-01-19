@@ -28,7 +28,8 @@ import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.ui.theme.BrandBlue
 import com.example.mahayuga.ui.theme.ErrorRed
 
-private val AccountBg = Color(0xFF050505)
+private val AccountBg = Color(0xFF0F172A)
+
 private val CardBg = Color(0xFF101920)
 private val TextGrey = Color(0xFF888888)
 

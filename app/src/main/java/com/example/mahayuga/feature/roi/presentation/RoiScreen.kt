@@ -39,6 +39,9 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.min
 
+private val NavyBlue = Color(0xFF0F172A)
+
+
 // ... [Helper functions formatIndian, VisualTransformation remain unchanged] ...
 // ⚡ HELPER: Smart Indian Formatting
 fun formatIndian(amount: Double): String {
@@ -124,6 +127,8 @@ fun RoiScreen(
     var showCounterResultPage by remember { mutableStateOf(false) }
 
     Scaffold(
+        // ⚡ CHANGE: Set the main container background to NavyBlue
+        containerColor = NavyBlue,
         topBar = {
             TopAppBar(
                 title = {
@@ -132,7 +137,9 @@ fun RoiScreen(
                             showCounterResultPage -> "Counter Offer Analysis"
                             state.currentStep == 5 -> "ROI Calculation"
                             else -> "ROI Calculator"
-                        }
+                        },
+                        // Optional: Ensure title text is white if not handled by theme
+                        color = Color.White
                     )
                 },
                 navigationIcon = {
@@ -145,10 +152,14 @@ fun RoiScreen(
                             onBackClick()
                         }
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = NavyBlue,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->

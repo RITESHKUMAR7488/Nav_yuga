@@ -28,8 +28,8 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-// Dark Theme Colors
-private val GptBlack = Color(0xFF000000)
+// ⚡ UPDATED: Navyuga Theme Colors
+private val NavyBackground = Color(0xFF0F172A) // Matches Welcome Screen
 private val GptTextWhite = Color(0xFFFFFFFF)
 private val GptTextGrey = Color(0xFFC5C5D2)
 private val GptBrandGreen = Color(0xFF10A37F)
@@ -79,7 +79,7 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(GptBlack)
+            .background(NavyBackground) // ⚡ Uses NavyBackground
             .padding(24.dp)
             .verticalScroll(rememberScrollState()), // Added scroll for small screens
         horizontalAlignment = Alignment.CenterHorizontally
@@ -213,7 +213,9 @@ fun RegisterScreen(
                 readOnly = true,
                 label = { Text("Select Planet") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPlanetExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = GptBrandGreen,
@@ -289,16 +291,18 @@ fun RegisterScreen(
 
         Button(
             onClick = { viewModel.register(name, email, password, dob, phone) }, // ⚡ Pass phone
-            modifier = Modifier.fillMaxWidth().height(50.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = GptTextWhite,
-                contentColor = GptBlack
+                contentColor = NavyBackground
             ),
             shape = MaterialTheme.shapes.medium,
             enabled = !isLoading
         ) {
             if (isLoading) {
-                CircularProgressIndicator(color = GptBlack, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(color = NavyBackground, modifier = Modifier.size(24.dp))
             } else {
                 Text("Sign up", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }

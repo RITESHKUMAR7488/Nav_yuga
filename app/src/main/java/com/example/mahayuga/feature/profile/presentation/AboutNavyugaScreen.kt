@@ -31,6 +31,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 // Navyuga Theme Colors
 private val ScreenBg = Color(0xFF050505)
+private val NavyBlue = Color(0xFF0F172A)
 private val CardBg = Color(0xFF101920) // Dark Slate
 private val BrandBlue = Color(0xFF2979FF)
 private val TextWhite = Color(0xFFFFFFFF)
@@ -111,7 +112,7 @@ fun AboutNavyugaScreen(
     )
 
     Scaffold(
-        containerColor = ScreenBg,
+        containerColor = NavyBlue,
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -130,7 +131,7 @@ fun AboutNavyugaScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = ScreenBg)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = NavyBlue)
             )
         }
     ) { padding ->

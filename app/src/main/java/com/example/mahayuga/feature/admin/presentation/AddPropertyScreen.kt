@@ -43,7 +43,7 @@ fun AddPropertyScreen(
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
-    // ⚡ REQUEST 1: Add Country
+    // âš¡ REQUEST 1: Add Country
     var country by remember { mutableStateOf("India") }
 
     var age by remember { mutableStateOf("") }
@@ -53,7 +53,7 @@ fun AddPropertyScreen(
 
     var legalWrapper by remember { mutableStateOf("SPV") }
     var totalUnits by remember { mutableStateOf("") }
-    // ⚡ REQUEST 4: Rename "Liquidity Rules" to "Tenant Lock-in"
+    // âš¡ REQUEST 4: Rename "Liquidity Rules" to "Tenant Lock-in"
     var liquidityRules by remember { mutableStateOf("3 Years") }
 
     var tenantName by remember { mutableStateOf("") }
@@ -74,7 +74,7 @@ fun AddPropertyScreen(
     var roi by remember { mutableStateOf("") }
     var grossAnnualRent by remember { mutableStateOf("") }
 
-    // ⚡ REQUEST 3: Auto-calculate Min Investment based on Units
+    // âš¡ REQUEST 3: Auto-calculate Min Investment based on Units
     LaunchedEffect(totalValuation, totalUnits) {
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
         val units = totalUnits.replace(",", "").toIntOrNull() ?: 0
@@ -158,7 +158,11 @@ fun AddPropertyScreen(
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.AddPhotoAlternate, null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(
+                                Icons.Default.AddPhotoAlternate,
+                                null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                             Text("Add Photos (Max 10)")
                         }
                     }
@@ -166,10 +170,19 @@ fun AddPropertyScreen(
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.height(120.dp).padding(vertical = 8.dp)
+                    modifier = Modifier
+                        .height(120.dp)
+                        .padding(vertical = 8.dp)
                 ) {
                     items(selectedImageUris) { uri ->
-                        AsyncImage(model = uri, contentDescription = null, modifier = Modifier.width(160.dp).fillMaxHeight(), contentScale = ContentScale.Crop)
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(160.dp)
+                                .fillMaxHeight(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
             }
@@ -219,7 +232,7 @@ fun AddPropertyScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⚡ REQUEST 1: Country Field
+            // âš¡ REQUEST 1: Country Field
             NavyugaDropdown(
                 label = "Country",
                 options = listOf("India", "UAE", "USA", "UK"),
@@ -271,7 +284,7 @@ fun AddPropertyScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⚡ REQUEST 4: Label Changed
+            // âš¡ REQUEST 4: Label Changed
             NavyugaTextField(
                 value = liquidityRules,
                 onValueChange = { liquidityRules = it },
@@ -280,31 +293,6 @@ fun AddPropertyScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            if (status == "Exited") {
-                SectionHeader("Exit Details")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        NavyugaTextField(
-                            value = exitPrice,
-                            onValueChange = { exitPrice = it },
-                            label = "Exit Price",
-                            icon = Icons.Default.MonetizationOn,
-                            isNumber = true
-                        )
-                    }
-                    Box(Modifier.weight(1f)) {
-                        NavyugaTextField(
-                            value = totalProfit,
-                            onValueChange = { totalProfit = it },
-                            label = "Total Profit",
-                            icon = Icons.Default.TrendingUp,
-                            isNumber = true
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
             SectionHeader("Specifications")
             // ... (Keep Area, Floor, Age, Car Park rows - Same as original)
@@ -459,6 +447,32 @@ fun AddPropertyScreen(
                 isNumber = true
             )
 
+            // ⚡ REQUEST 3 (Updated): Moved Exit Details below Financial Analysis
+            if (status == "Exited") {
+                Spacer(modifier = Modifier.height(16.dp))
+                SectionHeader("Exit Details")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        NavyugaTextField(
+                            value = exitPrice,
+                            onValueChange = { exitPrice = it },
+                            label = "Exit Price",
+                            icon = Icons.Default.MonetizationOn,
+                            isNumber = true
+                        )
+                    }
+                    Box(Modifier.weight(1f)) {
+                        NavyugaTextField(
+                            value = totalProfit,
+                            onValueChange = { totalProfit = it },
+                            label = "Total Profit",
+                            icon = Icons.Default.TrendingUp,
+                            isNumber = true
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
             NavyugaGradientButton(
@@ -477,7 +491,7 @@ fun AddPropertyScreen(
                             address = address,
                             city = city,
                             state = state,
-                            country = country, // ⚡ PASS COUNTRY
+                            country = country, // âš¡ PASS COUNTRY
                             age = age,
                             area = area,
                             floor = floor,

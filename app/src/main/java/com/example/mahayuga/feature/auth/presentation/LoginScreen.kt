@@ -18,8 +18,8 @@ import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.components.GptTextField
 
-// Dark Theme Colors
-private val GptBlack = Color(0xFF000000)
+// ⚡ UPDATED: Navyuga Theme Colors
+private val NavyBackground = Color(0xFF0F172A) // Matches Welcome Screen
 private val GptTextWhite = Color(0xFFFFFFFF)
 private val GptTextGrey = Color(0xFFC5C5D2)
 private val GptBrandGreen = Color(0xFF10A37F)
@@ -57,7 +57,7 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(GptBlack)
+            .background(NavyBackground) // ⚡ Uses NavyBackground
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -106,16 +106,18 @@ fun LoginScreen(
         // Continue Button
         Button(
             onClick = { viewModel.login(email, password) },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = GptTextWhite,
-                contentColor = GptBlack
+                contentColor = NavyBackground
             ),
             shape = MaterialTheme.shapes.medium,
             enabled = !isLoading
         ) {
             if (isLoading) {
-                CircularProgressIndicator(color = GptBlack, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(color = NavyBackground, modifier = Modifier.size(24.dp))
             } else {
                 Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }

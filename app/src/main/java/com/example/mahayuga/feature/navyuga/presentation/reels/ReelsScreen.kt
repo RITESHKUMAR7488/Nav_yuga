@@ -16,18 +16,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+private val NavyBlue = Color(0xFF0F172A)
+
+
 @Composable
 fun ReelsScreen() {
     // State to track the selected tab: 0 -> Reel, 1 -> Education, 2 -> Movies
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
-        containerColor = Color.Black, // Instagram-like dark background
+        containerColor = NavyBlue, // Instagram-like dark background
         topBar = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.Black)
+                    .background(NavyBlue)
                     .padding(vertical = 16.dp, horizontal = 16.dp)
             ) {
                 Text(
@@ -70,7 +73,7 @@ fun ReelsScreen() {
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(NavyBlue)
         ) {
             // Content is intentionally left blank as requested.
             // You can add content switching here later (e.g., when selectedTab == 0).

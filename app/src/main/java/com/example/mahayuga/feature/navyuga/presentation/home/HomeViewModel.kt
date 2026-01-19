@@ -106,59 +106,61 @@ class HomeViewModel @Inject constructor(
     private fun updateUiWithUserData() {
         val s = _uiState.value
 
-        // Calculate Counts
-        val fundingC = allPropertiesCache.count { it.status.equals("Funding", true) }
-        val fundedC = allPropertiesCache.count { it.status.equals("Funded", true) }
-        val exitedC = allPropertiesCache.count { it.status.equals("Exited", true) }
+        // 1. First, apply GLOBAL filters (Location, Budget, Manager, Type) to the master list
+        var baseFilteredList = allPropertiesCache
 
-        // Filter Logic
-        var list =
-            if (s.selectedFilter == "All") allPropertiesCache else allPropertiesCache.filter {
-                it.status.equals(s.selectedFilter, ignoreCase = true)
-            }
-
+        // A. Search Query
         if (s.searchQuery.isNotBlank()) {
-            list = list.filter {
-                it.title.contains(
-                    s.searchQuery,
-                    true
-                ) || it.location.contains(s.searchQuery, true)
+            baseFilteredList = baseFilteredList.filter {
+                it.title.contains(s.searchQuery, true) || it.location.contains(s.searchQuery, true)
             }
         }
+        // B. Locations
         if (s.activeLocations.isNotEmpty()) {
-            list = list.filter { prop ->
+            baseFilteredList = baseFilteredList.filter { prop ->
                 s.activeLocations.any { loc ->
-                    prop.city.contains(
-                        loc,
-                        true
-                    ) || prop.location.contains(loc, true)
+                    prop.city.contains(loc, true) || prop.location.contains(loc, true)
                 }
             }
         }
+        // C. Managers
         if (s.activeManagers.isNotEmpty()) {
-            list = list.filter { prop ->
-                s.activeManagers.any { mgr ->
-                    prop.assetManager.contains(
-                        mgr,
-                        true
-                    )
-                }
+            baseFilteredList = baseFilteredList.filter { prop ->
+                s.activeManagers.any { mgr -> prop.assetManager.contains(mgr, true) }
             }
         }
+        // D. Types
         if (s.activeTypes.isNotEmpty()) {
-            list =
-                list.filter { prop -> s.activeTypes.any { type -> prop.type.equals(type, true) } }
+            baseFilteredList = baseFilteredList.filter { prop ->
+                s.activeTypes.any { type -> prop.type.equals(type, true) }
+            }
         }
+        // E. Budgets
         if (s.activeBudgets.isNotEmpty()) {
-            list = list.filter { prop ->
+            baseFilteredList = baseFilteredList.filter { prop ->
                 val price = parsePrice(prop.totalValuation)
                 s.activeBudgets.any { range -> checkBudget(price, range) }
             }
         }
 
-        val finalProperties =
-            list.map { property -> property.copy(isLiked = lastLikedIds.contains(property.id)) }
+        // 2. Calculate Counts based on this PRE-FILTERED list (Request 11)
+        val fundingC = baseFilteredList.count { it.status.equals("Funding", true) }
+        val fundedC = baseFilteredList.count { it.status.equals("Funded", true) }
+        val exitedC = baseFilteredList.count { it.status.equals("Exited", true) }
 
+        // 3. Finally, apply the Status Tab Filter (Funding/Funded/Exited) for display
+        val displayList = if (s.selectedFilter == "All") {
+            baseFilteredList
+        } else {
+            baseFilteredList.filter { it.status.equals(s.selectedFilter, ignoreCase = true) }
+        }
+
+        // 4. Map likes
+        val finalProperties = displayList.map { property ->
+            property.copy(isLiked = lastLikedIds.contains(property.id))
+        }
+
+        // Stories logic (unchanged)
         val stories = allPropertiesCache.filter { it.status != "Exited" }.map { prop ->
             StoryState(
                 id = prop.id,
@@ -174,6 +176,7 @@ class HomeViewModel @Inject constructor(
                 userName = lastUserName,
                 properties = finalProperties,
                 stories = stories,
+                // Update counts to reflect the filtered state
                 fundingCount = fundingC,
                 fundedCount = fundedC,
                 exitedCount = exitedC

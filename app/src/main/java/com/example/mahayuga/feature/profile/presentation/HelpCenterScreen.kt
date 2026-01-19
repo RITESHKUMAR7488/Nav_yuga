@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mahayuga.ui.theme.BrandBlue
 
-private val ScreenBg = Color(0xFF050505)
+private val ScreenBg = Color(0xFF0F172A)
 private val CardBg = Color(0xFF101920)
 private val BorderColor = Color(0xFF1F2B36)
 private val TextGrey = Color(0xFF888888)

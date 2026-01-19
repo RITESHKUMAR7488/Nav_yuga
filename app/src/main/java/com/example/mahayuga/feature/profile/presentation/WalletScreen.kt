@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // ⚡ UPDATED: Navyuga Theme Colors (Blue & White)
-private val WalletBg = Color(0xFF050505)
+private val WalletBg = Color(0xFF0F172A)
 private val WalletCardStart = Color(0xFF2979FF) // Brand Blue
 private val WalletCardEnd = Color(0xFF1565C0)   // Darker Blue
 private val CardDarkSurface = Color(0xFF101920)

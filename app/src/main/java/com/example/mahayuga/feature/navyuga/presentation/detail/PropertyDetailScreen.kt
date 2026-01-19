@@ -54,7 +54,9 @@ fun PropertyDetailScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     if (uiState.isLoading) {
-        Box(Modifier.fillMaxSize().background(DeepDarkBlue), contentAlignment = Alignment.Center) {
+        Box(Modifier
+            .fillMaxSize()
+            .background(DeepDarkBlue), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = BrandBlue)
         }
     } else if (property != null) {
@@ -70,14 +72,19 @@ fun PropertyDetailScreen(
                         property = property,
                         onInvestClicked = {
                             try {
-                                val message = "Hello, I am interested in investing in *${property.title}*."
-                                val url = "https://api.whatsapp.com/send?phone=$supportNumber&text=${Uri.encode(message)}"
+                                val message =
+                                    "Hello, I am interested in investing in *${property.title}*."
+                                val url =
+                                    "https://api.whatsapp.com/send?phone=$supportNumber&text=${
+                                        Uri.encode(message)
+                                    }"
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
                                     data = Uri.parse(url); setPackage("com.whatsapp")
                                 }
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                     )
@@ -91,8 +98,11 @@ fun PropertyDetailScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 // --- IMAGE SLIDER SECTION ---
-                Box(modifier = Modifier.height(300.dp).fillMaxWidth()) {
-                    val images = if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
+                Box(modifier = Modifier
+                    .height(300.dp)
+                    .fillMaxWidth()) {
+                    val images =
+                        if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
                     val pagerState = rememberPagerState(pageCount = { images.size })
 
                     HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
@@ -110,19 +120,35 @@ fun PropertyDetailScreen(
                             .fillMaxWidth()
                             .height(80.dp)
                             .align(Alignment.TopCenter)
-                            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.7f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(60.dp)
                             .align(Alignment.BottomCenter)
-                            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.6f)
+                                    )
+                                )
+                            )
                     )
 
                     IconButton(
                         onClick = onNavigateBack,
-                        modifier = Modifier.padding(top = 16.dp, start = 8.dp).align(Alignment.TopStart)
+                        modifier = Modifier
+                            .padding(top = 16.dp, start = 8.dp)
+                            .align(Alignment.TopStart)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
@@ -132,7 +158,10 @@ fun PropertyDetailScreen(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(16.dp)
-                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                                .background(
+                                    Color.Black.copy(alpha = 0.6f),
+                                    RoundedCornerShape(12.dp)
+                                )
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
@@ -143,14 +172,23 @@ fun PropertyDetailScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 12.dp),
                             horizontalArrangement = Arrangement.Center
                         ) {
                             repeat(images.size) { iteration ->
                                 val isSelected = pagerState.currentPage == iteration
-                                val color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f)
+                                val color =
+                                    if (isSelected) Color.White else Color.White.copy(alpha = 0.5f)
                                 val size = if (isSelected) 8.dp else 6.dp
-                                Box(modifier = Modifier.padding(4.dp).clip(CircleShape).background(color).size(size))
+                                Box(
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .size(size)
+                                )
                             }
                         }
                     }
@@ -166,7 +204,9 @@ fun PropertyDetailScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     TabButton("Details", selectedTab == 0, Modifier.weight(1f)) { selectedTab = 0 }
-                    TabButton("Calculate", selectedTab == 1, Modifier.weight(1f)) { selectedTab = 1 }
+                    TabButton("Calculate", selectedTab == 1, Modifier.weight(1f)) {
+                        selectedTab = 1
+                    }
                 }
 
                 // --- CONTENT SWITCHER ---
@@ -182,7 +222,9 @@ fun PropertyDetailScreen(
         }
     } else {
         Box(
-            Modifier.fillMaxSize().background(DeepDarkBlue),
+            Modifier
+                .fillMaxSize()
+                .background(DeepDarkBlue),
             contentAlignment = Alignment.Center
         ) { Text("Property not found.", color = Color.White) }
     }
@@ -190,7 +232,12 @@ fun PropertyDetailScreen(
 
 // ⚡ NEW: Tab Button Component
 @Composable
-fun TabButton(text: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun TabButton(
+    text: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     val containerColor = if (isSelected) BrandBlue else Color.Transparent
     val contentColor = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f)
 
@@ -218,9 +265,15 @@ fun PropertyCalculatorContent(property: PropertyModel) {
     fun parseDouble(str: String): Double {
         val clean = str.replace("₹", "").replace(",", "").trim().lowercase()
         return when {
-            clean.contains("cr") -> clean.replace("cr", "").trim().toDoubleOrNull()?.times(10000000) ?: 0.0
-            clean.contains("l") -> clean.replace("l", "").trim().toDoubleOrNull()?.times(100000) ?: 0.0
-            clean.contains("lakh") -> clean.replace("lakhs", "").replace("lakh", "").trim().toDoubleOrNull()?.times(100000) ?: 0.0
+            clean.contains("cr") -> clean.replace("cr", "").trim().toDoubleOrNull()?.times(10000000)
+                ?: 0.0
+
+            clean.contains("l") -> clean.replace("l", "").trim().toDoubleOrNull()?.times(100000)
+                ?: 0.0
+
+            clean.contains("lakh") -> clean.replace("lakhs", "").replace("lakh", "").trim()
+                .toDoubleOrNull()?.times(100000) ?: 0.0
+
             else -> clean.toDoubleOrNull() ?: 0.0
         }
     }
@@ -230,8 +283,16 @@ fun PropertyCalculatorContent(property: PropertyModel) {
     val costPerUnit = if (totalUnits > 0) totalValuation / totalUnits else 0.0
     val totalArea = parseDouble(property.area)
 
-    val annualRent = if(property.grossAnnualRent.isNotEmpty()) parseDouble(property.grossAnnualRent) else parseDouble(property.monthlyRent) * 12
-    val monthlyRent = annualRent / 12
+    // ⚡ UPDATED LOGIC: Subtract Property Tax
+    val rawAnnualRent =
+        if (property.grossAnnualRent.isNotEmpty()) parseDouble(property.grossAnnualRent) else parseDouble(
+            property.monthlyRent
+        ) * 12
+    val annualPropertyTax = parseDouble(property.annualPropertyTax)
+
+    // Net Rent after Tax
+    val netAnnualRentFull = rawAnnualRent - annualPropertyTax
+    val netMonthlyRentFull = netAnnualRentFull / 12
 
     var sharesInput by remember { mutableStateOf("") }
     var resultState by remember { mutableStateOf<CalculatorResult?>(null) }
@@ -246,9 +307,20 @@ fun PropertyCalculatorContent(property: PropertyModel) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                InfoRow("Total Fractional Units", if(totalUnits > 0) totalUnits.toString() else "N/A")
-                Divider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 12.dp))
-                InfoRow("Cost / Unit", if(costPerUnit > 0) "₹${formatIndian(costPerUnit)}" else "N/A", isBold = true, valueColor = BrandBlue)
+                InfoRow(
+                    "Total Fractional Units",
+                    if (totalUnits > 0) totalUnits.toString() else "N/A"
+                )
+                Divider(
+                    color = Color.White.copy(0.1f),
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+                InfoRow(
+                    "Cost / Unit",
+                    if (costPerUnit > 0) "₹${formatIndian(costPerUnit)}" else "N/A",
+                    isBold = true,
+                    valueColor = BrandBlue
+                )
             }
         }
 
@@ -283,8 +355,10 @@ fun PropertyCalculatorContent(property: PropertyModel) {
                     val percentage = (shares.toDouble() / totalUnits.toDouble()) * 100
                     val shareArea = (percentage / 100) * totalArea
                     val investment = shares * costPerUnit
-                    val rentMonth = (percentage / 100) * monthlyRent
-                    val rentAnnual = (percentage / 100) * annualRent
+
+                    // ⚡ Use NET rents here
+                    val rentMonth = (percentage / 100) * netMonthlyRentFull
+                    val rentAnnual = (percentage / 100) * netAnnualRentFull
 
                     resultState = CalculatorResult(
                         sharesBought = shares,
@@ -297,7 +371,9 @@ fun PropertyCalculatorContent(property: PropertyModel) {
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
         ) {
@@ -309,24 +385,40 @@ fun PropertyCalculatorContent(property: PropertyModel) {
         // C. ROI Details (Results)
         if (resultState != null) {
             Spacer(modifier = Modifier.height(32.dp))
-            SectionTitle("ROI Details")
+            SectionTitle("ROI Details (Post-Tax)")
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().border(1.dp, BrandBlue.copy(0.3f), RoundedCornerShape(16.dp))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, BrandBlue.copy(0.3f), RoundedCornerShape(16.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     val res = resultState!!
                     InfoRow("Shares Bought", res.sharesBought.toString())
                     InfoRow("Percentage Share", String.format("%.4f%%", res.percentageShare))
                     InfoRow("Area (Sq Ft)", String.format("%.2f", res.areaShare))
-                    Divider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 12.dp))
+                    Divider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
                     InfoRow("Net Investment", "₹${formatIndian(res.netInvestment)}", isBold = true)
-                    Divider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 12.dp))
-                    InfoRow("Monthly Rent", "₹${formatIndian(res.monthlyRent)}")
-                    InfoRow("Annual Rent", "₹${formatIndian(res.annualRent)}")
-                    Divider(color = Color.White.copy(0.1f), modifier = Modifier.padding(vertical = 12.dp))
-                    InfoRow("NET ROI", "${res.netRoi}%", isBold = true, valueColor = Color(0xFF00E676))
+                    Divider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                    InfoRow("Net Monthly Rent", "₹${formatIndian(res.monthlyRent)}")
+                    InfoRow("Net Annual Rent", "₹${formatIndian(res.annualRent)}")
+                    Divider(
+                        color = Color.White.copy(0.1f),
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                    InfoRow(
+                        "NET ROI",
+                        "${res.netRoi}%",
+                        isBold = true,
+                        valueColor = Color(0xFF00E676)
+                    )
                 }
             }
         }
@@ -422,13 +514,32 @@ fun PropertyDetailsContent(property: PropertyModel, isExited: Boolean) {
         ) {
             if (isExited) {
                 StatItem(label = "Entry", value = "₹${formatIndian(property.totalValuation)}")
-                VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(1.dp),
+                    color = Color.White.copy(alpha = 0.1f)
+                )
                 StatItem(label = "Exit", value = "₹${formatIndian(property.exitPrice)}")
-                VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
-                StatItem(label = "Profit", value = "₹${formatIndian(property.totalProfit)}", isHighlight = false)
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(1.dp),
+                    color = Color.White.copy(alpha = 0.1f)
+                )
+                StatItem(
+                    label = "Profit",
+                    value = "₹${formatIndian(property.totalProfit)}",
+                    isHighlight = false
+                )
             } else {
                 StatItem(label = "Price", value = "₹${formatIndian(property.totalValuation)}")
-                VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(1.dp),
+                    color = Color.White.copy(alpha = 0.1f)
+                )
                 val rentToShow = if (property.grossAnnualRent.isNotEmpty()) {
                     property.grossAnnualRent
                 } else {
@@ -436,7 +547,12 @@ fun PropertyDetailsContent(property: PropertyModel, isExited: Boolean) {
                     (monthly * 12).toString()
                 }
                 StatItem(label = "Rent/Year", value = "₹${formatIndian(rentToShow)}")
-                VerticalDivider(modifier = Modifier.height(40.dp).width(1.dp), color = Color.White.copy(alpha = 0.1f))
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(1.dp),
+                    color = Color.White.copy(alpha = 0.1f)
+                )
                 StatItem(label = "ROI", value = "${property.roi}%", isHighlight = false)
             }
         }
@@ -445,7 +561,12 @@ fun PropertyDetailsContent(property: PropertyModel, isExited: Boolean) {
 
         SectionTitle("Property Overview")
         GridItem(label1 = "Area", value1 = property.area, label2 = "Floor", value2 = property.floor)
-        GridItem(label1 = "Age", value1 = property.age, label2 = "Parking", value2 = property.carPark)
+        GridItem(
+            label1 = "Age",
+            value1 = property.age,
+            label2 = "Parking",
+            value2 = property.carPark
+        )
 
         if (property.assetManager.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -463,8 +584,16 @@ fun PropertyDetailsContent(property: PropertyModel, isExited: Boolean) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow("Entry Price", "₹${formatIndian(property.totalValuation)}")
                     InfoRow("Exit Price", "₹${formatIndian(property.exitPrice)}")
-                    Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.1f))
-                    InfoRow("Total Profit", "₹${formatIndian(property.totalProfit)}", isBold = true, valueColor = Color.White)
+                    Divider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = Color.White.copy(alpha = 0.1f)
+                    )
+                    InfoRow(
+                        "Total Profit",
+                        "₹${formatIndian(property.totalProfit)}",
+                        isBold = true,
+                        valueColor = Color.White
+                    )
                 }
             }
         } else {
@@ -484,7 +613,10 @@ fun PropertyDetailsContent(property: PropertyModel, isExited: Boolean) {
                     InfoRow("Monthly Rent", "₹${formatIndian(property.monthlyRent)}")
                     InfoRow("Gross Annual", "₹${formatIndian(property.grossAnnualRent)}")
                     InfoRow("Property Tax", "₹${formatIndian(property.annualPropertyTax)}")
-                    Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.1f))
+                    Divider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = Color.White.copy(alpha = 0.1f)
+                    )
                     InfoRow("Net ROI", "${property.roi}%", isBold = true, valueColor = Color.White)
                 }
             }
@@ -530,7 +662,9 @@ fun SectionTitle(title: String) {
 
 @Composable
 fun GridItem(label1: String, value1: String, label2: String, value2: String) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+    Row(Modifier
+        .fillMaxWidth()
+        .padding(bottom = 12.dp)) {
         Column(Modifier.weight(1f)) {
             Text(label1, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.5f))
             Text(value1, style = MaterialTheme.typography.bodyLarge, color = Color.White)
@@ -550,7 +684,9 @@ fun InfoRow(
     valueColor: Color = Color.White
 ) {
     Row(
-        Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(0.7f))

@@ -22,6 +22,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.ui.theme.BrandBlue
 
+private val NavyBlue = Color(0xFF0F172A)
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
@@ -33,13 +36,13 @@ fun SearchScreen(
     var selectedCity by remember { mutableStateOf("All Cities") }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = NavyBlue,
         topBar = {
             // Header with Icons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.Black)
+                    .background(NavyBlue)
                     .padding(vertical = 16.dp, horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -51,8 +54,6 @@ fun SearchScreen(
                     color = Color.White
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Icon(Icons.Default.AccountBalanceWallet, "Wallet", tint = Color.White)
-                    Icon(Icons.Default.CurrencyRupee, "Currency", tint = Color.White)
                     Icon(Icons.Default.Notifications, "Notif", tint = Color.White)
                 }
             }

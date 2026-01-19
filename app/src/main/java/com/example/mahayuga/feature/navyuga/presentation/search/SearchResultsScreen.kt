@@ -20,7 +20,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,7 +41,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
-import com.example.mahayuga.feature.navyuga.presentation.home.SearchBarRow
 import com.example.mahayuga.feature.navyuga.presentation.home.StoryState
 import com.example.mahayuga.feature.navyuga.presentation.home.FilterOptionRow
 import com.example.mahayuga.ui.theme.BrandBlue
@@ -47,6 +48,8 @@ import kotlinx.coroutines.launch
 
 private val StoryGradientStart = Color(0xFF4361EE)
 private val StoryGradientEnd = Color(0xFF3F37C9)
+private val NavyBlue = Color(0xFF0F172A)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +81,7 @@ fun SearchResultsScreen(
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = NavyBlue,
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -97,7 +100,7 @@ fun SearchResultsScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = NavyBlue)
             )
         },
         floatingActionButton = {
@@ -161,6 +164,7 @@ fun SearchResultsScreen(
                 .padding(padding)
         ) {
 
+            // ⚡ UPDATED: Defined locally below
             SearchBarRow(
                 query = searchQuery,
                 onQueryChange = { viewModel.updateSearchQuery(it) },
@@ -338,6 +342,65 @@ fun SearchResultsScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
+        }
+    }
+}
+
+// ⚡ ADDED THIS COMPONENT LOCALLY SO IT IS RESOLVED
+@Composable
+fun SearchBarRow(
+    query: String = "",
+    onQueryChange: (String) -> Unit = {},
+    onFilterClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier
+                .weight(1f)
+                .height(50.dp),
+            placeholder = {
+                Text(
+                    "Search properties...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.6f)
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    null,
+                    tint = Color.White.copy(alpha = 0.6f)
+                )
+            },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            ),
+            singleLine = true
+        )
+
+        Box(
+            modifier = Modifier
+                .size(50.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.1f))
+                .clickable { onFilterClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.FilterList, "Filter", tint = Color.White)
         }
     }
 }
