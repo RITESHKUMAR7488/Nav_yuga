@@ -17,9 +17,9 @@ import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.components.GptTextField
+import com.example.mahayuga.navigation.AssetManagerDestinations
 
-// ⚡ UPDATED: Navyuga Theme Colors
-private val NavyBackground = Color(0xFF0F172A) // Matches Welcome Screen
+private val NavyBackground = Color(0xFF0F172A)
 private val GptTextWhite = Color(0xFFFFFFFF)
 private val GptTextGrey = Color(0xFFC5C5D2)
 private val GptBrandGreen = Color(0xFF10A37F)
@@ -38,11 +38,11 @@ fun LoginScreen(
         if (loginState is UiState.Success) {
             val user = (loginState as UiState.Success<UserModel>).data
 
-            // ⚡ FIX: Navigate to correct dashboard, 'super_app_hub' was deleted
-            val destination = if (user.role == "admin") {
-                "admin_dashboard"
-            } else {
-                "navyuga_dashboard"
+            // ⚡ UPDATED ROUTING LOGIC
+            val destination = when (user.role) {
+                "admin" -> "admin_dashboard"
+                "asset_manager" -> AssetManagerDestinations.DASHBOARD // Go to AM Dashboard
+                else -> "navyuga_dashboard" // Go to Investor Dashboard
             }
 
             navController.navigate(destination) {
@@ -57,7 +57,7 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NavyBackground) // ⚡ Uses NavyBackground
+            .background(NavyBackground)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

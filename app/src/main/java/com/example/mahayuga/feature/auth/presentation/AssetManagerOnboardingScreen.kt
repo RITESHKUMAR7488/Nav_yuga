@@ -1,16 +1,14 @@
 package com.example.mahayuga.feature.auth.presentation
 
-import android.widget.Toast
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,6 +42,9 @@ fun AssetManagerOnboardingScreen(
     val context = LocalContext.current
     var currentStep by remember { mutableIntStateOf(1) }
     val totalSteps = 5
+
+    // State for success dialog
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
     // --- A. Credentials ---
     var workEmail by remember { mutableStateOf("") }
@@ -103,35 +103,90 @@ fun AssetManagerOnboardingScreen(
 
     LaunchedEffect(amState) {
         if (amState is UiState.Success) {
-            Toast.makeText(context, "Application Submitted!", Toast.LENGTH_LONG).show()
             viewModel.resetAmRegisterState()
-            navController.popBackStack("welcome", inclusive = false)
+            showSuccessDialog = true
         } else if (amState is UiState.Failure) {
-            Toast.makeText(context, (amState as UiState.Failure).message, Toast.LENGTH_LONG).show()
+            // Error handling
         }
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { /* Force user to click OK */ },
+            icon = {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    null,
+                    tint = BrandBlue,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = { Text("Application Submitted") },
+            text = { Text("Your Partner Application has been sent for review.\n\nYou will be notified once the Admin verifies your entity details. Please check back later.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSuccessDialog = false
+                        // ⚡ FIX: Navigate back to WELCOME/LOGIN, NOT Dashboard
+                        navController.navigate("welcome") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                ) {
+                    Text("Back to Home")
+                }
+            },
+            containerColor = Color(0xFF1E293B),
+            titleContentColor = TextWhite,
+            textContentColor = TextGrey
+        )
     }
 
     Scaffold(
         containerColor = NavyBg,
         topBar = {
             TopAppBar(
-                title = { Text("Partner Registration", color = TextWhite, fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "Partner Registration",
+                        color = TextWhite,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { if (currentStep > 1) currentStep-- else navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = TextWhite)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextWhite)
                     }
                 },
-                actions = { Text("Step $currentStep/$totalSteps", color = BrandBlue, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 16.dp)) },
+                actions = {
+                    Text(
+                        "Step $currentStep/$totalSteps",
+                        color = BrandBlue,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyBg)
             )
         }
     ) { padding ->
         Column(
-            modifier = Modifier.padding(padding).fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .imePadding() // ⚡ FIX: Ensures keyboard pushes content up
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState())
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
             LinearProgressIndicator(
                 progress = { currentStep / totalSteps.toFloat() },
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
                 color = BrandBlue,
                 trackColor = Color.White.copy(0.1f),
             )
@@ -146,6 +201,7 @@ fun AssetManagerOnboardingScreen(
                         department, { department = it }, whatsapp, { whatsapp = it },
                         commMethod, { commMethod = it }
                     )
+
                     2 -> Step2EntityProfile(
                         entityName, { entityName = it }, brandName, { brandName = it },
                         entityType, { entityType = it }, country, { country = it },
@@ -157,14 +213,17 @@ fun AssetManagerOnboardingScreen(
                         opLine1, { opLine1 = it }, opCity, { opCity = it },
                         assetClasses, { assetClasses = it }, opCities, { opCities = it }
                     )
+
                     3 -> Step3Identifiers(
                         pan, { pan = it }, gstin, { gstin = it },
                         cin, { cin = it }, sebi, { sebi = it }
                     )
+
                     4 -> Step4Bank(
                         accName, { accName = it }, accNumber, { accNumber = it },
                         ifsc, { ifsc = it }, bankName, { bankName = it }, branch, { branch = it }
                     )
+
                     5 -> Step5Consent(
                         authRep, { authRep = it }, terms, { terms = it },
                         digitalKyc, { digitalKyc = it }, noSanctions, { noSanctions = it }
@@ -174,13 +233,22 @@ fun AssetManagerOnboardingScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Error Message Display
+            if (amState is UiState.Failure) {
+                Text(
+                    text = (amState as UiState.Failure).message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
             Button(
                 onClick = {
                     if (currentStep < totalSteps) {
                         currentStep++
                     } else {
                         if (password != confirmPassword) {
-                            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                            // Local toast via context if needed, or state error
                             return@Button
                         }
                         val amData = AssetManagerModel(
@@ -192,13 +260,31 @@ fun AssetManagerOnboardingScreen(
                             entityType = entityType, country = country,
                             website = website, yearsInOperation = yearsOp,
                             aumRange = aumRange,
-                            registeredAddress = AddressModel(regLine1, "", regCity, regState, regPin),
+                            registeredAddress = AddressModel(
+                                regLine1,
+                                "",
+                                regCity,
+                                regState,
+                                regPin
+                            ),
                             isOperatingSameAsRegistered = isOperatingSame,
-                            operatingAddress = if(isOperatingSame) AddressModel() else AddressModel(opLine1, "", opCity, "", ""),
+                            operatingAddress = if (isOperatingSame) AddressModel() else AddressModel(
+                                opLine1,
+                                "",
+                                opCity,
+                                "",
+                                ""
+                            ),
                             primaryAssetClasses = assetClasses.split(",").map { it.trim() },
                             operatingCities = opCities.split(",").map { it.trim() },
                             pan = pan, gstin = gstin, cinOrLlpin = cin, sebiRegistrationNo = sebi,
-                            bankAccount = BankDetailsModel(accName, accNumber, ifsc, bankName, branch),
+                            bankAccount = BankDetailsModel(
+                                accName,
+                                accNumber,
+                                ifsc,
+                                bankName,
+                                branch
+                            ),
                             isAuthorizedRepresentative = authRep,
                             hasAgreedToTerms = terms,
                             hasConsentedToDigitalKyc = digitalKyc,
@@ -207,7 +293,9 @@ fun AssetManagerOnboardingScreen(
                         viewModel.registerAssetManager(amData, password)
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
                 enabled = amState !is UiState.Loading
             ) {
@@ -217,11 +305,15 @@ fun AssetManagerOnboardingScreen(
                     Text(if (currentStep == totalSteps) "Submit Application" else "Next")
                 }
             }
+
+            // ⚡ Added Spacer at bottom for easier scrolling on small screens
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
 
-// --- STEP COMPOSABLES ---
+// --- KEEP THE REST OF THE HELPER FUNCTIONS (Step1...Step5) AS IS ---
+// (Re-pasting them here for file completeness)
 
 @Composable
 fun Step1AccountAndContact(
@@ -244,7 +336,12 @@ fun Step1AccountAndContact(
             Box(Modifier.weight(1f)) { AmTextField(desig, onDesig, "Designation") }
             Box(Modifier.weight(1f)) { AmTextField(dept, onDept, "Department (Opt)") }
         }
-        AmTextField(whatsapp, onWhatsapp, "WhatsApp Number (Optional)", keyboardType = KeyboardType.Phone)
+        AmTextField(
+            whatsapp,
+            onWhatsapp,
+            "WhatsApp Number (Optional)",
+            keyboardType = KeyboardType.Phone
+        )
 
         Text("Preferred Communication", color = TextGrey, fontSize = 14.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -253,7 +350,10 @@ fun Step1AccountAndContact(
                     selected = comm == method,
                     onClick = { onComm(method) },
                     label = { Text(method) },
-                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BrandBlue, selectedLabelColor = TextWhite)
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = BrandBlue,
+                        selectedLabelColor = TextWhite
+                    )
                 )
             }
         }
@@ -276,7 +376,12 @@ fun Step2EntityProfile(
         SectionTitle("C. Entity Basics")
         AmTextField(name, onName, "Legal Entity Name")
         AmTextField(brand, onBrand, "Brand / Trade Name")
-        AmDropdown("Entity Type", listOf("Company", "LLP", "Partnership", "Trust", "REIT/InvIT"), type, onType)
+        AmDropdown(
+            "Entity Type",
+            listOf("Company", "LLP", "Partnership", "Trust", "REIT/InvIT"),
+            type,
+            onType
+        )
         AmTextField(country, onCountry, "Country")
 
         Text("Registered Address", color = TextWhite, fontWeight = FontWeight.Bold)
@@ -295,8 +400,22 @@ fun Step2EntityProfile(
 
         AmTextField(web, onWeb, "Website (Optional)")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.weight(1f)) { AmTextField(years, onYears, "Years in Op", keyboardType = KeyboardType.Number) }
-            Box(Modifier.weight(1f)) { AmDropdown("AUM Range", listOf("<50Cr", "50-200Cr", "200-500Cr", "500Cr+"), aum, onAum) }
+            Box(Modifier.weight(1f)) {
+                AmTextField(
+                    years,
+                    onYears,
+                    "Years in Op",
+                    keyboardType = KeyboardType.Number
+                )
+            }
+            Box(Modifier.weight(1f)) {
+                AmDropdown(
+                    "AUM Range",
+                    listOf("<50Cr", "50-200Cr", "200-500Cr", "500Cr+"),
+                    aum,
+                    onAum
+                )
+            }
         }
 
         AmTextField(assets, onAssets, "Asset Classes (e.g. Commercial, Land)")
@@ -354,13 +473,5 @@ fun Step5Consent(
         AmCheckbox("I agree to Terms & Privacy Policy.", terms, onTerms)
         AmCheckbox("I consent to digital KYC & verification.", kyc, onKyc)
         AmCheckbox("No sanctions / no adverse regulatory action.", sanc, onSanc)
-    }
-}
-
-@Preview
-@Composable
-fun AMWizardPreview() {
-    MaterialTheme {
-        AssetManagerOnboardingScreen(rememberNavController())
     }
 }

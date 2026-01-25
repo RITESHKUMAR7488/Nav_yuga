@@ -28,9 +28,13 @@ class MainActivity : FragmentActivity() {
         setContent {
             var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
-            // ⚡ FIX: Logged-in users start at Splash (for Biometrics), not Dashboard
+            // ⚡ SMART ROUTING LOGIC
             val startDestination = if (initialLoggedIn) {
-                if (userRole == "admin") "admin_dashboard" else "navyuga_splash"
+                when (userRole) {
+                    "admin" -> "admin_dashboard"
+                    "asset_manager" -> "am_dashboard" // Directs to new Dashboard
+                    else -> "navyuga_splash" // Investors go to Splash -> Dashboard
+                }
             } else {
                 "welcome"
             }

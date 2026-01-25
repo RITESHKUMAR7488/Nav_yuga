@@ -1,16 +1,9 @@
 package com.example.mahayuga.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -21,6 +14,7 @@ import androidx.navigation.navArgument
 import com.example.mahayuga.core.common.PlaceholderScreen
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.admin.presentation.*
+import com.example.mahayuga.feature.assetmanager.presentation.AssetManagerDashboardScreen
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.AssetManagerOnboardingScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
@@ -56,7 +50,7 @@ fun AppNavigation(
         composable("login") { LoginScreen(navController = navController) }
         composable("register") { RegisterScreen(navController = navController) }
 
-        // ⚡ NEW: Asset Manager Onboarding
+        // Asset Manager Onboarding
         composable(AssetManagerDestinations.ONBOARDING_INTRO) {
             AssetManagerOnboardingScreen(navController = navController)
         }
@@ -230,9 +224,9 @@ fun AppNavigation(
             )
         }
 
-        // ⚡ Placeholder for future Asset Manager Dashboard (Phase 4)
+        // ⚡ ASSET MANAGER DASHBOARD (NEW)
         composable(AssetManagerDestinations.DASHBOARD) {
-            PlaceholderScreen("Asset Manager Dashboard (Coming Soon)")
+            AssetManagerDashboardScreen(rootNavController = navController)
         }
     }
 }
