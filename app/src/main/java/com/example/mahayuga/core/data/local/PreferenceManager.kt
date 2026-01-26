@@ -25,6 +25,15 @@ class PreferenceManager @Inject constructor(
     val userRole: String
         get() = sharedPreferences.getString(KEY_USER_ROLE, "user") ?: "user"
 
+    // ⚡ NEW: Session Persistence for Dual-Role Users
+    // Values: "ADMIN", "INVESTOR", "AM_WORK"
+    fun saveLastActiveMode(mode: String) {
+        sharedPreferences.edit().putString(KEY_LAST_ACTIVE_MODE, mode).apply()
+    }
+
+    val lastActiveMode: String
+        get() = sharedPreferences.getString(KEY_LAST_ACTIVE_MODE, "") ?: ""
+
     // Track if onboarding wizard is done (useful for multi-stage processes)
     fun saveOnboardingState(isCompleted: Boolean) {
         sharedPreferences.edit().putBoolean(KEY_ONBOARDING_COMPLETED, isCompleted).apply()
@@ -51,5 +60,6 @@ class PreferenceManager @Inject constructor(
         private const val KEY_IS_DARK_MODE = "is_dark_mode"
         private const val KEY_USER_ROLE = "user_role"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+        private const val KEY_LAST_ACTIVE_MODE = "last_active_mode"
     }
 }

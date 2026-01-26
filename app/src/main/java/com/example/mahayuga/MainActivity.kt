@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
 import com.example.mahayuga.core.data.local.PreferenceManager
 import com.example.mahayuga.navigation.AppNavigation
+import com.example.mahayuga.navigation.AssetManagerDestinations
 import com.example.mahayuga.ui.theme.NavyugaTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -24,16 +25,25 @@ class MainActivity : FragmentActivity() {
         val initialDarkMode = preferenceManager.isDarkMode
         val initialLoggedIn = preferenceManager.isLoggedIn
         val userRole = preferenceManager.userRole
+        val lastMode = preferenceManager.lastActiveMode // ⚡ FETCH LAST ACTIVE MODE
 
         setContent {
             var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
-            // ⚡ SMART ROUTING LOGIC
+            // ⚡ SEAMLESS STATE ROUTING LOGIC
             val startDestination = if (initialLoggedIn) {
-                when (userRole) {
-                    "admin" -> "admin_dashboard"
-                    "asset_manager" -> "am_dashboard" // Directs to new Dashboard
-                    else -> "navyuga_splash" // Investors go to Splash -> Dashboard
+                when (lastMode) {
+                    "ADMIN" -> "admin_dashboard"
+                    "AM_WORK" -> AssetManagerDestinations.DASHBOARD
+                    "INVESTOR" -> "navyuga_dashboard"
+                    else -> {
+                        // Fallback if lastMode is missing (legacy support)
+                        when (userRole) {
+                            "admin" -> "admin_dashboard"
+                            "asset_manager" -> AssetManagerDestinations.DASHBOARD
+                            else -> "navyuga_splash" // Investors go to Splash -> Dashboard
+                        }
+                    }
                 }
             } else {
                 "welcome"

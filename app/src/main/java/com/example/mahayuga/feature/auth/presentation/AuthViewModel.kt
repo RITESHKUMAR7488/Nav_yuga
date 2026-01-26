@@ -87,4 +87,8 @@ class AuthViewModel @Inject constructor(
     fun resetAmRegisterState() {
         _amRegisterState.value = UiState.Idle
     }
+    // In AuthViewModel.kt
+    fun saveSessionMode(mode: String) {
+        preferenceManager.saveLastActiveMode(mode)
+    }
 }
