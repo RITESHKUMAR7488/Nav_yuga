@@ -92,7 +92,7 @@ fun AssetManagerDashboardScreen(
 
             // 3. Property Operations
             composable("am_ops") {
-                PlaceholderScreen("Panel 3: Operations & Maintenance\n(Coming Phase 2)")
+                com.example.mahayuga.feature.assetmanager.presentation.ops.AssetOperationsScreen()
             }
 
             // 2. Capital & Investor Intelligence

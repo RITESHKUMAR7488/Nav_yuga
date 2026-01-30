@@ -6,8 +6,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import java.text.NumberFormat
+import java.util.Locale
 
 // --- REFERENCE COLORS ---
 private object BricxColors {
@@ -28,11 +35,16 @@ private object BricxColors {
     val TextWhite = Color(0xFFFFFFFF)
     val TextGrey = Color(0xFF8B9BB4)
     val GraphGreen = Color(0xFF38a882)   // Matches AmAccent (Teal Green)
+    val GraphRed = Color(0xFFFF3B30)     // Added for Red Flag
     val InnerBoxBg = Color(0xFF080F18)   // Matches BgDark for the "cut-out" look
 }
 
 @Composable
-fun PortfolioCommandCentre() {
+fun PortfolioCommandCentre(
+    viewModel: AssetManagerViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+
     // --- DUMMY DATA ---
     val aumData = remember { listOf(10f, 25f, 40f, 35f, 50f, 65f, 80f, 100f) }
     val cashData = remember { listOf(20f, 22f, 28f, 35f, 42f, 40f, 55f, 62f) }
@@ -74,6 +86,39 @@ fun PortfolioCommandCentre() {
                 .padding(horizontal = 16.dp)
         ) {
 
+            // ⚡ Red Flag Alert (Logic Requirement)
+            if (state.hasRedFlag) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = BricxColors.GraphRed.copy(
+                            alpha = 0.1f
+                        )
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BricxColors.GraphRed),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            null,
+                            tint = BricxColors.GraphRed,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Alert: Negative Cash Flow Detected",
+                            color = BricxColors.GraphRed,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
             // --- ROW 1 ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -82,8 +127,10 @@ fun PortfolioCommandCentre() {
                 // 1. Total AUM (Live)
                 BricxCard(
                     title = "Total AUM (Live)",
-                    value = "₹6,250 Cr",
-                    modifier = Modifier.weight(1f).height(150.dp)
+                    value = formatCurrency(state.totalAum), // ⚡ Bound Data
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(150.dp)
                 ) {
                     BricxGraph(dataPoints = aumData, color = BricxColors.GraphGreen)
                 }
@@ -92,9 +139,11 @@ fun PortfolioCommandCentre() {
                 BricxCard(
                     title = "Asset Under Management",
                     value = null, // No main value, just grid
-                    modifier = Modifier.weight(1f).height(150.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(150.dp)
                 ) {
-                    AssetGrid()
+                    AssetGrid(state.assetBreakdown) // ⚡ Bound Data
                 }
             }
 
@@ -108,8 +157,10 @@ fun PortfolioCommandCentre() {
                 // 3. Cash Inflow
                 BricxCard(
                     title = "Cash Inflow",
-                    value = "₹23.4 Cr (This month)",
-                    modifier = Modifier.weight(1f).height(150.dp)
+                    value = "${formatCurrency(state.cashInflow)} (This month)", // ⚡ Bound Data + Original Text
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(150.dp)
                 ) {
                     BricxGraph(dataPoints = cashData, color = BricxColors.GraphGreen)
                 }
@@ -117,8 +168,10 @@ fun PortfolioCommandCentre() {
                 // 4. Upcoming Obligations
                 BricxCard(
                     title = "Upcoming Obligations",
-                    value = "₹6.8 Cr (due this month)",
-                    modifier = Modifier.weight(1f).height(150.dp)
+                    value = "${formatCurrency(state.obligations)} (due this month)", // ⚡ Bound Data + Original Text
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(150.dp)
                 ) {
                     BricxGraph(dataPoints = obliData, color = BricxColors.GraphGreen)
                 }
@@ -135,9 +188,11 @@ fun PortfolioCommandCentre() {
                 BricxCard(
                     title = "Projected ROI",
                     value = null,
-                    topRightText = "08%",
+                    topRightText = String.format("%.0f%%", state.portfolioIrr), // ⚡ Bound Data
                     subText = "Q2 April",
-                    modifier = Modifier.weight(1f).height(150.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(150.dp)
                 ) {
                     BricxGraph(dataPoints = roiData, color = BricxColors.GraphGreen)
                 }
@@ -146,9 +201,11 @@ fun PortfolioCommandCentre() {
                 BricxCard(
                     title = "Projected IRR",
                     value = null,
-                    topRightText = "14%",
+                    topRightText = String.format("%.0f%%", state.portfolioIrr), // ⚡ Bound Data
                     subText = "Q2 April",
-                    modifier = Modifier.weight(1f).height(150.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(150.dp)
                 ) {
                     BricxGraph(dataPoints = irrData, color = BricxColors.GraphGreen)
                 }
@@ -273,7 +330,9 @@ fun BricxCard(
             val boxModifier = if (isVariableHeight) {
                 Modifier.fillMaxWidth()
             } else {
-                Modifier.weight(1f).fillMaxWidth()
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             }
 
             Box(
@@ -336,28 +395,51 @@ fun BricxGraph(dataPoints: List<Float>, color: Color) {
     }
 }
 
-// ⚡ UPDATED GRID LOGIC: Use Weight to Fill Height
+// ⚡ UPDATED GRID LOGIC: Use Weight to Fill Height & Dynamic Data
 @Composable
-fun AssetGrid() {
+fun AssetGrid(breakdown: Map<String, Int>) {
+    // Default dummy map if empty to preserve layout
+    val data = if (breakdown.isEmpty()) mapOf(
+        "Office" to 2,
+        "Retail" to 1,
+        "Warehouse" to 3,
+        "Data Ctr" to 1
+    ) else breakdown
+    val keys = data.keys.toList()
+
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Row 1 (Weights applied here)
+        // Row 1
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth().weight(1f) // ⚡ Fill 50% height
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f) // ⚡ Fill 50% height
         ) {
-            AssetBox("02", "Office", Modifier.weight(1f))
-            AssetBox("01", "Retail", Modifier.weight(1f))
+            val k1 = keys.getOrElse(0) { "Office" }
+            val v1 = data[k1] ?: 0
+            AssetBox(String.format("%02d", v1), k1, Modifier.weight(1f))
+
+            val k2 = keys.getOrElse(1) { "Retail" }
+            val v2 = data[k2] ?: 0
+            AssetBox(String.format("%02d", v2), k2, Modifier.weight(1f))
         }
-        // Row 2 (Weights applied here)
+        // Row 2
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth().weight(1f) // ⚡ Fill 50% height
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f) // ⚡ Fill 50% height
         ) {
-            AssetBox("03", "Warehouse", Modifier.weight(1f))
-            AssetBox("01", "Data Ctr", Modifier.weight(1f))
+            val k3 = keys.getOrElse(2) { "Warehouse" }
+            val v3 = data[k3] ?: 0
+            AssetBox(String.format("%02d", v3), k3, Modifier.weight(1f))
+
+            val k4 = keys.getOrElse(3) { "Data Ctr" }
+            val v4 = data[k4] ?: 0
+            AssetBox(String.format("%02d", v4), k4, Modifier.weight(1f))
         }
     }
 }
@@ -379,7 +461,7 @@ fun AssetBox(number: String, label: String, modifier: Modifier) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = label,
+                text = label.take(8), // Safety truncate
                 color = BricxColors.TextGrey,
                 fontSize = 9.sp,
                 textAlign = TextAlign.Center,
@@ -422,5 +504,30 @@ fun TimelineRow(date: String, title: String, amount: String) {
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+// ⚡ HELPER for Formatting
+fun formatCurrency(amount: Double): String {
+    return try {
+        when {
+            amount >= 10000000 -> {
+                val cr = amount / 10000000
+                String.format("₹%.2f Cr", cr)
+            }
+
+            amount >= 100000 -> {
+                val l = amount / 100000
+                String.format("₹%.2f L", l)
+            }
+
+            else -> {
+                val formatter = NumberFormat.getInstance(Locale("en", "IN"))
+                formatter.maximumFractionDigits = 0
+                "₹" + formatter.format(amount)
+            }
+        }
+    } catch (e: Exception) {
+        "₹0"
     }
 }
