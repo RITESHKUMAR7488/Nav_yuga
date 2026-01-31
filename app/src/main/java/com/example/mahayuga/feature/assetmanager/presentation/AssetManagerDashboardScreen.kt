@@ -19,7 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mahayuga.core.common.PlaceholderScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
-//import com.example.mahayuga.feature.assetmanager.presentation.investors.InvestorScreen
+import com.example.mahayuga.feature.assetmanager.presentation.investors.InvestorScreen
 import com.example.mahayuga.feature.assetmanager.presentation.ops.AssetOperationsScreen
 import com.example.mahayuga.feature.assetmanager.presentation.finance.FinanceScreen
 import com.example.mahayuga.feature.assetmanager.presentation.risk.RiskScreen
@@ -102,9 +102,9 @@ fun AssetManagerDashboardScreen(
             }
 
             // 3. Capital & Investor Intelligence
-//            composable("am_investors") {
-//                InvestorScreen()
-//            }
+            composable("am_investors") {
+                InvestorScreen()
+            }
 
             // 4. Income & Distribution
             composable("am_finance") {
