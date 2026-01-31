@@ -102,7 +102,7 @@ fun AssetManagerDashboardScreen(
 
             // 4. Income & Distribution
             composable("am_finance") {
-                PlaceholderScreen("Panel 4: Income Engine\n(Coming Phase 2)")
+                com.example.mahayuga.feature.assetmanager.presentation.finance.FinanceScreen()
             }
 
             // Menu for Remaining Panels (5, 6, 7, 8) + Logout
