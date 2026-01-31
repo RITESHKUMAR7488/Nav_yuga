@@ -18,13 +18,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mahayuga.core.common.PlaceholderScreen
+import com.example.mahayuga.feature.assetmanager.presentation.benchmark.BenchmarkingScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.assetmanager.presentation.investors.InvestorScreen
 import com.example.mahayuga.feature.assetmanager.presentation.ops.AssetOperationsScreen
 import com.example.mahayuga.feature.assetmanager.presentation.finance.FinanceScreen
 import com.example.mahayuga.feature.assetmanager.presentation.risk.RiskScreen
 import com.example.mahayuga.feature.assetmanager.presentation.fundraising.FundraisingScreen
-//import com.example.mahayuga.feature.assetmanager.presentation.benchmark.BenchmarkingScreen
 
 // --- THEME ---
 private val AmBackground = Color(0xFF061123)
@@ -127,7 +127,7 @@ fun AssetManagerDashboardScreen(
             // --- Advanced Modules (Navigated from Menu) ---
             composable("am_risk") { RiskScreen() }
             composable("am_fundraising") { FundraisingScreen() }
-//            composable("am_benchmark") { BenchmarkingScreen() }
+            composable("am_benchmark") { BenchmarkingScreen() }
             composable("am_ai") { PlaceholderScreen("Panel 8: AI Insights\n(Coming Tier 3)") }
         }
     }
