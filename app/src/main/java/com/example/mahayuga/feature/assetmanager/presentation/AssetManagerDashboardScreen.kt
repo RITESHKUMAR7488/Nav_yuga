@@ -19,6 +19,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mahayuga.core.common.PlaceholderScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
+//import com.example.mahayuga.feature.assetmanager.presentation.investors.InvestorScreen
+import com.example.mahayuga.feature.assetmanager.presentation.ops.AssetOperationsScreen
+import com.example.mahayuga.feature.assetmanager.presentation.finance.FinanceScreen
+import com.example.mahayuga.feature.assetmanager.presentation.risk.RiskScreen
+//import com.example.mahayuga.feature.assetmanager.presentation.fundraising.FundraisingScreen
+//import com.example.mahayuga.feature.assetmanager.presentation.benchmark.BenchmarkingScreen
 
 // --- THEME ---
 private val AmBackground = Color(0xFF061123)
@@ -85,29 +91,30 @@ fun AssetManagerDashboardScreen(
             startDestination = "am_command",
             modifier = Modifier.padding(padding)
         ) {
-            // 1. Portfolio Command Center (The CEO View)
+            // 1. Portfolio Command Center
             composable("am_command") {
-                PortfolioCommandCentre() // Reusing your existing component
+                PortfolioCommandCentre()
             }
 
-            // 3. Property Operations
+            // 2. Property Operations
             composable("am_ops") {
-                com.example.mahayuga.feature.assetmanager.presentation.ops.AssetOperationsScreen()
+                AssetOperationsScreen()
             }
 
-            // 2. Capital & Investor Intelligence
-            composable("am_investors") {
-                PlaceholderScreen("Panel 2: Investor Intelligence\n(Coming Phase 3)")
-            }
+            // 3. Capital & Investor Intelligence
+//            composable("am_investors") {
+//                InvestorScreen()
+//            }
 
             // 4. Income & Distribution
             composable("am_finance") {
-                com.example.mahayuga.feature.assetmanager.presentation.finance.FinanceScreen()
+                FinanceScreen()
             }
 
-            // Menu for Remaining Panels (5, 6, 7, 8) + Logout
+            // 5. Menu
             composable("am_menu") {
                 AmMenuScreen(
+                    onNavigate = { route -> amNavController.navigate(route) },
                     onLogout = {
                         authViewModel.logout()
                         rootNavController.navigate("welcome") {
@@ -116,12 +123,21 @@ fun AssetManagerDashboardScreen(
                     }
                 )
             }
+
+            // --- Advanced Modules (Navigated from Menu) ---
+            composable("am_risk") { RiskScreen() }
+//            composable("am_fundraising") { FundraisingScreen() }
+//            composable("am_benchmark") { BenchmarkingScreen() }
+            composable("am_ai") { PlaceholderScreen("Panel 8: AI Insights\n(Coming Tier 3)") }
         }
     }
 }
 
 @Composable
-fun AmMenuScreen(onLogout: () -> Unit) {
+fun AmMenuScreen(
+    onNavigate: (String) -> Unit,
+    onLogout: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -132,10 +148,10 @@ fun AmMenuScreen(onLogout: () -> Unit) {
         Text("Advanced Tools", style = MaterialTheme.typography.headlineMedium, color = Color.White)
         Spacer(Modifier.height(24.dp))
 
-        AmMenuItem("Risk & Compliance", "Panel 5") {}
-        AmMenuItem("Fundraising & Liquidity", "Panel 6") {}
-        AmMenuItem("Benchmarking", "Panel 7") {}
-        AmMenuItem("AI Insights", "Panel 8") {}
+        AmMenuItem("Risk & Compliance", "Panel 5") { onNavigate("am_risk") }
+        AmMenuItem("Fundraising & Liquidity", "Panel 6") { onNavigate("am_fundraising") }
+        AmMenuItem("Benchmarking", "Panel 7") { onNavigate("am_benchmark") }
+        AmMenuItem("AI Insights", "Panel 8") { onNavigate("am_ai") }
 
         Spacer(Modifier.weight(1f))
 
@@ -174,3 +190,4 @@ data class AmNavItem(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 )
+
