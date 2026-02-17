@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/domain/model/NavYugaModels.kt
 package com.example.mahayuga.feature.navyuga.domain.model
 
 data class TenantStory(
@@ -12,6 +13,9 @@ data class PropertyModel(
     val title: String = "",
     val location: String = "",
     val status: String = "Available", // "Funding", "Funded", "Exited"
+
+    // ⚡ NEW: Approval Status for Asset Manager Listings
+    val approvalStatus: String = "APPROVED", // "PENDING", "APPROVED", "REJECTED"
 
     // ⚡ NEW: Manual Trending Flag
     val isTrending: Boolean = false,

@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/admin/presentation/AdminViewModel.kt
 package com.example.mahayuga.feature.admin.presentation
 
 import android.content.Context
@@ -53,7 +54,7 @@ class AdminViewModel @Inject constructor(
     private val _requestsState = MutableStateFlow<UiState<List<UserModel>>>(UiState.Loading)
     val requestsState: StateFlow<UiState<List<UserModel>>> = _requestsState
 
-    // Partner (Asset Manager) Requests - ⚡ NEW
+    // Partner (Asset Manager) Requests
     private val _amRequestsState =
         MutableStateFlow<UiState<List<AssetManagerModel>>>(UiState.Loading)
     val amRequestsState: StateFlow<UiState<List<AssetManagerModel>>> = _amRequestsState
@@ -78,7 +79,7 @@ class AdminViewModel @Inject constructor(
         fetchUsers()
         fetchProperties()
         fetchPendingRequests()
-        fetchPendingPartners() // ⚡ NEW
+        fetchPendingPartners()
     }
 
     private fun fetchUsers() {
@@ -99,7 +100,6 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ REQUEST: Sync Stats
     private fun syncSystemStats() {
         val uState = _usersState.value
         val pState = _propertiesState.value
@@ -136,7 +136,6 @@ class AdminViewModel @Inject constructor(
         }
     }
 
-    // ⚡ NEW: Fetch Asset Manager Requests
     private fun fetchPendingPartners() {
         viewModelScope.launch {
             adminRepository.getPendingAssetManagers()
@@ -291,6 +290,7 @@ class AdminViewModel @Inject constructor(
         legalWrapper: String, totalUnits: String, liquidityRules: String,
         isTrending: Boolean,
         assetManager: String,
+        approvalStatus: String, // ⚡ NEW PARAMETER
         imageUris: List<Uri>
     ) {
         viewModelScope.launch {
@@ -314,6 +314,7 @@ class AdminViewModel @Inject constructor(
                     description = description,
                     type = type,
                     status = status,
+                    approvalStatus = approvalStatus, // ⚡ PASSED DOWN TO MODEL
                     address = address,
                     city = city,
                     state = state,

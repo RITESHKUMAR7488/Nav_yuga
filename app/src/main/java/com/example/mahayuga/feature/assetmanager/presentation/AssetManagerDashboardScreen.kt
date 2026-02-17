@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/assetmanager/presentation/AssetManagerDashboardScreen.kt
 package com.example.mahayuga.feature.assetmanager.presentation
 
 import androidx.compose.foundation.background
@@ -38,7 +39,6 @@ fun AssetManagerDashboardScreen(
 ) {
     val amNavController = rememberNavController()
 
-    // 5 Primary Tabs
     val navItems = listOf(
         AmNavItem("Command", "am_command", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
         AmNavItem("Assets", "am_ops", Icons.Filled.Apartment, Icons.Outlined.Apartment),
@@ -54,7 +54,8 @@ fun AssetManagerDashboardScreen(
                 containerColor = AmSurface,
                 contentColor = Color.White
             ) {
-                val currentRoute = amNavController.currentBackStackEntryFlow.collectAsState(initial = null).value?.destination?.route
+                val currentRoute =
+                    amNavController.currentBackStackEntryFlow.collectAsState(initial = null).value?.destination?.route
 
                 navItems.forEach { item ->
                     val isSelected = currentRoute == item.route
@@ -62,7 +63,9 @@ fun AssetManagerDashboardScreen(
                         selected = isSelected,
                         onClick = {
                             amNavController.navigate(item.route) {
-                                popUpTo(amNavController.graph.startDestinationId) { saveState = true }
+                                popUpTo(amNavController.graph.startDestinationId) {
+                                    saveState = true
+                                }
                                 launchSingleTop = true
                                 restoreState = true
                             }
@@ -91,29 +94,13 @@ fun AssetManagerDashboardScreen(
             startDestination = "am_command",
             modifier = Modifier.padding(padding)
         ) {
-            // 1. Portfolio Command Center
-            composable("am_command") {
-                PortfolioCommandCentre()
-            }
-
-            // 2. Property Operations
-            composable("am_ops") {
-                AssetOperationsScreen()
-            }
-
-            // 3. Capital & Investor Intelligence
-            composable("am_investors") {
-                InvestorScreen()
-            }
-
-            // 4. Income & Distribution
-            composable("am_finance") {
-                FinanceScreen()
-            }
-
-            // 5. Menu
+            composable("am_command") { PortfolioCommandCentre() }
+            composable("am_ops") { AssetOperationsScreen() }
+            composable("am_investors") { InvestorScreen() }
+            composable("am_finance") { FinanceScreen() }
             composable("am_menu") {
                 AmMenuScreen(
+                    rootNavController = rootNavController, // ⚡ Pass rootNavController
                     onNavigate = { route -> amNavController.navigate(route) },
                     onLogout = {
                         authViewModel.logout()
@@ -123,8 +110,6 @@ fun AssetManagerDashboardScreen(
                     }
                 )
             }
-
-            // --- Advanced Modules (Navigated from Menu) ---
             composable("am_risk") { RiskScreen() }
             composable("am_fundraising") { FundraisingScreen() }
             composable("am_benchmark") { BenchmarkingScreen() }
@@ -135,6 +120,7 @@ fun AssetManagerDashboardScreen(
 
 @Composable
 fun AmMenuScreen(
+    rootNavController: NavController, // ⚡ Needed to route back to root level "add_property"
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -148,6 +134,18 @@ fun AmMenuScreen(
         Text("Advanced Tools", style = MaterialTheme.typography.headlineMedium, color = Color.White)
         Spacer(Modifier.height(24.dp))
 
+        // ⚡ NEW: Property Management Phase 1
+        AmMenuItem("List New Property", "Submit asset for admin review") {
+            rootNavController.navigate("add_property")
+        }
+        AmMenuItem("My Listings", "Track pending and live properties") {
+            // Placeholder for Phase 2
+        }
+
+        Spacer(Modifier.height(16.dp))
+        HorizontalDivider(color = Color.White.copy(0.1f))
+        Spacer(Modifier.height(16.dp))
+
         AmMenuItem("Risk & Compliance", "Panel 5") { onNavigate("am_risk") }
         AmMenuItem("Fundraising & Liquidity", "Panel 6") { onNavigate("am_fundraising") }
         AmMenuItem("Benchmarking", "Panel 7") { onNavigate("am_benchmark") }
@@ -157,8 +155,13 @@ fun AmMenuScreen(
 
         Button(
             onClick = onLogout,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(0.2f), contentColor = Color.Red),
-            modifier = Modifier.fillMaxWidth().height(50.dp)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Red.copy(0.2f),
+                contentColor = Color.Red
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
         ) {
             Icon(Icons.Default.ExitToApp, null)
             Spacer(Modifier.width(8.dp))
@@ -171,7 +174,9 @@ fun AmMenuScreen(
 fun AmMenuItem(title: String, subtitle: String, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         colors = CardDefaults.cardColors(containerColor = AmSurface)
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -190,4 +195,3 @@ data class AmNavItem(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 )
-

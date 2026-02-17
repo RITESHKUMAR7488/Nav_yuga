@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/navigation/AppNavigation.kt
 package com.example.mahayuga.navigation
 
 import androidx.compose.runtime.Composable
@@ -172,7 +173,9 @@ fun AppNavigation(
         composable("admin_create_user") { CreateUserScreen(navController) }
         composable("admin_manage_properties") { ManagePropertiesScreen(navController) }
         composable("admin_manage_users") { ManageUsersScreen(navController) }
-        composable("admin_add_property") { AddPropertyScreen(navController) }
+
+        // ⚡ CHANGE: Renamed from "admin_add_property" to "add_property"
+        composable("add_property") { AddPropertyScreen(navController) }
 
         composable(
             "admin_edit_property/{propertyId}",
@@ -224,7 +227,7 @@ fun AppNavigation(
             )
         }
 
-        // ⚡ ASSET MANAGER DASHBOARD (NEW)
+        // ⚡ ASSET MANAGER DASHBOARD
         composable(AssetManagerDestinations.DASHBOARD) {
             AssetManagerDashboardScreen(rootNavController = navController)
         }

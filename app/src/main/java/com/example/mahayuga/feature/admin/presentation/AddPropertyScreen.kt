@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/admin/presentation/AddPropertyScreen.kt
 package com.example.mahayuga.feature.admin.presentation
 
 import android.net.Uri
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -24,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.auth.presentation.components.NavyugaGradientButton
 import com.example.mahayuga.feature.auth.presentation.components.NavyugaTextField
 
@@ -31,7 +34,8 @@ import com.example.mahayuga.feature.auth.presentation.components.NavyugaTextFiel
 @Composable
 fun AddPropertyScreen(
     navController: NavController,
-    viewModel: AdminViewModel = hiltViewModel()
+    viewModel: AdminViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel() // ⚡ Injecting Auth to check Role
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -43,7 +47,6 @@ fun AddPropertyScreen(
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
-    // âš¡ REQUEST 1: Add Country
     var country by remember { mutableStateOf("India") }
 
     var age by remember { mutableStateOf("") }
@@ -53,7 +56,6 @@ fun AddPropertyScreen(
 
     var legalWrapper by remember { mutableStateOf("SPV") }
     var totalUnits by remember { mutableStateOf("") }
-    // âš¡ REQUEST 4: Rename "Liquidity Rules" to "Tenant Lock-in"
     var liquidityRules by remember { mutableStateOf("3 Years") }
 
     var tenantName by remember { mutableStateOf("") }
@@ -74,7 +76,22 @@ fun AddPropertyScreen(
     var roi by remember { mutableStateOf("") }
     var grossAnnualRent by remember { mutableStateOf("") }
 
-    // âš¡ REQUEST 3: Auto-calculate Min Investment based on Units
+    // ⚡ NEW: Identity & Role Detection logic
+    val currentUserState by authViewModel.currentUser.collectAsState()
+    var isAssetManager by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentUserState) {
+        if (currentUserState is UiState.Success) {
+            val user = (currentUserState as UiState.Success).data
+            if (user.role == "asset_manager") {
+                isAssetManager = true
+                assetManager = user.name // Pre-fill with BrandName mapped into Name
+                status = "Funding"       // Lock status to default Funding internally
+                isTrendingSelection = "No" // AMs can't force trend
+            }
+        }
+    }
+
     LaunchedEffect(totalValuation, totalUnits) {
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
         val units = totalUnits.replace(",", "").toIntOrNull() ?: 0
@@ -123,7 +140,7 @@ fun AddPropertyScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("List New Asset") },
+                title = { Text(if (isAssetManager) "Submit Asset for Review" else "List New Asset") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -141,7 +158,6 @@ fun AddPropertyScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ... Image Picker (Keep existing code) ...
             if (selectedImageUris.isEmpty()) {
                 Card(
                     modifier = Modifier
@@ -197,13 +213,27 @@ fun AddPropertyScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            NavyugaTextField(
-                value = assetManager,
-                onValueChange = { assetManager = it },
-                label = "Asset Manager Name",
-                icon = Icons.Default.PersonOutline
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            // ⚡ DYNAMIC: Asset Manager Name Field
+            if (!isAssetManager) {
+                NavyugaTextField(
+                    value = assetManager,
+                    onValueChange = { assetManager = it },
+                    label = "Asset Manager Name",
+                    icon = Icons.Default.PersonOutline
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                // Read Only for Asset Manager
+                OutlinedTextField(
+                    value = assetManager,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Asset Manager (Auto-Filled)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             NavyugaTextField(
                 value = address,
@@ -232,7 +262,6 @@ fun AddPropertyScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            // âš¡ REQUEST 1: Country Field
             NavyugaDropdown(
                 label = "Country",
                 options = listOf("India", "UAE", "USA", "UK"),
@@ -248,24 +277,26 @@ fun AddPropertyScreen(
                 onSelectionChange = { type = it })
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    NavyugaDropdown(
-                        label = "Status",
-                        options = listOf("Funding", "Funded", "Exited"),
-                        selected = status,
-                        onSelectionChange = { status = it })
+            // ⚡ DYNAMIC: Hide Status and Trending options from Asset Managers
+            if (!isAssetManager) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        NavyugaDropdown(
+                            label = "Status",
+                            options = listOf("Funding", "Funded", "Exited"),
+                            selected = status,
+                            onSelectionChange = { status = it })
+                    }
+                    Box(Modifier.weight(1f)) {
+                        NavyugaDropdown(
+                            label = "Make Trending?",
+                            options = listOf("Yes", "No"),
+                            selected = isTrendingSelection,
+                            onSelectionChange = { isTrendingSelection = it })
+                    }
                 }
-                Box(Modifier.weight(1f)) {
-                    NavyugaDropdown(
-                        label = "Make Trending?",
-                        options = listOf("Yes", "No"),
-                        selected = isTrendingSelection,
-                        onSelectionChange = { isTrendingSelection = it })
-                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             SectionHeader("Structure & Liquidity")
             NavyugaDropdown(
@@ -284,18 +315,16 @@ fun AddPropertyScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // âš¡ REQUEST 4: Label Changed
             NavyugaTextField(
                 value = liquidityRules,
                 onValueChange = { liquidityRules = it },
-                label = "Tenant Lock-in", // Changed from Liquidity Rules
+                label = "Tenant Lock-in",
                 icon = Icons.Default.Rule
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             SectionHeader("Specifications")
-            // ... (Keep Area, Floor, Age, Car Park rows - Same as original)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) {
                     NavyugaTextField(
@@ -390,7 +419,7 @@ fun AddPropertyScreen(
                     NavyugaTextField(
                         value = minInvest,
                         onValueChange = { minInvest = it },
-                        label = "Min Invest (Auto)", // Changed label to indicate auto
+                        label = "Min Invest (Auto)",
                         icon = Icons.Default.AttachMoney,
                         isNumber = true
                     )
@@ -447,7 +476,6 @@ fun AddPropertyScreen(
                 isNumber = true
             )
 
-            // ⚡ REQUEST 3 (Updated): Moved Exit Details below Financial Analysis
             if (status == "Exited") {
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionHeader("Exit Details")
@@ -475,13 +503,17 @@ fun AddPropertyScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // ⚡ DYNAMIC: Text and Action changes based on Role
             NavyugaGradientButton(
-                text = if (uploadState is UiState.Loading) "Uploading..." else "Publish Live",
+                text = if (uploadState is UiState.Loading) "Processing..." else if (isAssetManager) "Submit for Approval" else "Publish Live",
                 isLoading = uploadState is UiState.Loading,
                 onClick = {
                     if (title.isNotEmpty() && totalValuation.isNotEmpty()) {
                         val finalEscalation =
                             if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
+
+                        // ⚡ Determine Approval Status based on Role
+                        val finalApprovalStatus = if (isAssetManager) "PENDING" else "APPROVED"
 
                         viewModel.listNewProperty(
                             title = title,
@@ -491,7 +523,7 @@ fun AddPropertyScreen(
                             address = address,
                             city = city,
                             state = state,
-                            country = country, // âš¡ PASS COUNTRY
+                            country = country,
                             age = age,
                             area = area,
                             floor = floor,
@@ -513,6 +545,7 @@ fun AddPropertyScreen(
                             liquidityRules = liquidityRules,
                             isTrending = isTrendingSelection == "Yes",
                             assetManager = assetManager,
+                            approvalStatus = finalApprovalStatus, // ⚡ PASS IT HERE
                             imageUris = selectedImageUris
                         )
                     } else {
