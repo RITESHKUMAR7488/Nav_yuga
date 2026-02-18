@@ -26,6 +26,7 @@ import com.example.mahayuga.feature.assetmanager.presentation.ops.AssetOperation
 import com.example.mahayuga.feature.assetmanager.presentation.finance.FinanceScreen
 import com.example.mahayuga.feature.assetmanager.presentation.risk.RiskScreen
 import com.example.mahayuga.feature.assetmanager.presentation.fundraising.FundraisingScreen
+import com.example.mahayuga.feature.assetmanager.presentation.listings.AmListingsScreen // ⚡ NEW IMPORT
 
 // --- THEME ---
 private val AmBackground = Color(0xFF061123)
@@ -100,7 +101,7 @@ fun AssetManagerDashboardScreen(
             composable("am_finance") { FinanceScreen() }
             composable("am_menu") {
                 AmMenuScreen(
-                    rootNavController = rootNavController, // ⚡ Pass rootNavController
+                    rootNavController = rootNavController,
                     onNavigate = { route -> amNavController.navigate(route) },
                     onLogout = {
                         authViewModel.logout()
@@ -109,6 +110,10 @@ fun AssetManagerDashboardScreen(
                         }
                     }
                 )
+            }
+            // ⚡ PHASE 2 ROUTE ADDED HERE
+            composable("am_listings") {
+                AmListingsScreen(onBackClick = { amNavController.popBackStack() })
             }
             composable("am_risk") { RiskScreen() }
             composable("am_fundraising") { FundraisingScreen() }
@@ -120,7 +125,7 @@ fun AssetManagerDashboardScreen(
 
 @Composable
 fun AmMenuScreen(
-    rootNavController: NavController, // ⚡ Needed to route back to root level "add_property"
+    rootNavController: NavController,
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -134,12 +139,12 @@ fun AmMenuScreen(
         Text("Advanced Tools", style = MaterialTheme.typography.headlineMedium, color = Color.White)
         Spacer(Modifier.height(24.dp))
 
-        // ⚡ NEW: Property Management Phase 1
         AmMenuItem("List New Property", "Submit asset for admin review") {
             rootNavController.navigate("add_property")
         }
+        // ⚡ PHASE 2 NAVIGATION LINKED
         AmMenuItem("My Listings", "Track pending and live properties") {
-            // Placeholder for Phase 2
+            onNavigate("am_listings")
         }
 
         Spacer(Modifier.height(16.dp))

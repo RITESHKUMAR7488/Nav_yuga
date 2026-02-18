@@ -47,6 +47,11 @@ class AdminViewModel @Inject constructor(
     private val _propertiesState = MutableStateFlow<UiState<List<PropertyModel>>>(UiState.Loading)
     val propertiesState: StateFlow<UiState<List<PropertyModel>>> = _propertiesState
 
+    // ⚡ NEW: Pending Properties for Approval
+    private val _pendingPropertiesState =
+        MutableStateFlow<UiState<List<PropertyModel>>>(UiState.Loading)
+    val pendingPropertiesState: StateFlow<UiState<List<PropertyModel>>> = _pendingPropertiesState
+
     private val _propertyUploadState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val propertyUploadState: StateFlow<UiState<String>> = _propertyUploadState
 
@@ -97,6 +102,39 @@ class AdminViewModel @Inject constructor(
                 _propertiesState.value = state
                 if (state is UiState.Success) syncSystemStats()
             }
+        }
+    }
+
+    // ⚡ NEW: Fetch Pending Properties
+    fun fetchPendingProperties() {
+        viewModelScope.launch {
+            _pendingPropertiesState.value = UiState.Loading
+            propertyRepository.getAllProperties().collect { state ->
+                if (state is UiState.Success) {
+                    val pending = state.data.filter { it.approvalStatus == "PENDING" }
+                    _pendingPropertiesState.value = UiState.Success(pending)
+                } else if (state is UiState.Failure) {
+                    _pendingPropertiesState.value = UiState.Failure(state.message)
+                }
+            }
+        }
+    }
+
+    // ⚡ NEW: Approve Logic
+    fun approveProperty(property: PropertyModel) {
+        viewModelScope.launch {
+            val updated = property.copy(approvalStatus = "APPROVED")
+            propertyRepository.updateProperty(updated)
+            fetchPendingProperties() // Refresh
+        }
+    }
+
+    // ⚡ NEW: Reject Logic
+    fun rejectProperty(property: PropertyModel) {
+        viewModelScope.launch {
+            val updated = property.copy(approvalStatus = "REJECTED")
+            propertyRepository.updateProperty(updated)
+            fetchPendingProperties() // Refresh
         }
     }
 
@@ -290,7 +328,7 @@ class AdminViewModel @Inject constructor(
         legalWrapper: String, totalUnits: String, liquidityRules: String,
         isTrending: Boolean,
         assetManager: String,
-        approvalStatus: String, // ⚡ NEW PARAMETER
+        approvalStatus: String,
         imageUris: List<Uri>
     ) {
         viewModelScope.launch {
@@ -314,7 +352,7 @@ class AdminViewModel @Inject constructor(
                     description = description,
                     type = type,
                     status = status,
-                    approvalStatus = approvalStatus, // ⚡ PASSED DOWN TO MODEL
+                    approvalStatus = approvalStatus,
                     address = address,
                     city = city,
                     state = state,

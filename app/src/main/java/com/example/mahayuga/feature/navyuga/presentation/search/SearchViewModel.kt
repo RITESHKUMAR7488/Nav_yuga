@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/search/SearchViewModel.kt
 package com.example.mahayuga.feature.navyuga.presentation.search
 
 import androidx.lifecycle.ViewModel
@@ -45,7 +46,6 @@ class SearchViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
 
     // 3. Combined Logic: Raw Results + Local Filters
-    // ⚡ FIX: Using array overload because we have >5 flows
     val searchResults: StateFlow<UiState<List<PropertyModel>>> = combine(
         _uiState,
         _rawFilteredResults,
@@ -55,7 +55,6 @@ class SearchViewModel @Inject constructor(
         _activeManagers,
         _activeTypes
     ) { args ->
-        // Manual casting is required when combining >5 flows
         val uiState = args[0] as UiState<Unit>
         val rawProperties = args[1] as List<PropertyModel>
         val likedIds = args[2] as Set<String>
@@ -103,10 +102,8 @@ class SearchViewModel @Inject constructor(
 
                 // --- FINAL MAPPING ---
                 if (filteredList.isEmpty() && uiState is UiState.Success && rawProperties.isNotEmpty()) {
-                    // Results existed but filters hid them (Show empty list, not "Coming Soon")
                     UiState.Success(emptyList())
                 } else if (filteredList.isEmpty() && uiState is UiState.Success) {
-                    // No results loaded initially
                     UiState.Failure("Coming Soon")
                 } else if (filteredList.isEmpty()) {
                     UiState.Idle
@@ -159,12 +156,16 @@ class SearchViewModel @Inject constructor(
                                     property.country.equals(country, ignoreCase = true) ||
                                             country == "India"
 
-                                isFunding && matchesCity && matchesCountry
+                                // ⚡ SECURITY FIX: Check Approval Status
+                                val isApproved = property.approvalStatus == "APPROVED"
+
+                                isFunding && matchesCity && matchesCountry && isApproved
                             }
 
                             _rawFilteredResults.value = filteredList
                             _uiState.value = UiState.Success(Unit)
                         }
+
                         is UiState.Failure -> _uiState.value = UiState.Failure(state.message)
                         is UiState.Loading -> _uiState.value = UiState.Loading
                         else -> {}
@@ -177,7 +178,9 @@ class SearchViewModel @Inject constructor(
     }
 
     // --- FILTER ACTIONS ---
-    fun updateSearchQuery(query: String) { _searchQuery.value = query }
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
 
     fun toggleBudget(range: String) {
         val current = _activeBudgets.value.toMutableSet()
@@ -207,9 +210,15 @@ class SearchViewModel @Inject constructor(
     private fun parsePrice(priceStr: String): Double {
         val clean = priceStr.replace("₹", "").replace(",", "").trim().lowercase()
         return when {
-            clean.contains("cr") -> clean.replace("cr", "").trim().toDoubleOrNull()?.times(10000000) ?: 0.0
-            clean.contains("lakh") -> clean.replace("lakhs", "").replace("lakh", "").trim().toDoubleOrNull()?.times(100000) ?: 0.0
-            clean.contains("l") -> clean.replace("l", "").trim().toDoubleOrNull()?.times(100000) ?: 0.0
+            clean.contains("cr") -> clean.replace("cr", "").trim().toDoubleOrNull()?.times(10000000)
+                ?: 0.0
+
+            clean.contains("lakh") -> clean.replace("lakhs", "").replace("lakh", "").trim()
+                .toDoubleOrNull()?.times(100000) ?: 0.0
+
+            clean.contains("l") -> clean.replace("l", "").trim().toDoubleOrNull()?.times(100000)
+                ?: 0.0
+
             else -> clean.toDoubleOrNull() ?: 0.0
         }
     }

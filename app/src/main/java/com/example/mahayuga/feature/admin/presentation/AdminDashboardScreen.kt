@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/admin/presentation/AdminDashboardScreen.kt
 package com.example.mahayuga.feature.admin.presentation
 
 import androidx.compose.foundation.background
@@ -96,12 +95,7 @@ fun AdminDashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AdminStatCard(
-                    "Active Props",
-                    activePropertiesCount,
-                    SuccessGreen,
-                    Modifier.weight(1f)
-                )
+                AdminStatCard("Active Props", activePropertiesCount, SuccessGreen, Modifier.weight(1f))
                 AdminStatCard("Total Users", totalUsersCount, BrandBlue, Modifier.weight(1f))
                 AdminStatCard("Asset Vol", totalVolume, CyanAccent, Modifier.weight(1f))
             }
@@ -112,17 +106,24 @@ fun AdminDashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AdminStatCard(
-                    "Nationalities",
-                    userNationalities,
-                    Color(0xFFFF9800),
-                    Modifier.weight(1f)
-                )
+                AdminStatCard("Nationalities", userNationalities, Color(0xFFFF9800), Modifier.weight(1f))
                 AdminStatCard("Rent Paid", rentalIncomePaid, Color(0xFF9C27B0), Modifier.weight(1f))
                 AdminStatCard("Avg Return", avgReturn, Color(0xFF00E676), Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            // ⚡ NEW: Approval Button
+            AdminActionCard(
+                title = "Review Pending Assets",
+                subtitle = "Approve or Reject AM submissions",
+                icon = Icons.Default.VerifiedUser,
+                containerColor = Color(0xFF673AB7),
+                contentColor = Color.White,
+                onClick = { navController.navigate("admin_approvals") }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             AdminActionCard(
                 title = "List New Property",
@@ -130,7 +131,7 @@ fun AdminDashboardScreen(
                 icon = Icons.Default.AddHome,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
-                onClick = { navController.navigate("add_property") } // ⚡ UPDATED ROUTE
+                onClick = { navController.navigate("add_property") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -173,9 +174,7 @@ fun AdminDashboardScreen(
 
             OutlinedButton(
                 onClick = onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)

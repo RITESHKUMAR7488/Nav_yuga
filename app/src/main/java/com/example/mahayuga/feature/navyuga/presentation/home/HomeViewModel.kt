@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeViewModel.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
 import androidx.lifecycle.ViewModel
@@ -81,7 +82,8 @@ class HomeViewModel @Inject constructor(
             try {
                 propertyRepository.getAllProperties().collect { state ->
                     if (state is com.example.mahayuga.core.common.UiState.Success) {
-                        allPropertiesCache = state.data
+                        // ⚡ SECURITY FIX: Only load properties that are APPROVED
+                        allPropertiesCache = state.data.filter { it.approvalStatus == "APPROVED" }
                         listenToUserData(userId)
                     }
                 }

@@ -172,6 +172,7 @@ fun AppNavigation(
 
         composable("admin_create_user") { CreateUserScreen(navController) }
         composable("admin_manage_properties") { ManagePropertiesScreen(navController) }
+        composable("admin_approvals") { AdminApprovalsScreen(onBackClick = { navController.popBackStack() }) }
         composable("admin_manage_users") { ManageUsersScreen(navController) }
 
         // ⚡ CHANGE: Renamed from "admin_add_property" to "add_property"
