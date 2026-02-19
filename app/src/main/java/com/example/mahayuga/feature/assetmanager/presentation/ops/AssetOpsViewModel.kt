@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/assetmanager/presentation/ops/AssetOpsViewModel.kt
 package com.example.mahayuga.feature.assetmanager.presentation.ops
 
 import androidx.lifecycle.ViewModel
@@ -5,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,20 +15,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.random.Random
 
-// Wrapper model to hold calculated Ops data without changing your DB schema
 data class AssetOpsModel(
     val property: PropertyModel,
     val daysToVacancy: Long,
-    val isHighRisk: Boolean, // < 90 Days
+    val isHighRisk: Boolean,
     val maintenanceSpendYtd: Double,
-    val capexForecast: Double, // Formula: Avg * Growth Factor
-    val transparencyScore: Int // 0-100
+    val capexForecast: Double,
+    val transparencyScore: Int
 )
 
 data class OpsState(
@@ -37,7 +40,9 @@ data class OpsState(
 
 @HiltViewModel
 class AssetOpsViewModel @Inject constructor(
-    private val propertyRepository: PropertyRepository
+    private val propertyRepository: PropertyRepository,
+    private val auth: FirebaseAuth,
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(OpsState())
@@ -49,9 +54,35 @@ class AssetOpsViewModel @Inject constructor(
 
     private fun loadOpsData() {
         viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            var amName = ""
+            try {
+                val uid = auth.currentUser?.uid
+                if (uid != null) {
+                    val doc = firestore.collection("asset_managers").document(uid).get().await()
+                    if (doc.exists()) {
+                        val brand = doc.getString("brandName")
+                        val legal = doc.getString("entityLegalName")
+                        val contact = doc.getString("contactName")
+                        amName = when {
+                            !brand.isNullOrBlank() -> brand
+                            !legal.isNullOrBlank() -> legal
+                            !contact.isNullOrBlank() -> contact
+                            else -> "PARTNER"
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             propertyRepository.getAllProperties().collectLatest { uiState ->
                 when (uiState) {
-                    is UiState.Success -> processAssets(uiState.data)
+                    is UiState.Success -> {
+                        val myProps = uiState.data.filter { it.assetManager.equals(amName, true) }
+                        processAssets(myProps)
+                    }
+
                     is UiState.Loading -> _state.value = _state.value.copy(isLoading = true)
                     is UiState.Failure -> _state.value = _state.value.copy(isLoading = false)
                     else -> {}
@@ -60,11 +91,9 @@ class AssetOpsViewModel @Inject constructor(
         }
     }
 
-    // ⚡ COROUTINE USAGE: Background thread for calculations
     private suspend fun processAssets(properties: List<PropertyModel>) {
         withContext(Dispatchers.Default) {
             val today = Calendar.getInstance()
-            // Reset hours to start of day for accurate day diff
             today.set(Calendar.HOUR_OF_DAY, 0)
             today.set(Calendar.MINUTE, 0)
             today.set(Calendar.SECOND, 0)
@@ -74,33 +103,27 @@ class AssetOpsViewModel @Inject constructor(
             var totalMaint = 0.0
 
             val opsAssets = properties.map { prop ->
-                // 1. Simulate Lease End Date (Compatibility Fix for API < 26)
                 val tenure = prop.occupationPeriod.toIntOrNull() ?: 5
-
-                // Simulate a lease start date
                 val leaseStart = Calendar.getInstance()
                 leaseStart.timeInMillis = today.timeInMillis
                 leaseStart.add(Calendar.YEAR, -tenure)
-                leaseStart.add(Calendar.DAY_OF_YEAR, Random.nextInt(60, 400)) // Random offset
+                leaseStart.add(Calendar.DAY_OF_YEAR, Random.nextInt(60, 400))
 
                 val leaseEnd = Calendar.getInstance()
                 leaseEnd.timeInMillis = leaseStart.timeInMillis
                 leaseEnd.add(Calendar.YEAR, tenure)
 
-                // Calculate Diff in Days
                 val diffMillis = leaseEnd.timeInMillis - today.timeInMillis
                 val daysLeft = TimeUnit.MILLISECONDS.toDays(diffMillis).coerceAtLeast(0)
 
-                // Risk Tagging: High Risk if < 90 Days
                 val isRisk = daysLeft < 90
                 if (isRisk) riskCounter++
 
-                // 2. Maintenance Logic (Simulated Vendor Invoices)
-                // Formula: Maintenance Cost = Σ(Vendor.Invoice)
-                val simulatedMaint = (prop.totalValuation.replace(",", "").replace("₹", "").take(3).toDoubleOrNull() ?: 10.0) * 1000
+                val simulatedMaint =
+                    (prop.totalValuation.replace(",", "").replace("₹", "").take(3).toDoubleOrNull()
+                        ?: 10.0) * 1000
                 totalMaint += simulatedMaint
 
-                // Formula: Capex Forecast = Avg(Last 12 Months) * Growth_Factor (1.1)
                 val forecast = simulatedMaint * 1.1
 
                 AssetOpsModel(
@@ -109,9 +132,9 @@ class AssetOpsViewModel @Inject constructor(
                     isHighRisk = isRisk,
                     maintenanceSpendYtd = simulatedMaint,
                     capexForecast = forecast,
-                    transparencyScore = Random.nextInt(70, 100) // Dummy transparency
+                    transparencyScore = Random.nextInt(70, 100)
                 )
-            }.sortedBy { it.daysToVacancy } // Show urgent items first
+            }.sortedBy { it.daysToVacancy }
 
             _state.value = OpsState(
                 isLoading = false,

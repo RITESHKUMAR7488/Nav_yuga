@@ -1,15 +1,22 @@
+// main/java/com/example/mahayuga/feature/assetmanager/presentation/investors/InvestorViewModel.kt
 package com.example.mahayuga.feature.assetmanager.presentation.investors
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.admin.data.model.InvestmentModel
+import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
+import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
-import kotlin.random.Random
 
 // --- MODELS ---
 data class InvestorModel(
@@ -30,81 +37,136 @@ data class InvestorState(
     // Formula: Top 5 Holdings / Total AUM
     val whaleConcentrationPercent: Double = 0.0,
     val isWhaleRiskHigh: Boolean = false, // > 40%
-    val fundraisingVelocity: List<Float> = emptyList(), // Trend data
+    val fundraisingVelocity: List<Float> = emptyList(), // Placeholder for trend
     val investorList: List<InvestorModel> = emptyList()
 )
 
 @HiltViewModel
-class InvestorViewModel @Inject constructor() : ViewModel() {
+class InvestorViewModel @Inject constructor(
+    private val propertyRepository: PropertyRepository,
+    private val auth: FirebaseAuth,
+    private val firestore: FirebaseFirestore
+) : ViewModel() {
 
     private val _state = MutableStateFlow(InvestorState())
     val state: StateFlow<InvestorState> = _state.asStateFlow()
 
     init {
-        loadInvestorData()
+        loadRealInvestorData()
     }
 
-    private fun loadInvestorData() {
+    private fun loadRealInvestorData() {
         viewModelScope.launch {
-            // Simulate data fetching
-            val mockInvestors = generateMockInvestors()
+            _state.value = _state.value.copy(isLoading = true)
+            var amName = ""
 
-            // 1. Calculate AUM & Averages
-            val totalCapital = mockInvestors.sumOf { it.totalInvested }
-            val avgTicket = if (mockInvestors.isNotEmpty()) totalCapital / mockInvestors.size else 0.0
+            // 1. Get Asset Manager Identity
+            try {
+                val uid = auth.currentUser?.uid
+                if (uid != null) {
+                    val doc = firestore.collection("asset_managers").document(uid).get().await()
+                    if (doc.exists()) {
+                        val brand = doc.getString("brandName")
+                        val legal = doc.getString("entityLegalName")
+                        val contact = doc.getString("contactName")
 
-            // 2. Whale Risk Logic (Concentration)
-            // Sort by investment size desc
-            val sortedInvestors = mockInvestors.sortedByDescending { it.totalInvested }
-            val top5Capital = sortedInvestors.take(5).sumOf { it.totalInvested }
-            val concentration = if (totalCapital > 0) (top5Capital / totalCapital) * 100 else 0.0
+                        amName = when {
+                            !brand.isNullOrBlank() -> brand
+                            !legal.isNullOrBlank() -> legal
+                            !contact.isNullOrBlank() -> contact
+                            else -> "PARTNER"
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
-            // Alert if > 40% of capital is held by top 5 people
-            val isRisk = concentration > 40.0
+            // 2. Fetch My Properties
+            propertyRepository.getAllProperties().collectLatest { uiState ->
+                if (uiState is UiState.Success) {
+                    // Filter properties that belong to this AM
+                    val myProperties = uiState.data.filter { it.assetManager.equals(amName, true) }
+                    val myPropertyIds = myProperties.map { it.id }
 
-            // 3. Fundraising Velocity (Simulated Trend)
-            val velocity = listOf(10f, 15f, 12f, 25f, 30f, 28f, 45f, 60f)
-
-            _state.value = InvestorState(
-                isLoading = false,
-                totalInvestors = mockInvestors.size,
-                averageTicketSize = avgTicket,
-                whaleConcentrationPercent = concentration,
-                isWhaleRiskHigh = isRisk,
-                fundraisingVelocity = velocity,
-                investorList = sortedInvestors
-            )
+                    if (myPropertyIds.isNotEmpty()) {
+                        fetchInvestments(myPropertyIds)
+                    } else {
+                        _state.value = InvestorState(isLoading = false)
+                    }
+                }
+            }
         }
     }
 
-    private fun generateMockInvestors(): List<InvestorModel> {
-        val names = listOf(
-            "Aarav Sharma", "Vivaan Gupta", "Aditya Mehta", "Vihaan Patel", "Arjun Reddy",
-            "Sai Kumar", "Reyansh Singh", "Krishna Das", "Ishaan Verma", "Shaurya Nair"
-        )
+    private suspend fun fetchInvestments(propertyIds: List<String>) {
+        try {
+            // 3. Fetch Investments specific to these properties
+            // Firestore 'in' queries are limited to 10 items, so we fetch all and filter (for MVP)
+            // For production with >10 properties, you'd structure this differently.
+            val snapshot = firestore.collection("investments").get().await()
+            val allInvestments = snapshot.toObjects(InvestmentModel::class.java)
 
-        return names.mapIndexed { index, name ->
-            // Create a "Whale" for the first 2 entries to test risk logic
-            val isWhale = index < 2
-            val invested = if (isWhale) Random.nextDouble(50000000.0, 150000000.0) else Random.nextDouble(1000000.0, 5000000.0)
-            val type = if (invested > 10000000) "Institutional" else if (invested > 2500000) "HNI" else "Retail"
+            // Filter only investments for MY properties
+            val myInvestments = allInvestments.filter { it.propertyId in propertyIds }
 
-            val reinvest = Random.nextInt(0, 5)
+            processInvestorData(myInvestments)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _state.value = _state.value.copy(isLoading = false)
+        }
+    }
+
+    private fun processInvestorData(investments: List<InvestmentModel>) {
+        // Group by User ID to create "Investor Profiles"
+        val grouped = investments.groupBy { it.userId }
+
+        val investorModels = grouped.map { (userId, invList) ->
+            val totalInvested = invList.sumOf { it.amount.toDouble() }
+            val name = invList.firstOrNull()?.userName ?: "Unknown Investor"
+
+            // Logic for Type
+            val type = when {
+                totalInvested > 10000000 -> "Institutional" // > 1 Cr
+                totalInvested > 2500000 -> "HNI"            // > 25 L
+                else -> "Retail"
+            }
+
+            // Logic for Tags
             val tags = mutableListOf<String>()
-            if (isWhale) tags.add("WHALE")
-            if (reinvest > 2) tags.add("LOYAL")
-            if (Random.nextBoolean()) tags.add("ACTIVE")
+            if (totalInvested > 5000000) tags.add("WHALE")
+            if (invList.size > 1) tags.add("LOYAL") // Invested multiple times
 
             InvestorModel(
-                id = "INV-$index",
+                id = userId,
                 name = name,
                 type = type,
-                totalInvested = invested,
-                joinDate = "202${Random.nextInt(3,6)}-0${Random.nextInt(1,9)}",
-                reinvestCount = reinvest,
-                riskScore = Random.nextInt(10, 90),
+                totalInvested = totalInvested,
+                joinDate = "Active", // simplified
+                reinvestCount = invList.size,
+                riskScore = if (invList.size > 2) 10 else 50, // More investments = Lower churn risk
                 tags = tags
             )
-        }
+        }.sortedByDescending { it.totalInvested }
+
+        // Metrics Calculation
+        val totalCapital = investorModels.sumOf { it.totalInvested }
+        val avgTicket = if (investorModels.isNotEmpty()) totalCapital / investorModels.size else 0.0
+
+        // Whale Risk: % of capital held by top 5 investors
+        val top5Capital = investorModels.take(5).sumOf { it.totalInvested }
+        val concentration = if (totalCapital > 0) (top5Capital / totalCapital) * 100 else 0.0
+        val isWhaleRisk = concentration > 40.0
+
+        _state.value = InvestorState(
+            isLoading = false,
+            totalInvestors = investorModels.size,
+            averageTicketSize = avgTicket,
+            whaleConcentrationPercent = concentration,
+            isWhaleRiskHigh = isWhaleRisk,
+            fundraisingVelocity = listOf(10f, 20f, 15f, 40f, 35f, 50f), // Dummy trend for graph UI
+            investorList = investorModels
+        )
     }
 }
