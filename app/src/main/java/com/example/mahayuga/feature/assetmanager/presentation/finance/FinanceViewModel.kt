@@ -4,6 +4,7 @@ package com.example.mahayuga.feature.assetmanager.presentation.finance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.assetmanager.domain.usecase.CalculateFinanceMetricsUseCase
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -40,7 +41,8 @@ data class FinanceState(
 class FinanceViewModel @Inject constructor(
     private val propertyRepository: PropertyRepository,
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val calculateFinanceMetricsUseCase: CalculateFinanceMetricsUseCase // ⚡ Injected Use Case
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FinanceState())
@@ -77,9 +79,18 @@ class FinanceViewModel @Inject constructor(
             propertyRepository.getAllProperties().collectLatest { uiState ->
                 when (uiState) {
                     is UiState.Success -> {
-                        // Filter Logic
                         val myProps = uiState.data.filter { it.assetManager.equals(amName, true) }
-                        calculateFinancials(myProps)
+
+                        // ⚡ DELEGATED LOGIC TO USE CASE
+                        val result = calculateFinanceMetricsUseCase(myProps)
+
+                        _state.value = FinanceState(
+                            isLoading = false,
+                            totalRevenue = result.totalRevenue,
+                            totalNdi = result.totalNdi,
+                            avgPortfolioYield = result.avgPortfolioYield,
+                            assets = result.assets
+                        )
                     }
 
                     is UiState.Loading -> _state.value = _state.value.copy(isLoading = true)
@@ -88,51 +99,6 @@ class FinanceViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun calculateFinancials(properties: List<PropertyModel>) {
-        var globalRevenue = 0.0
-        var globalNdi = 0.0
-        var yieldAccumulator = 0.0
-
-        val financeModels = properties.map { prop ->
-            val value = parseCurrency(prop.totalValuation)
-            val rentMonthly = parseDouble(prop.monthlyRent)
-            val taxAnnual = parseDouble(prop.annualPropertyTax)
-
-            val monthlyTax = taxAnnual / 12
-            val maintEstimate = rentMonthly * 0.10
-            val totalExpenses = monthlyTax + maintEstimate
-
-            val reserves = rentMonthly * 0.05
-            val ndi = (rentMonthly - totalExpenses - reserves).coerceAtLeast(0.0)
-
-            val annualizedNdi = ndi * 12
-            val yield = if (value > 0) (annualizedNdi / value) * 100 else 0.0
-
-            globalRevenue += rentMonthly
-            globalNdi += ndi
-            yieldAccumulator += yield
-
-            AssetFinanceModel(
-                property = prop,
-                grossRent = rentMonthly,
-                expenses = totalExpenses,
-                reserves = reserves,
-                ndi = ndi,
-                yield = yield
-            )
-        }
-
-        val avgYield = if (properties.isNotEmpty()) yieldAccumulator / properties.size else 0.0
-
-        _state.value = FinanceState(
-            isLoading = false,
-            totalRevenue = globalRevenue,
-            totalNdi = globalNdi,
-            avgPortfolioYield = avgYield,
-            assets = financeModels
-        )
     }
 
     fun selectAssetForPayout(asset: AssetFinanceModel) {
@@ -145,20 +111,5 @@ class FinanceViewModel @Inject constructor(
 
     fun executePayout() {
         clearSelection()
-    }
-
-    private fun parseCurrency(value: String): Double {
-        val clean = value.replace("₹", "").replace(",", "").trim().lowercase()
-        return when {
-            clean.contains("cr") -> clean.replace("cr", "").toDoubleOrNull()?.times(10000000) ?: 0.0
-            clean.contains("l") -> clean.replace("lakhs", "").replace("lakh", "").replace("l", "")
-                .toDoubleOrNull()?.times(100000) ?: 0.0
-
-            else -> clean.toDoubleOrNull() ?: 0.0
-        }
-    }
-
-    private fun parseDouble(value: String): Double {
-        return value.replace(",", "").replace("₹", "").trim().toDoubleOrNull() ?: 0.0
     }
 }
