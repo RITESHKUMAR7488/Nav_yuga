@@ -171,7 +171,7 @@ fun NavYugaDashboard(
                     onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onRoiClick = { rootNavController.navigate("roi_calculator") })
             }
-            composable("ay_trade") { TradeScreen() }
+            composable("ay_trade") { TradeScreen(navController = rootNavController) }
             composable("ay_reels") { ReelsScreen() }
             composable("ay_profile") {
                 ProfileScreen(

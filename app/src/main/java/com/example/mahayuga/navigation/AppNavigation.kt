@@ -131,6 +131,16 @@ fun AppNavigation(
                 propertyId = propertyId,
                 onNavigateBack = { navController.popBackStack() })
         }
+        composable(
+            "trade_asset_detail/{assetId}",
+            arguments = listOf(navArgument("assetId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val assetId = backStackEntry.arguments?.getString("assetId") ?: ""
+            com.example.mahayuga.feature.navyuga.presentation.trade.ReitDetailScreen(
+                assetId = assetId,
+                navController = navController
+            )
+        }
 
         composable("roi_calculator") { RoiScreen(onBackClick = { navController.popBackStack() }) }
 
