@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/NavYugaDashboard.kt
 package com.example.mahayuga.feature.navyuga.presentation
 
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
 import com.example.mahayuga.feature.navyuga.presentation.trade.TradeScreen
+import com.example.mahayuga.feature.navyuga.presentation.portfolio.PortfolioScreen // ⚡ NEW IMPORT
 
 private val NavBackground = Color.Black
 private val NavyBlue = Color(0xFF0F172A)
@@ -54,20 +56,10 @@ fun NavYugaDashboard(
 
     val items = listOf(
         BottomNavItem("Asset", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
-        // ⚡ CHANGE (Request 12): Renamed Search to Funds and changed Icon
-        BottomNavItem(
-            "Funds",
-            "ay_search",
-            Icons.Filled.MonetizationOn,
-            Icons.Outlined.MonetizationOn
-        ),
-        BottomNavItem(
-            "Trade",
-            "ay_trade",
-            Icons.AutoMirrored.Filled.TrendingUp,
-            Icons.AutoMirrored.Outlined.TrendingUp
-        ),
-        BottomNavItem("Discover", "ay_reels", Icons.Filled.Category, Icons.Outlined.Category),
+        BottomNavItem("Funds", "ay_search", Icons.Filled.MonetizationOn, Icons.Outlined.MonetizationOn),
+        BottomNavItem("Trade", "ay_trade", Icons.AutoMirrored.Filled.TrendingUp, Icons.AutoMirrored.Outlined.TrendingUp),
+        // ⚡ CHANGE: Replaced Discover (Reels) with Portfolio in the UI
+        BottomNavItem("Portfolio", "ay_portfolio", Icons.Filled.PieChart, Icons.Outlined.PieChart),
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
@@ -98,11 +90,10 @@ fun NavYugaDashboard(
                                     modifier = Modifier.size(24.dp)
                                 )
                             },
-                            // ⚡ CHANGE (Request 10): Move title closer to icon
                             label = {
                                 Text(
                                     item.label,
-                                    modifier = Modifier.offset(y = (-4).dp) // Adjusted based on previous step
+                                    modifier = Modifier.offset(y = (-4).dp)
                                 )
                             },
                             selected = isSelected,
@@ -120,9 +111,7 @@ fun NavYugaDashboard(
                                     }
                                 } else {
                                     navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
+                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -137,42 +126,37 @@ fun NavYugaDashboard(
         NavHost(
             navController = navController,
             startDestination = "ay_home",
-            modifier = Modifier
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
+            modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)
         ) {
             composable("ay_home") {
                 HomeScreen(
                     onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onRoiClick = { rootNavController.navigate("roi_calculator") },
                     scrollToTopTrigger = homeScrollTrigger,
-                    // ⚡ NEW: Pass navigation to Funds screen when Search Button on Home is clicked
                     onNavigateToSearch = { navController.navigate("ay_search") }
                 )
             }
-            composable("ay_search") {
-                SearchScreen(
-                    navController = navController,
+            composable("ay_search") { SearchScreen(navController = navController, onRoiClick = { rootNavController.navigate("roi_calculator") }) }
+            composable(
+                "search_results/{country}/{city}",
+                arguments = listOf(navArgument("country") { type = NavType.StringType }, navArgument("city") { type = NavType.StringType })
+            ) { entry ->
+                SearchResultsScreen(
+                    country = entry.arguments?.getString("country") ?: "India",
+                    city = entry.arguments?.getString("city") ?: "All Cities",
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onRoiClick = { rootNavController.navigate("roi_calculator") }
                 )
             }
-            composable(
-                "search_results/{country}/{city}",
-                arguments = listOf(
-                    navArgument("country") { type = NavType.StringType },
-                    navArgument("city") { type = NavType.StringType })
-            ) { entry ->
-                val country = entry.arguments?.getString("country") ?: "India"
-                val city = entry.arguments?.getString("city") ?: "All Cities"
-                SearchResultsScreen(
-                    country = country,
-                    city = city,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    onRoiClick = { rootNavController.navigate("roi_calculator") })
-            }
             composable("ay_trade") { TradeScreen(navController = rootNavController) }
+
+            // ⚡ STILL HERE: The Reels code is safe and accessible if you route to it later
             composable("ay_reels") { ReelsScreen() }
+
+            // ⚡ NEW: Portfolio Route attached to the bottom bar
+            composable("ay_portfolio") { PortfolioScreen() }
+
             composable("ay_profile") {
                 ProfileScreen(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },

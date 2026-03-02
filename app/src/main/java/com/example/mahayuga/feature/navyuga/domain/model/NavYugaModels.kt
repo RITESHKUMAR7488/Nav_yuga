@@ -74,3 +74,31 @@ data class PropertyModel(
     val fullLocation: String
         get() = if (address.isNotEmpty()) "$address, $city, $state" else location
 }
+data class PortfolioState(
+    val isLoading: Boolean = false,
+    val totalInvested: Double = 0.0,
+    val currentValue: Double = 0.0,
+    val totalReturns: Double = 0.0,
+    val returnsPercentage: Double = 0.0,
+    val irr: Double = 0.0,
+    val riskProfile: String = "Balanced",
+    val allocation: List<AssetAllocation> = emptyList(),
+    val holdings: List<PortfolioHolding> = emptyList()
+)
+
+data class AssetAllocation(
+    val category: String, // e.g., "Commercial Office", "Warehousing"
+    val percentage: Float,
+    val color: Long // Hex color for the chart
+)
+
+data class PortfolioHolding(
+    val id: String,
+    val propertyName: String,
+    val location: String,
+    val imageUrl: String,
+    val investedAmount: Double,
+    val currentValue: Double,
+    val returnsPercentage: Double,
+    val isPositive: Boolean
+)
