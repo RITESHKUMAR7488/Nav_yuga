@@ -41,8 +41,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
-import com.example.mahayuga.feature.navyuga.presentation.home.StoryState
-import com.example.mahayuga.feature.navyuga.presentation.home.FilterOptionRow
 import com.example.mahayuga.ui.theme.BrandBlue
 import kotlinx.coroutines.launch
 
@@ -447,5 +445,56 @@ fun StoryCircle(story: StoryState, onClick: () -> Unit) {
             modifier = Modifier.width(70.dp),
             textAlign = TextAlign.Center
         )
+    }
+}
+// --- RESTORED COMPONENTS FOR SEARCH RESULTS ---
+
+data class StoryState(
+    val id: String,
+    val title: String,
+    val imageUrl: String = "",
+    val isSeen: Boolean = false
+)
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun FilterOptionRow(
+    title: String,
+    options: List<String>,
+    selectedOptions: Set<String>,
+    onOptionSelected: (String) -> Unit
+) {
+    androidx.compose.foundation.layout.Column {
+        androidx.compose.material3.Text(
+            text = title,
+            color = androidx.compose.ui.graphics.Color.White,
+            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+        )
+        androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
+            options.forEach { option ->
+                val isSelected = selectedOptions.contains(option)
+                androidx.compose.material3.SuggestionChip(
+                    onClick = { onOptionSelected(option) },
+                    label = {
+                        androidx.compose.material3.Text(
+                            text = option,
+                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
+                        )
+                    },
+                    colors = androidx.compose.material3.SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = if (isSelected) androidx.compose.ui.graphics.Color(0xFF00BFA5) else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.05f)
+                    ),
+                    border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f)
+                    )
+                )
+            }
+        }
     }
 }

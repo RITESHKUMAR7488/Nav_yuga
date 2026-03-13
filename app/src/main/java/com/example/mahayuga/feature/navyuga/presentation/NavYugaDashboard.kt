@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -19,23 +17,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.mahayuga.feature.navyuga.presentation.home.HomeScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
+import com.example.mahayuga.feature.navyuga.presentation.portfolio.PortfolioScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
-import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
-import com.example.mahayuga.feature.navyuga.presentation.trade.TradeScreen
-import com.example.mahayuga.feature.navyuga.presentation.portfolio.PortfolioScreen // ⚡ NEW IMPORT
+import com.example.mahayuga.feature.navyuga.presentation.discover.DiscoverScreen
+import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScreen
 
-private val NavBackground = Color.Black
 private val NavyBlue = Color(0xFF0F172A)
-
 private val UnselectedIconColor = Color.White
 private val SelectedIconColor = Color(0xFF2979FF)
 private val IndicatorColor = Color.Transparent
@@ -54,12 +46,12 @@ fun NavYugaDashboard(
 ) {
     val navController = rememberNavController()
 
+    // ⚡ Phase 1: Replaced Trade and Funds with Watchlist and Discover
     val items = listOf(
-        BottomNavItem("Asset", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
-        BottomNavItem("Funds", "ay_search", Icons.Filled.MonetizationOn, Icons.Outlined.MonetizationOn),
-        BottomNavItem("Trade", "ay_trade", Icons.AutoMirrored.Filled.TrendingUp, Icons.AutoMirrored.Outlined.TrendingUp),
-        // ⚡ CHANGE: Replaced Discover (Reels) with Portfolio in the UI
+        BottomNavItem("Home", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
+        BottomNavItem("Watchlist", "ay_watchlist", Icons.Filled.Bookmark, Icons.Outlined.BookmarkBorder),
         BottomNavItem("Portfolio", "ay_portfolio", Icons.Filled.PieChart, Icons.Outlined.PieChart),
+        BottomNavItem("Discover", "ay_discover", Icons.Filled.Explore, Icons.Outlined.Explore),
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
@@ -79,8 +71,7 @@ fun NavYugaDashboard(
                     val currentRoute = navBackStackEntry?.destination?.route
 
                     items.forEach { item ->
-                        val isSelected = currentRoute == item.route ||
-                                (item.route == "ay_search" && currentRoute?.startsWith("search_results") == true)
+                        val isSelected = currentRoute == item.route
 
                         NavigationBarItem(
                             icon = {
@@ -130,32 +121,17 @@ fun NavYugaDashboard(
         ) {
             composable("ay_home") {
                 HomeScreen(
-                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    onRoiClick = { rootNavController.navigate("roi_calculator") },
-                    scrollToTopTrigger = homeScrollTrigger,
-                    onNavigateToSearch = { navController.navigate("ay_search") }
+                    // ⚡ Phase 2: Split navigation targets based on asset type
+                    onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
+                    onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") },
+                    onNavigateToSearch = { /* Search logic can be attached here later */ },
+                    scrollToTopTrigger = homeScrollTrigger
                 )
             }
-            composable("ay_search") { SearchScreen(navController = navController, onRoiClick = { rootNavController.navigate("roi_calculator") }) }
-            composable(
-                "search_results/{country}/{city}",
-                arguments = listOf(navArgument("country") { type = NavType.StringType }, navArgument("city") { type = NavType.StringType })
-            ) { entry ->
-                SearchResultsScreen(
-                    country = entry.arguments?.getString("country") ?: "India",
-                    city = entry.arguments?.getString("city") ?: "All Cities",
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    onRoiClick = { rootNavController.navigate("roi_calculator") }
-                )
-            }
-            composable("ay_trade") { TradeScreen(navController = rootNavController) }
 
-            // ⚡ STILL HERE: The Reels code is safe and accessible if you route to it later
-            composable("ay_reels") { ReelsScreen() }
-
-            // ⚡ NEW: Portfolio Route attached to the bottom bar
+            composable("ay_watchlist") { WatchlistScreen() }
             composable("ay_portfolio") { PortfolioScreen() }
+            composable("ay_discover") { DiscoverScreen() }
 
             composable("ay_profile") {
                 ProfileScreen(

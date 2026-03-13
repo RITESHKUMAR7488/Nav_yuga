@@ -40,10 +40,10 @@ import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
 import com.example.mahayuga.feature.profile.data.model.ProfileStat
 
-private val DrawerBg = Color(0xFF0F172A)
+private val DrawerBg = Color(0xFF040C17)
 private val DrawerCardBg = Color(0xFF0F172A)
 private val BrandBlue = Color(0xFF2979FF)
-private val NavyBlue = Color(0xFF0F172A)
+private val NavyBlue = Color(0xFF040C17)
 private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF888888)
 private val ProgressGreen = Color(0xFF00E676)

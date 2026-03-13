@@ -7,7 +7,10 @@ import com.example.mahayuga.feature.admin.domain.repository.AdminRepository
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepositoryImpl
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepository
+import com.example.mahayuga.feature.navyuga.data.remote.YahooFinanceApi
+import com.example.mahayuga.feature.navyuga.data.repository.MarketRepositoryImpl
 import com.example.mahayuga.feature.navyuga.data.repository.PropertyRepositoryImpl
+import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -50,5 +53,12 @@ object AppModule {
     @Singleton
     fun providePropertyRepository(firestore: FirebaseFirestore): PropertyRepository {
         return PropertyRepositoryImpl(firestore)
+    }
+    @Provides
+    @Singleton
+    fun provideMarketRepository(
+        api: YahooFinanceApi
+    ): MarketRepository {
+        return MarketRepositoryImpl(api)
     }
 }

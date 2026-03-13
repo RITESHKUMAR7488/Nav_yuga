@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
 // --- SPECIFIC UI COLORS FROM MOCKUPS ---
-private val PortBg = Color(0xFF04101F)
+private val PortBg = Color(0xFF040C17)
 private val PortCard = Color(0xFF0B1727)
 private val PortTeal = Color(0xFF00BFA5) // The vibrant green/teal accent
 private val PortTextWhite = Color.White

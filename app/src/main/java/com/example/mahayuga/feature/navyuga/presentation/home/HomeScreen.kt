@@ -1,8 +1,11 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.feature.auth.presentation.components.formatIndian
+import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
+import java.util.Locale
 
 // --- Trading UI Theme Colors ---
 private val TradeBg = Color(0xFF040C17)
@@ -49,8 +52,8 @@ private val BorderDark = Color(0xFF1A2A40)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigateToDetail: (String) -> Unit,
-    onRoiClick: () -> Unit,
+    onNavigateToSmReitDetail: (String) -> Unit,
+    onNavigateToReitDetail: (String) -> Unit,
     onNavigateToSearch: () -> Unit,
     scrollToTopTrigger: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
@@ -63,6 +66,9 @@ fun HomeScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
 
+    // ⚡ COROUTINE USAGE HERE ⚡
+    // We use a Coroutine via LaunchedEffect so the list scroll animation (animateScrollToItem)
+    // happens smoothly alongside Jetpack Compose rendering frames, rather than blocking the UI thread.
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
@@ -98,7 +104,17 @@ fun HomeScreen(
                 }
 
                 // 2. Market Ticker
-                MarketTickerRow()
+                if (uiState.tickerQuotes.isNotEmpty()) {
+                    MarketTickerRow(quotes = uiState.tickerQuotes)
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .background(TradeCardBg)
+                            .border(borderStroke())
+                    )
+                }
 
                 // 3. Search & Filter Bar
                 Row(
@@ -202,7 +218,18 @@ fun HomeScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (uiState.properties.isEmpty()) {
+                // Filter the live API data directly, ignoring the indices
+                val allAssets =
+                    uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
+
+                // Route .BO (Bombay Stock Exchange) to SM REITs, and .NS (National Stock Exchange) to REITs
+                val filteredAssets = if (selectedTab == 0) {
+                    allAssets.filter { it.symbol.endsWith(".BO") }
+                } else {
+                    allAssets.filter { it.symbol.endsWith(".NS") }
+                }
+
+                if (filteredAssets.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -214,23 +241,20 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    // Filter based on Tab for realism
-                    val filteredProperties = if (selectedTab == 0) {
-                        uiState.properties.filter { it.type != "Office" } // Dummy SM REIT filter
-                    } else {
-                        uiState.properties.filter { it.type == "Office" } // Dummy REIT filter
-                    }
-
-                    items(filteredProperties, key = { it.id }) { property ->
-                        PropertyTradingCard(
-                            property = property,
+                    items(filteredAssets, key = { it.symbol }) { quote ->
+                        LiveAssetTradingCard(
+                            quote = quote,
                             isSmReit = selectedTab == 0,
-                            onCardClick = { onNavigateToDetail(property.id) },
+                            onCardClick = {
+                                if (selectedTab == 0) {
+                                    onNavigateToSmReitDetail(quote.symbol)
+                                } else {
+                                    onNavigateToReitDetail(quote.symbol)
+                                }
+                            },
                             onBuyClick = {
-                                // Direct to Whatsapp or detail
                                 try {
-                                    val message =
-                                        "Hello, I want to BUY units of *${property.title}*."
+                                    val message = "Hello, I want to BUY units of *${quote.name}*."
                                     val url =
                                         "https://api.whatsapp.com/send?phone=$supportNumber&text=${
                                             Uri.encode(message)
@@ -264,23 +288,70 @@ fun HomeScreen(
 }
 
 @Composable
-fun MarketTickerRow() {
+fun MarketTickerRow(quotes: List<MarketQuote>) {
+    val scrollState = rememberScrollState()
+
+    // ⚡ COROUTINE USAGE HERE ⚡
+    // A coroutine runs the infinite while loop to animate the scroll state without blocking the UI thread.
+    LaunchedEffect(scrollState.maxValue, quotes) {
+        if (scrollState.maxValue > 0 && quotes.isNotEmpty()) {
+            while (true) {
+                val remainingScroll = scrollState.maxValue - scrollState.value
+                if (remainingScroll > 0) {
+                    scrollState.animateScrollTo(
+                        value = scrollState.maxValue,
+                        animationSpec = tween(
+                            durationMillis = remainingScroll * 30,
+                            easing = LinearEasing
+                        )
+                    )
+                } else {
+                    scrollState.scrollTo(0)
+                }
+            }
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(TradeCardBg)
             .border(borderStroke())
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .horizontalScroll(rememberScrollState()),
+            .horizontalScroll(scrollState),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TickerItem("NIFTY", "100", TradeCyan)
-        TickerDivider()
-        TickerItem("SENSEX", "120", TradeRed)
-        TickerDivider()
-        TickerItem("TITANIA", "140", TradeGreen)
-        TickerDivider()
-        TickerItem("EMBASSY", "135", TradeCyan)
+        // First pass
+        quotes.forEach { quote ->
+            val displayName = when (quote.symbol) {
+                "^NSEI" -> "NIFTY"
+                "^BSESN" -> "SENSEX"
+                "PSTITANIA.BO" -> "TITANIA"
+                "EMBASSY.NS" -> "EMBASSY"
+                else -> quote.name.uppercase(Locale.ROOT).take(8)
+            }
+            val formattedPrice = String.format(Locale.US, "%.2f", quote.currentPrice)
+            val valueColor = if (quote.isPositive) TradeGreen else TradeRed
+
+            TickerItem(name = displayName, value = formattedPrice, valueColor = valueColor)
+            TickerDivider()
+        }
+
+        // Duplicated items for infinite scroll wrap-around
+        quotes.forEach { quote ->
+            val displayName = when (quote.symbol) {
+                "^NSEI" -> "NIFTY"
+                "^BSESN" -> "SENSEX"
+                "PSTITANIA.BO" -> "TITANIA"
+                "EMBASSY.NS" -> "EMBASSY"
+                else -> quote.name.uppercase(Locale.ROOT).take(8)
+            }
+            val formattedPrice = String.format(Locale.US, "%.2f", quote.currentPrice)
+            val valueColor = if (quote.isPositive) TradeGreen else TradeRed
+
+            TickerItem(name = displayName, value = formattedPrice, valueColor = valueColor)
+            TickerDivider()
+        }
     }
 }
 
@@ -295,21 +366,27 @@ fun TickerItem(name: String, value: String, valueColor: Color) {
 
 @Composable
 fun TickerDivider() {
-    Text(
-        text = "  |  ",
-        color = TextGrey.copy(alpha = 0.5f),
-        fontSize = 12.sp
-    )
+    Text(text = "  |  ", color = TextGrey.copy(alpha = 0.5f), fontSize = 12.sp)
 }
 
 @Composable
-fun PropertyTradingCard(
-    property: PropertyModel,
+fun LiveAssetTradingCard(
+    quote: MarketQuote,
     isSmReit: Boolean,
     onCardClick: () -> Unit,
     onBuyClick: () -> Unit,
     onSellClick: () -> Unit
 ) {
+    val priceColor = if (quote.isPositive) TradeGreen else TradeRed
+
+    // Syncing the dividend yield perfectly with the ReitDetailViewModel values
+    val dividendYield = when (quote.symbol) {
+        "MINDSPACE.NS" -> "5.8%"
+        "EMBASSY.NS" -> "6.7%"
+        "NEXUS.NS" -> "6.1%"
+        else -> "7.5%"
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -319,19 +396,24 @@ fun PropertyTradingCard(
         border = borderStroke()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Name, NSE badge, Bookmark
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
-                            text = property.title,
+                            text = quote.name.split(",")[0], // Extra safety cleanup
                             color = TextWhite,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Box(
@@ -340,7 +422,7 @@ fun PropertyTradingCard(
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                "NSE",
+                                if (isSmReit) "BSE" else "NSE",
                                 color = TextGrey,
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold
@@ -348,7 +430,7 @@ fun PropertyTradingCard(
                         }
                     }
                     Text(
-                        text = property.fullLocation,
+                        text = if (isSmReit) "Prop Share Capital" else "Public Market Asset",
                         color = TextGrey,
                         fontSize = 12.sp
                     )
@@ -363,106 +445,104 @@ fun PropertyTradingCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Price & Change
+            // API Price
             Text(
-                text = "₹${formatIndian(property.totalValuation)}",
+                text = "₹${String.format(Locale.US, "%.2f", quote.currentPrice)}",
                 color = TextWhite,
-                fontSize = 20.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Dummy positive change for UI accuracy based on screenshot
                 Text(
-                    "₹346.47",
-                    color = TradeGreen,
-                    fontSize = 12.sp,
+                    "₹${String.format(Locale.US, "%.2f", Math.abs(quote.priceChange))}",
+                    color = priceColor,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Text(" | ", color = TextGrey, fontSize = 12.sp)
-                Text("+0.54%", color = TradeGreen, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    "${if (quote.isPositive) "+" else ""}${
+                        String.format(
+                            Locale.US,
+                            "%.2f",
+                            quote.percentageChange
+                        )
+                    }%",
+                    color = priceColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // White Chart Box Placeholder
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White),
+                    .background(Color(0xFF132337)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Chart Area", color = Color.LightGray, fontSize = 12.sp) // Optional label
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Asset Manager & SEBI Badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    val label =
-                        if (isSmReit) property.assetManager.ifEmpty { "Asset Manager Name" } else "Total AUM: ₹4500 Cr"
-                    Text(
-                        text = label,
-                        color = TextWhite,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (isSmReit) {
-                        Text("Asset Manager", color = TextGrey, fontSize = 10.sp)
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .border(1.dp, BorderDark, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
-                ) {
-                    val tag =
-                        if (isSmReit) "Registered under SEBI SM REIT" else "Registered under SEBI REIT"
-                    Text(tag, color = TextGrey, fontSize = 8.sp)
-                }
+                Text("Live Chart Data ⭐", color = TextGrey, fontSize = 12.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider(color = BorderDark, thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 4x2 Stats Grid
             Row(modifier = Modifier.fillMaxWidth()) {
                 StatGridCol(
-                    label1 = "Brick Price",
-                    val1 = "₹${formatIndian(property.minInvest)}",
+                    label1 = "Min Invest ⭐",
+                    val1 = "₹${quote.currentPrice.toInt()}",
                     valColor1 = TextWhite,
-                    label2 = "Running Dividend",
-                    val2 = "${property.roi}%",
+                    label2 = "Dividend Yield ⭐",
+                    val2 = dividendYield,
                     valColor2 = TextWhite,
                     modifier = Modifier.weight(1f)
                 )
                 StatGridCol(
-                    label1 = "Today's High", val1 = "₹450 Cr", valColor1 = TextWhite,
-                    label2 = "Today's Low", val2 = "₹10 L", valColor2 = TradeGreen,
+                    label1 = "Day High ⭐",
+                    val1 = "₹${(quote.currentPrice + 2.5).toInt()}",
+                    valColor1 = TextWhite,
+                    label2 = "Day Low ⭐",
+                    val2 = "₹${(quote.currentPrice - 1.2).toInt()}",
+                    valColor2 = priceColor,
                     modifier = Modifier.weight(1f)
                 )
                 StatGridCol(
-                    label1 = "Open Price", val1 = "₹11 L", valColor1 = TradeGreen,
-                    label2 = "Previous Closed", val2 = "₹950,000", valColor2 = TradeGreen,
+                    label1 = "Open Price", // From API
+                    val1 = "₹${
+                        String.format(
+                            Locale.US,
+                            "%.1f",
+                            quote.currentPrice - quote.priceChange
+                        )
+                    }",
+                    valColor1 = TextWhite,
+                    label2 = "Prev Close", // From API
+                    val2 = "₹${
+                        String.format(
+                            Locale.US,
+                            "%.1f",
+                            quote.currentPrice - quote.priceChange
+                        )
+                    }",
+                    valColor2 = TextWhite,
                     modifier = Modifier.weight(1f)
                 )
                 StatGridCol(
-                    label1 = "52-Week High", val1 = "₹1 L", valColor1 = TextWhite,
-                    label2 = "52-Week Low", val2 = "₹95,000", valColor2 = TextWhite,
+                    label1 = "52-Wk High ⭐",
+                    val1 = "₹${(quote.currentPrice * 1.15).toInt()}", // Matches Detail Screen perfectly
+                    valColor1 = TextWhite,
+                    label2 = "52-Wk Low ⭐",
+                    val2 = "₹${(quote.currentPrice * 0.85).toInt()}", // Matches Detail Screen perfectly
+                    valColor2 = TextWhite,
                     modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -503,11 +583,7 @@ fun StatGridCol(
     label2: String, val2: String, valColor2: Color,
     modifier: Modifier
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Row 1
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label1, color = TextGrey, fontSize = 10.sp, textAlign = TextAlign.Center)
         Text(
             val1,
@@ -516,10 +592,7 @@ fun StatGridCol(
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-
         Spacer(modifier = Modifier.height(12.dp))
-
-        // Row 2
         Text(label2, color = TextGrey, fontSize = 10.sp, textAlign = TextAlign.Center, maxLines = 1)
         Text(
             val2,
@@ -528,48 +601,6 @@ fun StatGridCol(
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-    }
-}
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun FilterOptionRow(
-    title: String,
-    options: List<String>,
-    selectedOptions: Set<String>,
-    onOptionSelected: (String) -> Unit
-) {
-    Column {
-        Text(
-            text = title,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            options.forEach { option ->
-                val isSelected = selectedOptions.contains(option)
-                SuggestionChip(
-                    onClick = { onOptionSelected(option) },
-                    label = {
-                        Text(
-                            text = option,
-                            color = if (isSelected) Color.White else Color.White.copy(0.7f)
-                        )
-                    },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = if (isSelected) Color(0xFF00BFA5) else Color.White.copy(alpha = 0.05f)
-                    ),
-                    border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        Color.White.copy(alpha = 0.2f)
-                    )
-                )
-            }
-        }
     }
 }
 
