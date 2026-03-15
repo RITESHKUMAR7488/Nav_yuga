@@ -15,12 +15,11 @@ class MarketRepositoryImpl @Inject constructor(
     override suspend fun getLiveQuotes(symbols: List<String>): Result<List<MarketQuote>> {
         // ⚡ COROUTINE USAGE HERE ⚡
         // 'withContext(Dispatchers.IO)' forcibly shifts this block of code onto a background thread pool
-        // optimized for Input/Output operations (like network calls).
-        // Why it makes the code good: Even if the API takes 5 seconds to respond, the UI will not stutter
+        // optimized for Input/Output operations (like parsing massive JSON strings).
+        // Why it makes your code good: Even if parsing the Yahoo API takes time, the UI will not stutter
         // for a single frame because the heavy lifting is completely isolated on the IO dispatcher.
         return withContext(Dispatchers.IO) {
             try {
-                // Join symbols into a comma-separated string (e.g., "^NSEI,^BSESN,PSTITANIA.BO")
                 val symbolString = symbols.joinToString(",")
                 val response = api.getMarketQuotes(symbols = symbolString)
 
@@ -34,7 +33,17 @@ class MarketRepositoryImpl @Inject constructor(
                         currentPrice = price,
                         priceChange = change,
                         percentageChange = dto.regularMarketChangePercent ?: 0.0,
-                        isPositive = change >= 0
+                        isPositive = change >= 0,
+
+                        // MAPPING THE REAL API DATA HERE:
+                        openPrice = dto.regularMarketOpen ?: 0.0,
+                        previousClose = dto.regularMarketPreviousClose ?: 0.0,
+                        dayHigh = dto.regularMarketDayHigh ?: 0.0,
+                        dayLow = dto.regularMarketDayLow ?: 0.0,
+                        fiftyTwoWeekHigh = dto.fiftyTwoWeekHigh ?: 0.0,
+                        fiftyTwoWeekLow = dto.fiftyTwoWeekLow ?: 0.0,
+                        marketCap = dto.marketCap ?: 0L,
+                        dividendYield = dto.dividendYield ?: 0.0
                     )
                 } ?: emptyList()
 

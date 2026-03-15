@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/roi/presentation/RoiViewModel.kt
 package com.example.mahayuga.feature.roi.presentation
 
 import androidx.lifecycle.ViewModel
@@ -135,8 +134,6 @@ class RoiViewModel @Inject constructor(
 
     private fun calculateResults() {
         val s = _uiState.value
-
-        // ⚡ MAP STATE TO USE CASE INPUT
         val input = RoiCalculationInput(
             isBuyerMode = s.isBuyerMode,
             monthlyRent = s.monthlyRent.toDoubleOrNull() ?: 0.0,
@@ -152,10 +149,8 @@ class RoiViewModel @Inject constructor(
             targetRoiVal = s.targetRoi.toDoubleOrNull() ?: 0.0
         )
 
-        // ⚡ EXECUTE BUSINESS LOGIC
         val result = calculateRoiUseCase(input)
 
-        // ⚡ UPDATE UI STATE
         _uiState.update {
             it.copy(
                 calculatedRoi = result.calculatedRoi,
@@ -173,33 +168,32 @@ class RoiViewModel @Inject constructor(
 
     fun generateCashFlow() {
         val s = _uiState.value
+        val years = s.periodOfOccupation.toIntOrNull() ?: 10
+        val startRent = s.monthlyRent.toDoubleOrNull() ?: 0.0
+        val escPercent = s.escalationPercent.toDoubleOrNull() ?: 0.0
+        val escFreq = s.escalationYears.toIntOrNull() ?: 100
         val annualExpenses = (s.propertyTaxMonthly.toDoubleOrNull() ?: 0.0) * 12 +
-                if (s.isMaintenanceByLandlord) (s.maintenanceCost.toDoubleOrNull()
-                    ?: 0.0) * 12 else 0.0
+                if (s.isMaintenanceByLandlord) (s.maintenanceCost.toDoubleOrNull() ?: 0.0) * 12 else 0.0
 
-        // ⚡ DELEGATE TO USE CASE
-        val flow = generateCashFlowUseCase(
-            years = s.periodOfOccupation.toIntOrNull() ?: 10,
-            startRent = s.monthlyRent.toDoubleOrNull() ?: 0.0,
-            escPercent = s.escalationPercent.toDoubleOrNull() ?: 0.0,
-            escFreq = s.escalationYears.toIntOrNull() ?: 100,
+        val cashFlowList = generateCashFlowUseCase(
+            years = years,
+            startRent = startRent,
+            escPercent = escPercent,
+            escFreq = escFreq,
             annualExpenses = annualExpenses
         )
-
-        _uiState.update { it.copy(cashFlows = flow) }
+        _uiState.update { it.copy(cashFlows = cashFlowList) }
     }
 
     fun calculateCounterOffer(desiredRoi: Double) {
         val s = _uiState.value
-
-        // ⚡ DELEGATE TO USE CASE
+        val registryPercent = s.registryInput.toDoubleOrNull() ?: 0.0
         val counterPrice = calculateCounterOfferUseCase(
             netAnnualIncome = s.netAnnualIncome,
             totalOtherCharges = s.totalOtherCharges,
-            registryPercent = s.registryInput.toDoubleOrNull() ?: 0.0,
+            registryPercent = registryPercent,
             desiredRoi = desiredRoi
         )
-
         _uiState.update { it.copy(counterOfferPrice = counterPrice, counterOfferRoi = desiredRoi) }
     }
 }

@@ -7,8 +7,9 @@ import retrofit2.http.Query
 interface YahooFinanceApi {
     // ⚡ COROUTINE USAGE HERE ⚡
     // The 'suspend' keyword tells Kotlin this function will execute inside a Coroutine.
-    // It makes the code good because Retrofit natively supports 'suspend', allowing it
-    // to perform the network call off the main thread automatically without complex callbacks.
+    // Why it makes your code good: Retrofit natively supports 'suspend', allowing it
+    // to perform the network call off the main thread automatically without complex callbacks,
+    // ensuring your app never drops frames while waiting for the network.
     @GET("market/v2/get-quotes")
     suspend fun getMarketQuotes(
         @Query("region") region: String = "IN",
@@ -16,13 +17,22 @@ interface YahooFinanceApi {
     ): QuoteResponseDto
 }
 
-// Data Transfer Objects (DTOs) to parse the Yahoo Finance JSON
 data class QuoteResponseDto(val quoteResponse: QuoteResultDto?)
 data class QuoteResultDto(val result: List<QuoteDto>?)
+
 data class QuoteDto(
     val symbol: String,
     val shortName: String?,
     val regularMarketPrice: Double?,
     val regularMarketChange: Double?,
-    val regularMarketChangePercent: Double?
+    val regularMarketChangePercent: Double?,
+    // REAL DATA FIELDS ADDED HERE:
+    val regularMarketOpen: Double?,
+    val regularMarketPreviousClose: Double?,
+    val regularMarketDayHigh: Double?,
+    val regularMarketDayLow: Double?,
+    val fiftyTwoWeekHigh: Double?,
+    val fiftyTwoWeekLow: Double?,
+    val marketCap: Long?,
+    val dividendYield: Double?
 )

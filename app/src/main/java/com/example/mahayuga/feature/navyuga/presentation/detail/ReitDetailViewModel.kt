@@ -5,14 +5,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.feature.navyuga.domain.model.ReitModel
-import com.example.mahayuga.feature.navyuga.domain.model.ReitNewsModel
-import com.example.mahayuga.feature.navyuga.domain.model.ReitPropertyModel
 import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 sealed class ReitDetailState {
@@ -28,7 +27,6 @@ class ReitDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val assetId: String = checkNotNull(savedStateHandle["assetId"])
-
     private val _uiState = MutableStateFlow<ReitDetailState>(ReitDetailState.Loading)
     val uiState: StateFlow<ReitDetailState> = _uiState.asStateFlow()
 
@@ -37,6 +35,9 @@ class ReitDetailViewModel @Inject constructor(
     }
 
     private fun fetchReitData(id: String) {
+        // ⚡ COROUTINE USAGE: viewModelScope.launch ties this network call to the lifecycle of this ViewModel.
+        // If the user quickly navigates back before the Yahoo API responds, this coroutine is automatically cancelled,
+        // preventing memory leaks and avoiding crashes caused by trying to update a dead UI.
         viewModelScope.launch {
             _uiState.value = ReitDetailState.Loading
 
@@ -46,38 +47,41 @@ class ReitDetailViewModel @Inject constructor(
                 val liveQuote = quotes.firstOrNull()
 
                 if (liveQuote != null) {
-                    // ⚡ FIX 1: Clean the ugly Yahoo Finance names
-                    val cleanName = when(id) {
+                    val cleanName = when (id) {
                         "MINDSPACE.NS" -> "Mindspace Business Parks"
                         "EMBASSY.NS" -> "Embassy Office Parks"
                         "NEXUS.NS" -> "Nexus Select Trust"
                         "BIRET.NS" -> "Brookfield India Trust"
                         "PSTITANIA.BO" -> "Prop Share Titania"
                         "PSPLATINA.BO" -> "Prop Share Platina"
-                        else -> liveQuote.name.split(",")[0] // Fallback: drop anything after a comma
+                        else -> liveQuote.name.split(",")[0]
                     }
 
-                    // ⚡ FIX 2: Inject realistic static data based on the asset
-                    val (mCap, div, portVal, holdings, dev) = when(id) {
-                        "MINDSPACE.NS" -> listOf("₹20,450 Cr", "5.8%", "₹28,000 Cr", 32.3, 2.8)
-                        "EMBASSY.NS" -> listOf("₹33,850 Cr", "6.7%", "₹48,800 Cr", 42.6, 8.1)
-                        "NEXUS.NS" -> listOf("₹20,900 Cr", "6.1%", "₹22,000 Cr", 9.8, 0.0)
-                        else -> listOf("₹1,250 Cr", "7.5%", "₹1,500 Cr", 1.2, 0.0)
+                    val (portVal, holdings, dev) = when (id) {
+                        "MINDSPACE.NS" -> listOf("₹28,000 Cr", 32.3, 2.8)
+                        "EMBASSY.NS" -> listOf("₹48,800 Cr", 42.6, 8.1)
+                        "NEXUS.NS" -> listOf("₹22,000 Cr", 9.8, 0.0)
+                        else -> listOf("₹1,500 Cr", 1.2, 0.0)
                     }
 
-                    // Merge live prices with static details
+                    val marketCapInCr = liveQuote.marketCap / 10_000_000.0
+                    val formattedMarketCap =
+                        "₹${String.format(Locale.US, "%.0f", marketCapInCr)} Cr"
+                    val formattedDividend =
+                        "${String.format(Locale.US, "%.1f", liveQuote.dividendYield)}%"
+
                     val dynamicReit = ReitModel(
                         id = id,
                         name = cleanName,
                         currentPrice = liveQuote.currentPrice,
                         priceChange = liveQuote.priceChange,
                         priceChangePercent = liveQuote.percentageChange,
-                        openPrice = liveQuote.currentPrice - liveQuote.priceChange,
-                        lastPrice = liveQuote.currentPrice,
-                        marketCap = mCap as String,
-                        dividendYield = div as String,
-                        high52Week = liveQuote.currentPrice * 1.15, // Calculated realistic high
-                        low52Week = liveQuote.currentPrice * 0.85,  // Calculated realistic low
+                        openPrice = liveQuote.openPrice,
+                        lastPrice = liveQuote.previousClose,
+                        marketCap = formattedMarketCap,
+                        dividendYield = formattedDividend,
+                        high52Week = liveQuote.fiftyTwoWeekHigh,
+                        low52Week = liveQuote.fiftyTwoWeekLow,
                         totalPortfolioValue = portVal as String,
                         totalHoldingsMsf = holdings as Double,
                         underDevelopmentMsf = dev as Double,
@@ -87,12 +91,13 @@ class ReitDetailViewModel @Inject constructor(
                             (liveQuote.currentPrice * 0.98).toFloat(),
                             liveQuote.currentPrice.toFloat()
                         ),
-                        properties = emptyList(), // Can add dummy properties here if needed
+                        properties = emptyList(),
                         news = emptyList()
                     )
                     _uiState.value = ReitDetailState.Success(dynamicReit)
                 } else {
-                    _uiState.value = ReitDetailState.Error("Could not fetch live market data for $id")
+                    _uiState.value =
+                        ReitDetailState.Error("Could not fetch live market data for $id")
                 }
             }.onFailure {
                 _uiState.value = ReitDetailState.Error(it.message ?: "Unknown error occurred")

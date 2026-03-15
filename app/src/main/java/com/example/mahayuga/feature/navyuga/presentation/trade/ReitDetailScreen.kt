@@ -36,8 +36,7 @@ import com.example.mahayuga.feature.navyuga.domain.model.ReitPropertyModel
 import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailState
 import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailViewModel
 
-// --- SPECIFIC UI COLORS FROM MOCKUPS ---
-private val ReitBg = Color(0xFF040C17) // Unified dark background
+private val ReitBg = Color(0xFF040C17)
 private val ReitCard = Color(0xFF0B1727)
 private val ReitGreen = Color(0xFF00BFA5)
 private val ReitTabActive = Color(0xFF00BFA5)
@@ -61,12 +60,9 @@ fun ReitDetailScreen(
     Scaffold(
         containerColor = ReitBg,
         topBar = {
-            Column(
-                modifier = Modifier
-                    .background(ReitBg)
-                    .statusBarsPadding()
-            ) {
-                // Top App Bar Row
+            Column(modifier = Modifier
+                .background(ReitBg)
+                .statusBarsPadding()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -76,19 +72,11 @@ fun ReitDetailScreen(
                     IconButton(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextWhite)
-                    }
-
-                    val headerTitle = when (uiState) {
-                        is ReitDetailState.Success -> (uiState as ReitDetailState.Success).reit.name
-                        is ReitDetailState.Loading -> "Loading..."
-                        is ReitDetailState.Error -> "Error"
-                    }
-
-                    // ⚡ SAFETY CHECK: maxLines & Ellipsis applied here
+                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextWhite) }
                     Text(
-                        text = headerTitle,
+                        text = when (uiState) {
+                            is ReitDetailState.Success -> (uiState as ReitDetailState.Success).reit.name; is ReitDetailState.Loading -> "Loading..."; else -> "Error"
+                        },
                         style = MaterialTheme.typography.headlineSmall,
                         color = TextWhite,
                         fontWeight = FontWeight.Bold,
@@ -101,67 +89,58 @@ fun ReitDetailScreen(
                     )
                     Spacer(modifier = Modifier.size(24.dp))
                 }
-
-                // Custom Tab Row
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 0.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     tabs.forEachIndexed { index, title ->
-                        val isSelected = selectedTab == index
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .background(if (isSelected) ReitTabActive else ReitTabInactive)
+                                .background(if (selectedTab == index) ReitTabActive else ReitTabInactive)
                                 .clickable { selectedTab = index }
                                 .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = title,
-                                color = if (isSelected) TextWhite else TextWhite.copy(alpha = 0.7f),
+                                title,
+                                color = if (selectedTab == index) TextWhite else TextWhite.copy(
+                                    alpha = 0.7f
+                                ),
                                 fontSize = 16.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
                             )
                         }
-                        if (index < tabs.size - 1) {
-                            Box(
-                                modifier = Modifier
-                                    .width(1.dp)
-                                    .height(40.dp)
-                                    .background(ReitBg)
-                            )
-                        }
+                        if (index < tabs.size - 1) Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(40.dp)
+                                .background(ReitBg)
+                        )
                     }
                 }
             }
         }
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-        ) {
+        Box(modifier = Modifier
+            .padding(padding)
+            .fillMaxSize()) {
             when (val state = uiState) {
-                is ReitDetailState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = ReitGreen)
-                    }
-                }
+                is ReitDetailState.Loading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = ReitGreen) }
 
-                is ReitDetailState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = state.message, color = Color.Red)
-                    }
-                }
+                is ReitDetailState.Error -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { Text(state.message, color = Color.Red) }
 
                 is ReitDetailState.Success -> {
                     when (selectedTab) {
-                        0 -> ReitDetailsTab(state.reit)
-                        1 -> ReitPortfolioTab()
-                        2 -> ReitNewsTab(state.reit.news)
+                        0 -> ReitDetailsTab(state.reit); 1 -> ReitPortfolioTab(); 2 -> ReitNewsTab(
+                        state.reit.news
+                    )
                     }
                 }
             }
@@ -171,9 +150,7 @@ fun ReitDetailScreen(
 
 @Composable
 fun ReitDetailsTab(reit: ReitModel) {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val cardWidth = (screenWidth - 48.dp) / 2
+    val cardWidth = (LocalConfiguration.current.screenWidthDp.dp - 48.dp) / 2
 
     Column(
         modifier = Modifier
@@ -182,35 +159,27 @@ fun ReitDetailsTab(reit: ReitModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // --- 1. Main Price Header & Chart ---
+
         Card(
             colors = CardDefaults.cardColors(containerColor = ReitCard),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .background(Color(0xFFE8EDF2))
-                )
-
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .background(Color(0xFFE8EDF2)))
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-
-                        // ⚡ SAFETY CHECK: Weight applied to left column so it doesn't push the chart out
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp)
-                        ) {
-                            // ⚡ SAFETY CHECK: maxLines & Ellipsis applied here
+                        Column(modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)) {
                             Text(
-                                text = reit.name,
+                                reit.name,
                                 color = TextWhite,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
@@ -218,7 +187,7 @@ fun ReitDetailsTab(reit: ReitModel) {
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = reit.assetManager,
+                                reit.assetManager,
                                 color = TextGrey,
                                 fontSize = 12.sp,
                                 maxLines = 1,
@@ -263,7 +232,6 @@ fun ReitDetailsTab(reit: ReitModel) {
                                     )
                                 }", color = TextGrey, fontSize = 12.sp
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 "Last Price: ₹${
                                     String.format(
@@ -274,7 +242,6 @@ fun ReitDetailsTab(reit: ReitModel) {
                                 }", color = TextGrey, fontSize = 12.sp
                             )
                         }
-
                         Column(horizontalAlignment = Alignment.End) {
                             Box(
                                 modifier = Modifier
@@ -284,15 +251,11 @@ fun ReitDetailsTab(reit: ReitModel) {
                                         RoundedCornerShape(4.dp)
                                     )
                                     .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text("Registered under SEBI", color = TextGrey, fontSize = 8.sp)
-                            }
+                            ) { Text("Registered under SEBI", color = TextGrey, fontSize = 8.sp) }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(60.dp)
-                            ) {
+                            Box(modifier = Modifier
+                                .width(120.dp)
+                                .height(60.dp)) {
                                 SimpleLineChart(
                                     data = reit.priceHistory,
                                     lineColor = if (reit.priceChange >= 0) ChartLineColor else Color.Red
@@ -304,7 +267,7 @@ fun ReitDetailsTab(reit: ReitModel) {
             }
         }
 
-        // --- 2. Market Stats Row ---
+        // NO STARS HERE! This is real API data synced from the ViewModel
         Card(
             colors = CardDefaults.cardColors(containerColor = ReitCard),
             shape = RoundedCornerShape(12.dp),
@@ -317,24 +280,14 @@ fun ReitDetailsTab(reit: ReitModel) {
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                StatItem("Market Cap ⭐", reit.marketCap)
+                StatItem("Market Cap", reit.marketCap)
                 Box(
                     modifier = Modifier
                         .width(1.dp)
                         .height(30.dp)
                         .background(ReitGreen.copy(alpha = 0.6f))
                 )
-                StatItem("Dividend ⭐", reit.dividendYield)
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(30.dp)
-                        .background(ReitGreen.copy(alpha = 0.6f))
-                )
-                StatItem(
-                    "52-Wk High ⭐",
-                    "₹${String.format(java.util.Locale.US, "%.2f", reit.high52Week)}"
-                )
+                StatItem("Dividend", reit.dividendYield)
                 Box(
                     modifier = Modifier
                         .width(1.dp)
@@ -342,13 +295,23 @@ fun ReitDetailsTab(reit: ReitModel) {
                         .background(ReitGreen.copy(alpha = 0.6f))
                 )
                 StatItem(
-                    "52-Wk Low ⭐",
-                    "₹${String.format(java.util.Locale.US, "%.2f", reit.low52Week)}"
+                    "52-Wk High",
+                    "₹${String.format(java.util.Locale.US, "%.0f", reit.high52Week)}"
+                )
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(30.dp)
+                        .background(ReitGreen.copy(alpha = 0.6f))
+                )
+                StatItem(
+                    "52-Wk Low",
+                    "₹${String.format(java.util.Locale.US, "%.0f", reit.low52Week)}"
                 )
             }
         }
 
-        // --- 3. Portfolio Overview ---
+        // STARS KEPT HERE. Yahoo Finance does not know the square footage of a building.
         Card(
             colors = CardDefaults.cardColors(containerColor = ReitCard),
             shape = RoundedCornerShape(12.dp),
@@ -394,13 +357,10 @@ fun ReitDetailsTab(reit: ReitModel) {
                         fontWeight = FontWeight.Medium
                     )
                 }
-                Box(modifier = Modifier.size(100.dp)) {
-                    SimpleDonutChart(completedPercent = 60f, color1 = PieBlue, color2 = PiePink)
-                }
+                Box(modifier = Modifier.size(100.dp)) { SimpleDonutChart(60f, PieBlue, PiePink) }
             }
         }
 
-        // --- 4. All Properties ---
         if (reit.properties.isNotEmpty()) {
             Text(
                 "All Properties ⭐",
@@ -410,7 +370,10 @@ fun ReitDetailsTab(reit: ReitModel) {
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 items(reit.properties) { prop ->
-                    ReitPropertyCard(prop, cardWidth)
+                    ReitPropertyCard(
+                        prop,
+                        cardWidth
+                    )
                 }
             }
         }
@@ -420,20 +383,20 @@ fun ReitDetailsTab(reit: ReitModel) {
 
 @Composable
 fun ReitPortfolioTab() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Portfolio Details Coming Soon", color = TextGrey)
-    }
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) { Text("Portfolio Details Coming Soon", color = TextGrey) }
 }
 
 @Composable
 fun ReitNewsTab(newsList: List<ReitNewsModel>) {
     if (newsList.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No news available currently.", color = TextGrey)
-        }
-        return
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) { Text("No news available currently.", color = TextGrey) }; return
     }
-
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -501,15 +464,13 @@ fun ReitPropertyCard(prop: ReitPropertyModel, cardWidth: androidx.compose.ui.uni
         modifier = Modifier.width(cardWidth)
     ) {
         Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(Color(0xFFE8EDF2))
-            )
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .background(Color(0xFFE8EDF2)))
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = prop.name,
+                    prop.name,
                     color = TextWhite,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
@@ -517,7 +478,7 @@ fun ReitPropertyCard(prop: ReitPropertyModel, cardWidth: androidx.compose.ui.uni
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = prop.location,
+                    prop.location,
                     color = TextGrey,
                     fontSize = 12.sp,
                     lineHeight = 14.sp,
@@ -530,28 +491,32 @@ fun ReitPropertyCard(prop: ReitPropertyModel, cardWidth: androidx.compose.ui.uni
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(40.dp)
-                ) {
-                    SimpleLineChart(data = prop.priceHistory, lineColor = ChartLineColor)
-                }
+                ) { SimpleLineChart(prop.priceHistory, ChartLineColor) }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Open Price: ", color = TextGrey, fontSize = 10.sp)
                     Text(
-                        "₹${String.format(java.util.Locale.US, "%.2f", prop.openPrice)}",
-                        color = ReitGreen,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                        "Open Price: ",
+                        color = TextGrey,
+                        fontSize = 10.sp
+                    ); Text(
+                    "₹${String.format(java.util.Locale.US, "%.2f", prop.openPrice)}",
+                    color = ReitGreen,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Last Price: ", color = TextGrey, fontSize = 10.sp)
                     Text(
-                        "₹${String.format(java.util.Locale.US, "%.2f", prop.lastPrice)}",
-                        color = TextWhite,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                        "Last Price: ",
+                        color = TextGrey,
+                        fontSize = 10.sp
+                    ); Text(
+                    "₹${String.format(java.util.Locale.US, "%.2f", prop.lastPrice)}",
+                    color = TextWhite,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 }
             }
         }
@@ -562,50 +527,30 @@ fun ReitPropertyCard(prop: ReitPropertyModel, cardWidth: androidx.compose.ui.uni
 fun SimpleLineChart(data: List<Float>, lineColor: Color) {
     if (data.isEmpty()) return
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val width = size.width
-        val height = size.height
-        val maxVal = data.maxOrNull() ?: 1f
-        val minVal = data.minOrNull() ?: 0f
+        val width = size.width;
+        val height = size.height;
+        val maxVal = data.maxOrNull() ?: 1f;
+        val minVal = data.minOrNull() ?: 0f;
         val range = if ((maxVal - minVal) == 0f) 1f else maxVal - minVal
-
-        val path = Path()
-        val startY = height - ((data[0] - minVal) / range) * height
-        path.moveTo(0f, startY)
-
-        for (i in 1 until data.size) {
-            val x = (i.toFloat() / (data.size - 1)) * width
-            val y = height - ((data[i] - minVal) / range) * height
-            path.lineTo(x, y)
-        }
-        drawPath(
-            path = path,
-            color = lineColor,
-            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+        val path = Path().apply { moveTo(0f, height - ((data[0] - minVal) / range) * height) }
+        for (i in 1 until data.size) path.lineTo(
+            (i.toFloat() / (data.size - 1)) * width,
+            height - ((data[i] - minVal) / range) * height
         )
+        drawPath(path, lineColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
     }
 }
 
 @Composable
 fun SimpleDonutChart(completedPercent: Float, color1: Color, color2: Color) {
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val sweep1 = (completedPercent / 100f) * 360f
+        val sweep1 = (completedPercent / 100f) * 360f;
         val sweep2 = 360f - sweep1
-
-        drawArc(
-            color = color1,
-            startAngle = -90f,
-            sweepAngle = sweep1,
-            useCenter = true
-        )
-        drawArc(
-            color = color2,
-            startAngle = -90f + sweep1,
-            sweepAngle = sweep2,
-            useCenter = true
-        )
-        drawCircle(
-            color = ReitCard,
-            radius = size.minDimension / 3f
-        )
+        drawArc(color1, -90f, sweep1, true); drawArc(
+        color2,
+        -90f + sweep1,
+        sweep2,
+        true
+    ); drawCircle(ReitCard, size.minDimension / 3f)
     }
 }
