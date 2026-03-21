@@ -60,9 +60,11 @@ fun ReitDetailScreen(
     Scaffold(
         containerColor = ReitBg,
         topBar = {
-            Column(modifier = Modifier
-                .background(ReitBg)
-                .statusBarsPadding()) {
+            Column(
+                modifier = Modifier
+                    .background(ReitBg)
+                    .statusBarsPadding()
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -122,9 +124,11 @@ fun ReitDetailScreen(
             }
         }
     ) { padding ->
-        Box(modifier = Modifier
-            .padding(padding)
-            .fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
             when (val state = uiState) {
                 is ReitDetailState.Loading -> Box(
                     modifier = Modifier.fillMaxSize(),
@@ -166,18 +170,22 @@ fun ReitDetailsTab(reit: ReitModel) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column {
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .background(Color(0xFFE8EDF2)))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .background(Color(0xFFE8EDF2))
+                )
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        ) {
                             Text(
                                 reit.name,
                                 color = TextWhite,
@@ -251,11 +259,16 @@ fun ReitDetailsTab(reit: ReitModel) {
                                         RoundedCornerShape(4.dp)
                                     )
                                     .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) { Text("Registered under SEBI", color = TextGrey, fontSize = 8.sp) }
+                            ) {
+                                // ⚡ STAR ADDED TO HARDCODED REGISTRATION STATUS
+                                Text("Registered under SEBI ⭐", color = TextGrey, fontSize = 8.sp)
+                            }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Box(modifier = Modifier
-                                .width(120.dp)
-                                .height(60.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .height(60.dp)
+                            ) {
                                 SimpleLineChart(
                                     data = reit.priceHistory,
                                     lineColor = if (reit.priceChange >= 0) ChartLineColor else Color.Red
@@ -267,7 +280,7 @@ fun ReitDetailsTab(reit: ReitModel) {
             }
         }
 
-        // NO STARS HERE! This is real API data synced from the ViewModel
+        // Yahoo Finance real data
         Card(
             colors = CardDefaults.cardColors(containerColor = ReitCard),
             shape = RoundedCornerShape(12.dp),
@@ -311,7 +324,7 @@ fun ReitDetailsTab(reit: ReitModel) {
             }
         }
 
-        // STARS KEPT HERE. Yahoo Finance does not know the square footage of a building.
+        // ⚡ STARS ADDED TO ALL HARDCODED / DUMMY PORTFOLIO DATA HERE
         Card(
             colors = CardDefaults.cardColors(containerColor = ReitCard),
             shape = RoundedCornerShape(12.dp),
@@ -330,7 +343,7 @@ fun ReitDetailsTab(reit: ReitModel) {
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
-                    Text("Total Portfolio Value", color = TextGrey, fontSize = 12.sp)
+                    Text("Total Portfolio Value ⭐", color = TextGrey, fontSize = 12.sp)
                     Text(
                         reit.totalPortfolioValue,
                         color = TextWhite,
@@ -339,19 +352,19 @@ fun ReitDetailsTab(reit: ReitModel) {
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "Total Holdings: ${reit.totalHoldingsMsf} MSF",
+                        "Total Holdings ⭐: ${reit.totalHoldingsMsf} MSF",
                         color = ReitGreen,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        "Under Development: +${reit.underDevelopmentMsf} MSF",
+                        "Under Development ⭐: +${reit.underDevelopmentMsf} MSF",
                         color = ReitGreen,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        "Occupancy: ${reit.occupancyPercent}%",
+                        "Occupancy ⭐: ${reit.occupancyPercent}%",
                         color = ReitGreen,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -363,7 +376,7 @@ fun ReitDetailsTab(reit: ReitModel) {
 
         if (reit.properties.isNotEmpty()) {
             Text(
-                "All Properties ⭐",
+                "All Properties ⭐", // ⚡ STAR ADDED TO DUMMY PROPERTY LIST
                 color = TextWhite,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
@@ -464,10 +477,12 @@ fun ReitPropertyCard(prop: ReitPropertyModel, cardWidth: androidx.compose.ui.uni
         modifier = Modifier.width(cardWidth)
     ) {
         Column {
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .background(Color(0xFFE8EDF2)))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .background(Color(0xFFE8EDF2))
+            )
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     prop.name,

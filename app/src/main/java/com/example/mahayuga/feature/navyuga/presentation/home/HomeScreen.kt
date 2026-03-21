@@ -64,8 +64,7 @@ fun HomeScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
 
-    // ⚡ COROUTINE USAGE: LaunchedEffect safely runs suspend functions like animateScrollToItem
-    // off the main thread, ensuring your UI doesn't stutter during the scroll animation.
+    // Safely scroll to top without freezing UI
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
@@ -226,6 +225,7 @@ fun HomeScreen(
                             quote = quote,
                             isSmReit = selectedTab == 0,
                             onCardClick = {
+                                // ⚡ Properly routes to Property Detail Screen when SM REIT is clicked
                                 if (selectedTab == 0) onNavigateToSmReitDetail(quote.symbol) else onNavigateToReitDetail(
                                     quote.symbol
                                 )
@@ -267,7 +267,7 @@ fun HomeScreen(
 fun MarketTickerRow(quotes: List<MarketQuote>) {
     val scrollState = rememberScrollState()
 
-    // ⚡ COROUTINE USAGE: Infinite loop running asynchronously inside LaunchedEffect to drive continuous UI scrolling
+    // Infinite loop scrolling
     LaunchedEffect(scrollState.maxValue, quotes) {
         if (scrollState.maxValue > 0 && quotes.isNotEmpty()) {
             while (true) {
@@ -364,8 +364,9 @@ fun LiveAssetTradingCard(
                             )
                         }
                     }
+                    // ⚡ STAR ADDED TO HARDCODED ASSET CATEGORY IDENTIFIER
                     Text(
-                        if (isSmReit) "Prop Share Capital" else "Public Market Asset",
+                        if (isSmReit) "Prop Share Capital ⭐" else "Public Market Asset ⭐",
                         color = TextGrey,
                         fontSize = 12.sp
                     )
@@ -409,10 +410,9 @@ fun LiveAssetTradingCard(
             HorizontalDivider(color = BorderDark, thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // NO MORE FAKE MATH HERE. WE MAP DIRECTLY TO quote.fiftyTwoWeekHigh, quote.dayHigh, etc.
             Row(modifier = Modifier.fillMaxWidth()) {
                 StatGridCol(
-                    label1 = "Min Invest ⭐", // ⭐ Hardcoded because Yahoo doesn't give fractional logic
+                    label1 = "Min Invest ⭐", // ⚡ STAR ADDED (Hardcoded because Yahoo doesn't return fraction logic)
                     val1 = "₹${quote.currentPrice.toInt()}",
                     valColor1 = TextWhite,
                     label2 = "Dividend Yield", // Real Data

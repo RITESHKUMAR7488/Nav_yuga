@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/detail/PropertyDetailScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.detail
 
 import android.content.Intent
@@ -46,187 +47,206 @@ fun PropertyDetailScreen(
     viewModel: PropertyDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.state.collectAsState()
-    val supportNumber by viewModel.supportNumber.collectAsState()
-    val property = uiState.property
     val context = LocalContext.current
+    val supportNumber = "+919876543210" // Default support number fallback
 
     // ⚡ Tab State: 0 = Details, 1 = Calculate
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    if (uiState.isLoading) {
-        Box(Modifier
-            .fillMaxSize()
-            .background(DeepDarkBlue), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = BrandBlue)
-        }
-    } else if (property != null) {
-        val isExited = property.status == "Exited"
-        val isFunded = property.status == "Funded"
-        val showBottomBar = !isExited && !isFunded
-
-        Scaffold(
-            containerColor = DeepDarkBlue,
-            bottomBar = {
-                if (showBottomBar) {
-                    InvestBottomBar(
-                        property = property,
-                        onInvestClicked = {
-                            try {
-                                val message =
-                                    "Hello, I am interested in investing in *${property.title}*."
-                                val url =
-                                    "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                        Uri.encode(message)
-                                    }"
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = Uri.parse(url); setPackage("com.whatsapp")
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                        }
-                    )
-                }
-            }
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
+    when (val currentState = uiState) {
+        is PropertyDetailState.Loading -> {
+            Box(
+                Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
+                    .background(DeepDarkBlue), contentAlignment = Alignment.Center
             ) {
-                // --- IMAGE SLIDER SECTION ---
-                Box(modifier = Modifier
-                    .height(300.dp)
-                    .fillMaxWidth()) {
-                    val images =
-                        if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
-                    val pagerState = rememberPagerState(pageCount = { images.size })
+                CircularProgressIndicator(color = BrandBlue)
+            }
+        }
 
-                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                        AsyncImage(
-                            model = images[page],
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+        is PropertyDetailState.Error -> {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(DeepDarkBlue),
+                contentAlignment = Alignment.Center
+            ) { Text(currentState.message, color = Color.White) }
+        }
+
+        is PropertyDetailState.Success -> {
+            val property = currentState.property
+            val isExited = property.status == "Exited"
+            val isFunded = property.status == "Funded"
+            val showBottomBar = !isExited && !isFunded
+
+            Scaffold(
+                containerColor = DeepDarkBlue,
+                bottomBar = {
+                    if (showBottomBar) {
+                        InvestBottomBar(
+                            property = property,
+                            onInvestClicked = {
+                                try {
+                                    val message =
+                                        "Hello, I am interested in investing in *${property.title}*."
+                                    val url =
+                                        "https://api.whatsapp.com/send?phone=$supportNumber&text=${
+                                            Uri.encode(message)
+                                        }"
+                                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                                        data = Uri.parse(url); setPackage("com.whatsapp")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        "WhatsApp not found",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                }
+                            }
                         )
                     }
-
-                    // Gradients & Controls
+                }
+            ) { innerPadding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    // --- IMAGE SLIDER SECTION ---
                     Box(
                         modifier = Modifier
+                            .height(300.dp)
                             .fillMaxWidth()
-                            .height(80.dp)
-                            .align(Alignment.TopCenter)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.Black.copy(alpha = 0.7f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)
-                            .align(Alignment.BottomCenter)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.6f)
-                                    )
-                                )
-                            )
-                    )
-
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier
-                            .padding(top = 16.dp, start = 8.dp)
-                            .align(Alignment.TopStart)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                    }
+                        val images =
+                            if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
+                        val pagerState = rememberPagerState(pageCount = { images.size })
 
-                    if (images.size > 1) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp)
-                                .background(
-                                    Color.Black.copy(alpha = 0.6f),
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = "${pagerState.currentPage + 1}/${images.size}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                            AsyncImage(
+                                model = images[page],
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
-                        Row(
+
+                        // Gradients & Controls
+                        Box(
                             modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 12.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            repeat(images.size) { iteration ->
-                                val isSelected = pagerState.currentPage == iteration
-                                val color =
-                                    if (isSelected) Color.White else Color.White.copy(alpha = 0.5f)
-                                val size = if (isSelected) 8.dp else 6.dp
-                                Box(
-                                    modifier = Modifier
-                                        .padding(4.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .size(size)
+                                .fillMaxWidth()
+                                .height(80.dp)
+                                .align(Alignment.TopCenter)
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.Black.copy(alpha = 0.7f),
+                                            Color.Transparent
+                                        )
+                                    )
                                 )
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp)
+                                .align(Alignment.BottomCenter)
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.6f)
+                                        )
+                                    )
+                                )
+                        )
+
+                        IconButton(
+                            onClick = onNavigateBack,
+                            modifier = Modifier
+                                .padding(top = 16.dp, start = 8.dp)
+                                .align(Alignment.TopStart)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                        }
+
+                        if (images.size > 1) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(16.dp)
+                                    .background(
+                                        Color.Black.copy(alpha = 0.6f),
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "${pagerState.currentPage + 1}/${images.size}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 12.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                repeat(images.size) { iteration ->
+                                    val isSelected = pagerState.currentPage == iteration
+                                    val color =
+                                        if (isSelected) Color.White else Color.White.copy(alpha = 0.5f)
+                                    val size = if (isSelected) 8.dp else 6.dp
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(4.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                            .size(size)
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                // --- TABS SECTION ---
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
-                        .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    TabButton("Details", selectedTab == 0, Modifier.weight(1f)) { selectedTab = 0 }
-                    TabButton("Calculate", selectedTab == 1, Modifier.weight(1f)) {
-                        selectedTab = 1
+                    // --- TABS SECTION ---
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        TabButton("Details", selectedTab == 0, Modifier.weight(1f)) {
+                            selectedTab = 0
+                        }
+                        TabButton("Calculate", selectedTab == 1, Modifier.weight(1f)) {
+                            selectedTab = 1
+                        }
                     }
-                }
 
-                // --- CONTENT SWITCHER ---
-                if (selectedTab == 0) {
-                    PropertyDetailsContent(property, isExited)
-                } else {
-                    PropertyCalculatorContent(property)
-                }
+                    // --- CONTENT SWITCHER ---
+                    if (selectedTab == 0) {
+                        PropertyDetailsContent(property, isExited)
+                    } else {
+                        PropertyCalculatorContent(property)
+                    }
 
-                // Bottom padding for scroll
-                Spacer(modifier = Modifier.height(100.dp))
+                    // Bottom padding for scroll
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
             }
         }
-    } else {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(DeepDarkBlue),
-            contentAlignment = Alignment.Center
-        ) { Text("Property not found.", color = Color.White) }
     }
 }
 
@@ -662,9 +682,11 @@ fun SectionTitle(title: String) {
 
 @Composable
 fun GridItem(label1: String, value1: String, label2: String, value2: String) {
-    Row(Modifier
-        .fillMaxWidth()
-        .padding(bottom = 12.dp)) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+    ) {
         Column(Modifier.weight(1f)) {
             Text(label1, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.5f))
             Text(value1, style = MaterialTheme.typography.bodyLarge, color = Color.White)
