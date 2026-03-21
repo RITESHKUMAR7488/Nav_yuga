@@ -20,27 +20,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.R
 import com.example.mahayuga.core.common.BiometricAuthenticator
-import com.example.mahayuga.feature.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun NavyugaSplashScreen(
-    onSplashFinished: () -> Unit,
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    onSplashFinished: () -> Unit
 ) {
     val alpha = remember { Animatable(0f) }
     val context = LocalContext.current
     val biometricAuth = remember { BiometricAuthenticator(context) }
 
     LaunchedEffect(Unit) {
-        // 1. Animate Logo
+        // Animate Logo
         alpha.animateTo(1f, animationSpec = tween(800))
-        delay(1500) // Keep logo visible for 1.5s
+        delay(1500)
 
-        // 2. Trigger Biometrics (if Activity available)
+        // Trigger Biometrics
         val activity = context as? FragmentActivity
         if (activity != null) {
             biometricAuth.authenticate(
@@ -59,7 +56,7 @@ fun NavyugaSplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black), // Sleek black background
+            .background(Color.Black), // Pitch Black Background
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -67,15 +64,16 @@ fun NavyugaSplashScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_launcher_foreground), // Bricx Logo
+                painter = painterResource(id = R.mipmap.ic_launcher_foreground), // BRICX Logo
                 contentDescription = "BRICX Logo",
                 modifier = Modifier
-                    .size(140.dp)
+                    .size(160.dp)
                     .alpha(alpha.value)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Styled exactly like the Portfolio header (24.sp, Normal Weight)
             Text(
                 text = "BRICX",
                 fontSize = 24.sp,
@@ -91,7 +89,7 @@ fun NavyugaSplashScreen(
             Text(
                 text = "Investing For Tomorrow",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.8f),
+                color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier.alpha(alpha.value)
             )
         }

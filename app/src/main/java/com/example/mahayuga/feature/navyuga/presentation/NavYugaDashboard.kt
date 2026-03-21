@@ -31,10 +31,12 @@ import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.feature.navyuga.presentation.discover.DiscoverScreen
 import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScreen
 
-private val NavyBlue = Color(0xFF0F172A)
-private val BottomNavBg = Color(0xFF162032)
+private val NavyBlue = Color(0xFF080F18) // Matching App Background
+
+// ⚡ UPDATED: The entire navigation bar is now TradeGreen
+private val BottomNavBg = Color(0xFF00BFA5)
 private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
-private val SelectedIconColor = Color(0xFF00BFA5) // Vibrant Green
+private val SelectedIconColor = Color.White
 
 @Composable
 fun NavYugaDashboard(
@@ -64,13 +66,12 @@ fun NavYugaDashboard(
 
     var homeScrollTrigger by remember { mutableStateOf(false) }
 
-    // ⚡ UPDATED: Replaced Scaffold with a Box to allow content to flow behind the floating bar
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(NavyBlue)
     ) {
-        // 1. Main Content Area (Fills the entire screen)
+        // 1. Main Content Area
         NavHost(
             navController = navController,
             startDestination = "ay_home",
@@ -103,22 +104,19 @@ fun NavYugaDashboard(
             }
         }
 
-        // 2. Floating Bottom Navigation Bar (Overlays on top of the content)
+        // 2. Floating Bottom Navigation Bar (Overlays on top)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding() // Ensures it sits above Android's system nav bar gesture area
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(68.dp)
-                    .shadow(
-                        16.dp,
-                        RoundedCornerShape(50)
-                    ) // 50% corner radius makes a perfect pill/oval
+                    .shadow(12.dp, RoundedCornerShape(50))
                     .clip(RoundedCornerShape(50))
                     .background(BottomNavBg),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -137,7 +135,7 @@ fun NavYugaDashboard(
                             .fillMaxHeight()
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null, // Removes the square ripple to keep the oval look clean
+                                indication = null, // Removes the square ripple
                                 onClick = {
                                     if (isSelected) {
                                         if (item.route == "ay_home") {

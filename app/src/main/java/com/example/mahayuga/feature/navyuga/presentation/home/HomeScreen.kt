@@ -42,10 +42,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
 import java.util.Locale
 
-private val TradeBg = Color(0xFF040C17)
-private val TradeCardBg = Color(0xFF0B1624)
-private val TradeGreen = Color(0xFF00BFA5)
-private val TradeRed = Color(0xFFD32F2F)
+// ⚡ EXACT Colors extracted from your images
+private val TradeBg = Color(0xFF080F18)       // Deep app background
+private val TradeCardBg = Color(0xFF0F1722)   // Card background
+private val TradeGreen = Color(0xFF00BFA5)    // Selection Green
+private val TradeRed = Color(0xFFFF3B30)
 private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF8B9BB4)
 private val BorderDark = Color(0xFF1A2A40)
@@ -67,9 +68,6 @@ fun HomeScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
 
-    // The coroutine block here is used to animate the scroll to the top of the list
-    // without freezing the main UI thread. `LaunchedEffect` creates a coroutine scope
-    // tied to the lifecycle of this composable.
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
@@ -82,12 +80,16 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .background(TradeBg)
-                    .statusBarsPadding() // ⚡ FIX: This prevents the header from bleeding into the top system status bar
+                    .statusBarsPadding()
             ) {
+                // ⚡ UPDATED: Home Header mapped to Portfolio Header Style
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                        .padding(
+                            horizontal = 24.dp,
+                            vertical = 20.dp
+                        ), // Matching Portfolio padding
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -107,21 +109,22 @@ fun HomeScreen(
                         )
                     }
 
+                    // ⚡ UPDATED: Search, Messages, Notifications Icons ONLY
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Search,
-                            desc = "Search",
+                            desc = "Search/Filter",
                             onClick = onNavigateToSearch
                         )
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Send,
                             desc = "Messages",
-                            onClick = { /* Add DM action */ }
+                            onClick = { /* Message action */ }
                         )
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Notifications,
                             desc = "Notifications",
-                            onClick = { /* Add Notif action */ }
+                            onClick = { /* Notif action */ }
                         )
                     }
                 }
@@ -133,8 +136,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(36.dp)
-                            .background(TradeCardBg)
-                            .border(borderStroke())
+                            .background(TradeBg)
                     )
                 }
 
@@ -148,7 +150,7 @@ fun HomeScreen(
                             color = TradeGreen
                         )
                     },
-                    divider = { HorizontalDivider(color = BorderDark) }
+                    divider = { HorizontalDivider(color = BorderDark.copy(alpha = 0.5f)) }
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
@@ -246,12 +248,13 @@ fun HomeScreen(
     }
 }
 
+// ⚡ UPDATED: Circular Header Icons with Shadows
 @Composable
 fun CircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(46.dp)
-            .shadow(elevation = 8.dp, shape = CircleShape, spotColor = Color.Black)
+            .size(42.dp)
+            .shadow(elevation = 6.dp, shape = CircleShape, spotColor = Color.Black)
             .clip(CircleShape)
             .background(TradeCardBg)
             .clickable { onClick() },
@@ -261,7 +264,7 @@ fun CircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
             imageVector = icon,
             contentDescription = desc,
             tint = TextWhite,
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }
@@ -270,8 +273,6 @@ fun CircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
 fun MarketTickerRow(quotes: List<MarketQuote>) {
     val scrollState = rememberScrollState()
 
-    // Coroutine usage here creates an infinite scroll animation loop
-    // so the ticker constantly moves to the left without blocking UI rendering
     LaunchedEffect(scrollState.maxValue, quotes) {
         if (scrollState.maxValue > 0 && quotes.isNotEmpty()) {
             while (true) {
@@ -288,8 +289,7 @@ fun MarketTickerRow(quotes: List<MarketQuote>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(TradeCardBg)
-            .border(borderStroke())
+            .background(TradeBg) // ⚡ Blends perfectly into the background
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .horizontalScroll(scrollState),
         verticalAlignment = Alignment.CenterVertically
@@ -332,7 +332,7 @@ fun LiveAssetTradingCard(
             .clickable { onCardClick() },
         colors = CardDefaults.cardColors(containerColor = TradeCardBg),
         shape = RoundedCornerShape(12.dp),
-        border = borderStroke()
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(0.05f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -517,6 +517,3 @@ fun StatGridCol(
         )
     }
 }
-
-@Composable
-private fun borderStroke() = androidx.compose.foundation.BorderStroke(1.dp, BorderDark)
