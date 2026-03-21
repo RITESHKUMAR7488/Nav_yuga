@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,11 +14,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Search
@@ -42,10 +47,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
 import java.util.Locale
 
-// ⚡ EXACT Colors extracted from your images
-private val TradeBg = Color(0xFF080F18)       // Deep app background
-private val TradeCardBg = Color(0xFF0F1722)   // Card background
-private val TradeGreen = Color(0xFF00BFA5)    // Selection Green
+private val TradeBg = Color(0xFF080F18)
+private val TradeCardBg = Color(0xFF0F1722)
+private val TradeGreen = Color(0xFF00BFA5)
 private val TradeRed = Color(0xFFFF3B30)
 private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF8B9BB4)
@@ -61,13 +65,14 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val supportNumber by viewModel.supportNumber.collectAsState()
     val context = LocalContext.current
     val listState = rememberLazyListState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
 
+    // Coroutine specifically for list scrolling to ensure the main UI thread isn't blocked
+    // when calculating and animating the list layout back to index 0.
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
@@ -82,14 +87,10 @@ fun HomeScreen(
                     .background(TradeBg)
                     .statusBarsPadding()
             ) {
-                // ⚡ UPDATED: Home Header mapped to Portfolio Header Style
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(
-                            horizontal = 24.dp,
-                            vertical = 20.dp
-                        ), // Matching Portfolio padding
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -109,7 +110,6 @@ fun HomeScreen(
                         )
                     }
 
-                    // ⚡ UPDATED: Search, Messages, Notifications Icons ONLY
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Search,
@@ -119,12 +119,24 @@ fun HomeScreen(
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Send,
                             desc = "Messages",
-                            onClick = { /* Message action */ }
+                            onClick = {
+                                Toast.makeText(
+                                    context,
+                                    "Messages coming soon",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         )
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Notifications,
                             desc = "Notifications",
-                            onClick = { /* Notif action */ }
+                            onClick = {
+                                Toast.makeText(
+                                    context,
+                                    "No new notifications",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         )
                     }
                 }
@@ -211,33 +223,12 @@ fun HomeScreen(
                             quote = quote,
                             isSmReit = selectedTab == 0,
                             onCardClick = {
-                                if (selectedTab == 0) onNavigateToSmReitDetail(quote.symbol) else onNavigateToReitDetail(
-                                    quote.symbol
-                                )
+                                if (selectedTab == 0) onNavigateToSmReitDetail(quote.symbol)
+                                else onNavigateToReitDetail(quote.symbol)
                             },
-                            onBuyClick = {
-                                try {
-                                    val url =
-                                        "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                            Uri.encode("Hello, I want to BUY units of *${quote.name}*.")
-                                        }"
-                                    context.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                                        data = Uri.parse(url); setPackage("com.whatsapp")
-                                    })
-                                } catch (e: Exception) {
-                                    Toast.makeText(
-                                        context,
-                                        "WhatsApp not found",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            },
-                            onSellClick = {
-                                Toast.makeText(
-                                    context,
-                                    "Sell orders available from Portfolio",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                            onSaveClick = {
+                                Toast.makeText(context, "Added to Watchlist", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         )
                     }
@@ -248,7 +239,6 @@ fun HomeScreen(
     }
 }
 
-// ⚡ UPDATED: Circular Header Icons with Shadows
 @Composable
 fun CircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
     Box(
@@ -289,7 +279,7 @@ fun MarketTickerRow(quotes: List<MarketQuote>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(TradeBg) // ⚡ Blends perfectly into the background
+            .background(TradeBg)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .horizontalScroll(scrollState),
         verticalAlignment = Alignment.CenterVertically
@@ -316,204 +306,245 @@ fun MarketTickerRow(quotes: List<MarketQuote>) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LiveAssetTradingCard(
     quote: MarketQuote,
     isSmReit: Boolean,
     onCardClick: () -> Unit,
-    onBuyClick: () -> Unit,
-    onSellClick: () -> Unit
+    onSaveClick: () -> Unit
 ) {
     val priceColor = if (quote.isPositive) TradeGreen else TradeRed
+
+    // Hardcoded mock values for the visual layout as requested
+    val location = if (isSmReit) "Sector 62, Gurugram" else null
+    val managerName = "Nikhil Kamath"
+    val managerTitle = "Asset Manager"
+
+    // Number of mock images to swipe through
+    val pagerState = rememberPagerState(pageCount = { 3 })
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCardClick() },
         colors = CardDefaults.cardColors(containerColor = TradeCardBg),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(0.05f))
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+
+            // 1. Top Row: Name, Location, Save Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    Text(
+                        text = quote.name.split(",")[0],
+                        color = TextWhite,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (isSmReit && location != null) {
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            quote.name.split(",")[0],
-                            color = TextWhite,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
+                            text = location,
+                            color = TextGrey,
+                            fontSize = 12.sp
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(BorderDark, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
-                        ) {
+                    }
+                }
+                IconButton(
+                    onClick = onSaveClick,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .offset(x = 8.dp, y = (-4).dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BookmarkBorder,
+                        contentDescription = "Save to Watchlist",
+                        tint = TextGrey
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 2. Price Row & Market Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "₹${String.format(Locale.US, "%,.2f", quote.currentPrice)}",
+                        color = TextWhite,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${if (quote.isPositive) "+" else ""}₹${
+                                String.format(
+                                    Locale.US,
+                                    "%.2f",
+                                    Math.abs(quote.priceChange)
+                                )
+                            }",
+                            color = priceColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(" | ", color = TextGrey, fontSize = 12.sp)
+                        Text(
+                            text = "${if (quote.isPositive) "+" else ""}${
+                                String.format(
+                                    Locale.US,
+                                    "%.2f",
+                                    quote.percentageChange
+                                )
+                            }%",
+                            color = priceColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // NSE / BSE Switch Toggle Badge
+                Row(
+                    modifier = Modifier
+                        .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .clickable { /* Handle market toggle */ },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isSmReit) "BSE" else "NSE",
+                        color = TextWhite,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.SwapVert,
+                        contentDescription = "Switch Market",
+                        tint = TextGrey,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 3. Swipeable Image/Video Area
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White) // The requested white area placeholder
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    // Placeholder for actual network image/video player
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = "Media Placeholder",
+                                tint = Color.LightGray,
+                                modifier = Modifier.size(48.dp)
+                            )
                             Text(
-                                if (isSmReit) "BSE" else "NSE",
-                                color = TextGrey,
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold
+                                "Media Swipe Area (Page ${page + 1})",
+                                color = Color.Gray,
+                                fontSize = 12.sp
                             )
                         }
                     }
-                    Text(
-                        if (isSmReit) "Prop Share Capital ⭐" else "Public Market Asset ⭐",
-                        color = TextGrey,
-                        fontSize = 12.sp
-                    )
                 }
-                Icon(
-                    Icons.Default.BookmarkBorder,
-                    "Save",
-                    tint = TextGrey,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                "₹${String.format(Locale.US, "%.2f", quote.currentPrice)}",
-                color = TextWhite,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "₹${String.format(Locale.US, "%.2f", Math.abs(quote.priceChange))}",
-                    color = priceColor,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(" | ", color = TextGrey, fontSize = 12.sp)
-                Text(
-                    "${if (quote.isPositive) "+" else ""}${
-                        String.format(
-                            Locale.US,
-                            "%.2f",
-                            quote.percentageChange
+                // Pager Indicators
+                Row(
+                    Modifier
+                        .height(20.dp)
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    repeat(pagerState.pageCount) { iteration ->
+                        val color =
+                            if (pagerState.currentPage == iteration) TradeGreen else Color.LightGray
+                        Box(
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .size(6.dp)
                         )
-                    }%", color = priceColor, fontSize = 14.sp, fontWeight = FontWeight.Bold
-                )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = BorderDark, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth()) {
-                StatGridCol(
-                    label1 = "Min Invest ⭐",
-                    val1 = "₹${quote.currentPrice.toInt()}",
-                    valColor1 = TextWhite,
-                    label2 = "Dividend Yield",
-                    val2 = "${String.format(Locale.US, "%.1f", quote.dividendYield)}%",
-                    valColor2 = TextWhite,
-                    modifier = Modifier.weight(1f)
-                )
-                StatGridCol(
-                    label1 = "Day High",
-                    val1 = "₹${quote.dayHigh.toInt()}",
-                    valColor1 = TextWhite,
-                    label2 = "Day Low",
-                    val2 = "₹${quote.dayLow.toInt()}",
-                    valColor2 = priceColor,
-                    modifier = Modifier.weight(1f)
-                )
-                StatGridCol(
-                    label1 = "Open Price",
-                    val1 = "₹${String.format(Locale.US, "%.1f", quote.openPrice)}",
-                    valColor1 = TextWhite,
-                    label2 = "Prev Close",
-                    val2 = "₹${String.format(Locale.US, "%.1f", quote.previousClose)}",
-                    valColor2 = TextWhite,
-                    modifier = Modifier.weight(1f)
-                )
-                StatGridCol(
-                    label1 = "52-Wk High",
-                    val1 = "₹${quote.fiftyTwoWeekHigh.toInt()}",
-                    valColor1 = TextWhite,
-                    label2 = "52-Wk Low",
-                    val2 = "₹${quote.fiftyTwoWeekLow.toInt()}",
-                    valColor2 = TextWhite,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            // 4. Footer: Asset Manager (SM REIT only) & SEBI Badge (Both)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
             ) {
-                Button(
-                    onClick = onBuyClick,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TradeGreen),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text("BUY", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (isSmReit) {
+                    Column {
+                        Text(
+                            text = managerName,
+                            color = TextWhite,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = managerTitle,
+                            color = TextGrey,
+                            fontSize = 12.sp
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f)) // Push SEBI badge to right if no manager
                 }
-                Button(
-                    onClick = onSellClick,
+
+                // SEBI Registration Box
+                Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TradeRed),
-                    shape = RoundedCornerShape(6.dp)
+                        .border(1.dp, BorderDark, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "SELL",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        text = "SEBI Registered",
+                        color = TextGrey,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "IN/REIT/XXXX", // Fixed for now per instructions
+                        color = TextWhite,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun StatGridCol(
-    label1: String,
-    val1: String,
-    valColor1: Color,
-    label2: String,
-    val2: String,
-    valColor2: Color,
-    modifier: Modifier
-) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label1, color = TextGrey, fontSize = 10.sp, textAlign = TextAlign.Center)
-        Text(
-            val1,
-            color = valColor1,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(label2, color = TextGrey, fontSize = 10.sp, textAlign = TextAlign.Center, maxLines = 1)
-        Text(
-            val2,
-            color = valColor2,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
     }
 }
