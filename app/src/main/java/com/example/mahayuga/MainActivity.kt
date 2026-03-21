@@ -35,7 +35,7 @@ class MainActivity : FragmentActivity() {
                 when (lastMode) {
                     "ADMIN" -> "admin_dashboard"
                     "AM_WORK" -> AssetManagerDestinations.DASHBOARD
-                    "INVESTOR" -> "navyuga_dashboard"
+                    "INVESTOR" -> "navyuga_splash" // ⚡ FIX: Route to Splash first instead of dashboard
                     else -> {
                         // Fallback if lastMode is missing (legacy support)
                         when (userRole) {

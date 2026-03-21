@@ -1,20 +1,24 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/NavYugaDashboard.kt
 package com.example.mahayuga.feature.navyuga.presentation
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -28,10 +32,9 @@ import com.example.mahayuga.feature.navyuga.presentation.discover.DiscoverScreen
 import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScreen
 
 private val NavyBlue = Color(0xFF0F172A)
-private val UnselectedIconColor = Color.White
-private val SelectedIconColor = Color(0xFF2979FF)
-private val IndicatorColor = Color.Transparent
-private val BorderColor = Color.White.copy(alpha = 0.15f)
+private val BottomNavBg = Color(0xFF162032)
+private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
+private val SelectedIconColor = Color(0xFF00BFA5) // Vibrant Green
 
 @Composable
 fun NavYugaDashboard(
@@ -46,10 +49,14 @@ fun NavYugaDashboard(
 ) {
     val navController = rememberNavController()
 
-    // ⚡ Phase 1: Replaced Trade and Funds with Watchlist and Discover
     val items = listOf(
         BottomNavItem("Home", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
-        BottomNavItem("Watchlist", "ay_watchlist", Icons.Filled.Bookmark, Icons.Outlined.BookmarkBorder),
+        BottomNavItem(
+            "Watchlist",
+            "ay_watchlist",
+            Icons.Filled.Bookmark,
+            Icons.Outlined.BookmarkBorder
+        ),
         BottomNavItem("Portfolio", "ay_portfolio", Icons.Filled.PieChart, Icons.Outlined.PieChart),
         BottomNavItem("Discover", "ay_discover", Icons.Filled.Explore, Icons.Outlined.Explore),
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
@@ -57,71 +64,20 @@ fun NavYugaDashboard(
 
     var homeScrollTrigger by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = NavyBlue,
-        bottomBar = {
-            Column {
-                HorizontalDivider(thickness = 0.5.dp, color = BorderColor)
-                NavigationBar(
-                    containerColor = NavyBlue,
-                    contentColor = Color.White,
-                    tonalElevation = 0.dp
-                ) {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route
-
-                    items.forEach { item ->
-                        val isSelected = currentRoute == item.route
-
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = item.label,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            label = {
-                                Text(
-                                    item.label,
-                                    modifier = Modifier.offset(y = (-4).dp)
-                                )
-                            },
-                            selected = isSelected,
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = SelectedIconColor,
-                                selectedTextColor = SelectedIconColor,
-                                indicatorColor = IndicatorColor,
-                                unselectedIconColor = UnselectedIconColor,
-                                unselectedTextColor = UnselectedIconColor
-                            ),
-                            onClick = {
-                                if (isSelected) {
-                                    if (item.route == "ay_home") {
-                                        homeScrollTrigger = !homeScrollTrigger
-                                    }
-                                } else {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
+    // ⚡ UPDATED: Replaced Scaffold with a Box to allow content to flow behind the floating bar
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(NavyBlue)
+    ) {
+        // 1. Main Content Area (Fills the entire screen)
         NavHost(
             navController = navController,
             startDestination = "ay_home",
-            modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable("ay_home") {
                 HomeScreen(
-                    // ⚡ Phase 2: Split navigation targets based on asset type
                     onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") },
                     onNavigateToSearch = { /* Search logic can be attached here later */ },
@@ -144,6 +100,78 @@ fun NavYugaDashboard(
                     onNavigateToMenu = onNavigateToMenu,
                     onLogout = onLogout
                 )
+            }
+        }
+
+        // 2. Floating Bottom Navigation Bar (Overlays on top of the content)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding() // Ensures it sits above Android's system nav bar gesture area
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(68.dp)
+                    .shadow(
+                        16.dp,
+                        RoundedCornerShape(50)
+                    ) // 50% corner radius makes a perfect pill/oval
+                    .clip(RoundedCornerShape(50))
+                    .background(BottomNavBg),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                items.forEach { item ->
+                    val isSelected = currentRoute == item.route
+                    val color = if (isSelected) SelectedIconColor else UnselectedIconColor
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null, // Removes the square ripple to keep the oval look clean
+                                onClick = {
+                                    if (isSelected) {
+                                        if (item.route == "ay_home") {
+                                            homeScrollTrigger = !homeScrollTrigger
+                                        }
+                                    } else {
+                                        navController.navigate(item.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                }
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                            contentDescription = item.label,
+                            tint = color,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = item.label,
+                            color = color,
+                            fontSize = 10.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }

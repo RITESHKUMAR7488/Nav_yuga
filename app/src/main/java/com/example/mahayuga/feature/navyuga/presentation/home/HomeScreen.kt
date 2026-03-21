@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
 import android.content.Intent
@@ -15,19 +14,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,7 +67,9 @@ fun HomeScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
 
-    // Safely scroll to top without freezing UI
+    // The coroutine block here is used to animate the scroll to the top of the list
+    // without freezing the main UI thread. `LaunchedEffect` creates a coroutine scope
+    // tied to the lifecycle of this composable.
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
@@ -74,26 +79,51 @@ fun HomeScreen(
     Scaffold(
         containerColor = TradeBg,
         topBar = {
-            Column(modifier = Modifier.background(TradeBg)) {
+            Column(
+                modifier = Modifier
+                    .background(TradeBg)
+                    .statusBarsPadding() // ⚡ FIX: This prevents the header from bleeding into the top system status bar
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "Home",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = TextWhite
-                    )
-                    Icon(
-                        Icons.Default.Notifications,
-                        "Notifications",
-                        tint = TextWhite,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.Home,
+                            contentDescription = "Home Icon",
+                            tint = TradeGreen,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Home",
+                            color = TextWhite,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularHeaderIcon(
+                            icon = Icons.Outlined.Search,
+                            desc = "Search",
+                            onClick = onNavigateToSearch
+                        )
+                        CircularHeaderIcon(
+                            icon = Icons.Outlined.Send,
+                            desc = "Messages",
+                            onClick = { /* Add DM action */ }
+                        )
+                        CircularHeaderIcon(
+                            icon = Icons.Outlined.Notifications,
+                            desc = "Notifications",
+                            onClick = { /* Add Notif action */ }
+                        )
+                    }
                 }
 
                 if (uiState.tickerQuotes.isNotEmpty()) {
@@ -106,52 +136,6 @@ fun HomeScreen(
                             .background(TradeCardBg)
                             .border(borderStroke())
                     )
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp)
-                            .clickable { onNavigateToSearch() },
-                        shape = RoundedCornerShape(8.dp),
-                        color = TradeBg,
-                        border = borderStroke()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Search,
-                                null,
-                                tint = TextGrey,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Search by Asset Manager, Location, etc.",
-                                color = TextGrey,
-                                fontSize = 13.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(borderStroke(), RoundedCornerShape(8.dp))
-                            .clickable { },
-                        contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Default.FilterList, "Filter", tint = TextGrey) }
                 }
 
                 TabRow(
@@ -225,7 +209,6 @@ fun HomeScreen(
                             quote = quote,
                             isSmReit = selectedTab == 0,
                             onCardClick = {
-                                // ⚡ Properly routes to Property Detail Screen when SM REIT is clicked
                                 if (selectedTab == 0) onNavigateToSmReitDetail(quote.symbol) else onNavigateToReitDetail(
                                     quote.symbol
                                 )
@@ -256,7 +239,7 @@ fun HomeScreen(
                             }
                         )
                     }
-                    item { Spacer(Modifier.height(80.dp)) }
+                    item { Spacer(Modifier.height(100.dp)) }
                 }
             }
         }
@@ -264,10 +247,31 @@ fun HomeScreen(
 }
 
 @Composable
+fun CircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(46.dp)
+            .shadow(elevation = 8.dp, shape = CircleShape, spotColor = Color.Black)
+            .clip(CircleShape)
+            .background(TradeCardBg)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = desc,
+            tint = TextWhite,
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+@Composable
 fun MarketTickerRow(quotes: List<MarketQuote>) {
     val scrollState = rememberScrollState()
 
-    // Infinite loop scrolling
+    // Coroutine usage here creates an infinite scroll animation loop
+    // so the ticker constantly moves to the left without blocking UI rendering
     LaunchedEffect(scrollState.maxValue, quotes) {
         if (scrollState.maxValue > 0 && quotes.isNotEmpty()) {
             while (true) {
@@ -290,7 +294,7 @@ fun MarketTickerRow(quotes: List<MarketQuote>) {
             .horizontalScroll(scrollState),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val mappedQuotes = quotes + quotes // Double for wrap-around
+        val mappedQuotes = quotes + quotes
         mappedQuotes.forEach { quote ->
             val displayName = when (quote.symbol) {
                 "^NSEI" -> "NIFTY"; "^BSESN" -> "SENSEX"; "PSTITANIA.BO" -> "TITANIA"; "EMBASSY.NS" -> "EMBASSY"; else -> quote.name.uppercase(
@@ -364,7 +368,6 @@ fun LiveAssetTradingCard(
                             )
                         }
                     }
-                    // ⚡ STAR ADDED TO HARDCODED ASSET CATEGORY IDENTIFIER
                     Text(
                         if (isSmReit) "Prop Share Capital ⭐" else "Public Market Asset ⭐",
                         color = TextGrey,
@@ -412,37 +415,37 @@ fun LiveAssetTradingCard(
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 StatGridCol(
-                    label1 = "Min Invest ⭐", // ⚡ STAR ADDED (Hardcoded because Yahoo doesn't return fraction logic)
+                    label1 = "Min Invest ⭐",
                     val1 = "₹${quote.currentPrice.toInt()}",
                     valColor1 = TextWhite,
-                    label2 = "Dividend Yield", // Real Data
+                    label2 = "Dividend Yield",
                     val2 = "${String.format(Locale.US, "%.1f", quote.dividendYield)}%",
                     valColor2 = TextWhite,
                     modifier = Modifier.weight(1f)
                 )
                 StatGridCol(
-                    label1 = "Day High", // Real Data
+                    label1 = "Day High",
                     val1 = "₹${quote.dayHigh.toInt()}",
                     valColor1 = TextWhite,
-                    label2 = "Day Low", // Real Data
+                    label2 = "Day Low",
                     val2 = "₹${quote.dayLow.toInt()}",
                     valColor2 = priceColor,
                     modifier = Modifier.weight(1f)
                 )
                 StatGridCol(
-                    label1 = "Open Price", // Real Data
+                    label1 = "Open Price",
                     val1 = "₹${String.format(Locale.US, "%.1f", quote.openPrice)}",
                     valColor1 = TextWhite,
-                    label2 = "Prev Close", // Real Data
+                    label2 = "Prev Close",
                     val2 = "₹${String.format(Locale.US, "%.1f", quote.previousClose)}",
                     valColor2 = TextWhite,
                     modifier = Modifier.weight(1f)
                 )
                 StatGridCol(
-                    label1 = "52-Wk High", // Real Data
+                    label1 = "52-Wk High",
                     val1 = "₹${quote.fiftyTwoWeekHigh.toInt()}",
                     valColor1 = TextWhite,
-                    label2 = "52-Wk Low", // Real Data
+                    label2 = "52-Wk Low",
                     val2 = "₹${quote.fiftyTwoWeekLow.toInt()}",
                     valColor2 = TextWhite,
                     modifier = Modifier.weight(1f)
