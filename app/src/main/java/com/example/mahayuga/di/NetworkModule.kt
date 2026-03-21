@@ -1,8 +1,8 @@
 package com.example.mahayuga.di
 
 import com.example.mahayuga.feature.profile.data.remote.ImageUploadApi
-// ⚡ THIS WAS THE MISSING IMPORT ⚡
 import com.example.mahayuga.feature.navyuga.data.remote.YahooFinanceApi
+import com.example.mahayuga.feature.navyuga.data.remote.AccelPixApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,7 +36,7 @@ object NetworkModule {
         return retrofit.create(ImageUploadApi::class.java)
     }
 
-    // --- NEW YAHOO FINANCE PIPELINE ---
+    // --- EXISTING YAHOO FINANCE PIPELINE ---
 
     @Provides
     @Singleton
@@ -71,5 +71,28 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(YahooFinanceApi::class.java)
+    }
+
+    // --- NEW ACCELPIX PIPELINE ---
+
+    @Provides
+    @Singleton
+    fun provideAccelPixOkHttpClient(): OkHttpClient {
+        // Adding a standard HTTP Client with timeouts to prevent infinite hanging on bad network calls
+        return OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAccelPixApi(okHttpClient: OkHttpClient): AccelPixApi {
+        return Retrofit.Builder()
+            .baseUrl("https://apidata.accelpix.in/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AccelPixApi::class.java)
     }
 }
