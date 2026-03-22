@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/NavYugaDashboard.kt
 package com.example.mahayuga.feature.navyuga.presentation
 
 import androidx.compose.foundation.background
@@ -31,9 +32,7 @@ import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.feature.navyuga.presentation.discover.DiscoverScreen
 import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScreen
 
-private val NavyBlue = Color(0xFF080F18) // Matching App Background
-
-// ⚡ UPDATED: The entire navigation bar is now TradeGreen
+private val NavyBlue = Color(0xFF080F18)
 private val BottomNavBg = Color(0xFF00BFA5)
 private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
 private val SelectedIconColor = Color.White
@@ -71,7 +70,6 @@ fun NavYugaDashboard(
             .fillMaxSize()
             .background(NavyBlue)
     ) {
-        // 1. Main Content Area
         NavHost(
             navController = navController,
             startDestination = "ay_home",
@@ -81,12 +79,19 @@ fun NavYugaDashboard(
                 HomeScreen(
                     onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") },
-                    onNavigateToSearch = { /* Search logic can be attached here later */ },
+                    onNavigateToSearch = { },
                     scrollToTopTrigger = homeScrollTrigger
                 )
             }
 
-            composable("ay_watchlist") { WatchlistScreen() }
+            // ⚡ FIX: Added Navigation Lambdas to Watchlist Screen
+            composable("ay_watchlist") {
+                WatchlistScreen(
+                    onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
+                    onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") }
+                )
+            }
+
             composable("ay_portfolio") { PortfolioScreen() }
             composable("ay_discover") { DiscoverScreen() }
 
@@ -104,7 +109,6 @@ fun NavYugaDashboard(
             }
         }
 
-        // 2. Floating Bottom Navigation Bar (Overlays on top)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -135,7 +139,7 @@ fun NavYugaDashboard(
                             .fillMaxHeight()
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null, // Removes the square ripple
+                                indication = null,
                                 onClick = {
                                     if (isSelected) {
                                         if (item.route == "ay_home") {

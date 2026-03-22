@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
 import android.content.Intent
@@ -71,8 +72,6 @@ fun HomeScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
 
-    // Coroutine specifically for list scrolling to ensure the main UI thread isn't blocked
-    // when calculating and animating the list layout back to index 0.
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
             listState.animateScrollToItem(0)
@@ -227,7 +226,9 @@ fun HomeScreen(
                                 else onNavigateToReitDetail(quote.symbol)
                             },
                             onSaveClick = {
-                                Toast.makeText(context, "Added to Watchlist", Toast.LENGTH_SHORT)
+                                // ⚡ FIX: Use the ViewModel to save directly to Firebase
+                                viewModel.toggleWatchlist(quote.symbol)
+                                Toast.makeText(context, "Watchlist Updated", Toast.LENGTH_SHORT)
                                     .show()
                             }
                         )
@@ -316,12 +317,10 @@ fun LiveAssetTradingCard(
 ) {
     val priceColor = if (quote.isPositive) TradeGreen else TradeRed
 
-    // Hardcoded mock values for the visual layout as requested
     val location = if (isSmReit) "Sector 62, Gurugram" else null
     val managerName = "Nikhil Kamath"
     val managerTitle = "Asset Manager"
 
-    // Number of mock images to swipe through
     val pagerState = rememberPagerState(pageCount = { 3 })
 
     Card(
@@ -334,7 +333,6 @@ fun LiveAssetTradingCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // 1. Top Row: Name, Location, Save Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -374,7 +372,6 @@ fun LiveAssetTradingCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. Price Row & Market Toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -416,12 +413,11 @@ fun LiveAssetTradingCard(
                     }
                 }
 
-                // NSE / BSE Switch Toggle Badge
                 Row(
                     modifier = Modifier
                         .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
                         .padding(horizontal = 8.dp, vertical = 6.dp)
-                        .clickable { /* Handle market toggle */ },
+                        .clickable { },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -442,19 +438,17 @@ fun LiveAssetTradingCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. Swipeable Image/Video Area
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White) // The requested white area placeholder
+                    .background(Color.White)
             ) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
-                    // Placeholder for actual network image/video player
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -475,7 +469,6 @@ fun LiveAssetTradingCard(
                     }
                 }
 
-                // Pager Indicators
                 Row(
                     Modifier
                         .height(20.dp)
@@ -500,7 +493,6 @@ fun LiveAssetTradingCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Footer: Asset Manager (SM REIT only) & SEBI Badge (Both)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -521,10 +513,9 @@ fun LiveAssetTradingCard(
                         )
                     }
                 } else {
-                    Spacer(modifier = Modifier.weight(1f)) // Push SEBI badge to right if no manager
+                    Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // SEBI Registration Box
                 Column(
                     modifier = Modifier
                         .border(1.dp, BorderDark, RoundedCornerShape(4.dp))
@@ -538,7 +529,7 @@ fun LiveAssetTradingCard(
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "IN/REIT/XXXX", // Fixed for now per instructions
+                        text = "IN/REIT/XXXX",
                         color = TextWhite,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold

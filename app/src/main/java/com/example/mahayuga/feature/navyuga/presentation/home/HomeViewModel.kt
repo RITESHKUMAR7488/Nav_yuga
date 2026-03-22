@@ -5,6 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
 import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +17,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// ⚡ FIX: Explicitly defining the state class here so the compiler knows what 'HomeUiState' and 'copy' are.
 data class HomeUiState(
     val isLoading: Boolean = false,
     val tickerQuotes: List<MarketQuote> = emptyList(),
@@ -22,7 +25,9 @@ data class HomeUiState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val marketRepository: MarketRepository
+    private val marketRepository: MarketRepository,
+    private val auth: FirebaseAuth,
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -36,7 +41,6 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun fetchLiveMarketData() {
-        // ⚡ COROUTINE USAGE HERE ⚡
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
@@ -59,6 +63,29 @@ class HomeViewModel @Inject constructor(
             }.onFailure { exception ->
                 _uiState.update { it.copy(isLoading = false, error = exception.message) }
             }
+        }
+    }
+
+    // ⚡ NEW: Toggle Watchlist functionality
+    fun toggleWatchlist(symbol: String) {
+        val uid = auth.currentUser?.uid ?: return
+        val userRef = firestore.collection("users").document(uid)
+
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(userRef)
+            val watchlisted = snapshot.get("watchlistedAssets") as? List<String> ?: emptyList()
+
+            if (watchlisted.contains(symbol)) {
+                transaction.update(userRef, "watchlistedAssets", FieldValue.arrayRemove(symbol))
+            } else {
+                if (!snapshot.exists()) {
+                    transaction.set(userRef, mapOf("watchlistedAssets" to listOf(symbol)), SetOptions.merge())
+                } else {
+                    transaction.update(userRef, "watchlistedAssets", FieldValue.arrayUnion(symbol))
+                }
+            }
+        }.addOnFailureListener { e ->
+            e.printStackTrace()
         }
     }
 }
