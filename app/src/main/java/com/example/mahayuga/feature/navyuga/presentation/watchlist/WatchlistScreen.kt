@@ -43,14 +43,13 @@ fun WatchlistScreen(
     var searchQuery by remember { mutableStateOf("") }
 
     Scaffold(
-        containerColor = Color(0xFF080F18), // Standard Bricx Background Dark
+        containerColor = Color(0xFF080F18),
         topBar = {
             Column(
                 modifier = Modifier
                     .background(Color(0xFF080F18))
                     .statusBarsPadding()
             ) {
-                // ⚡ Header matching Portfolio sizing and style
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -60,9 +59,9 @@ fun WatchlistScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Filled.Bookmark, // Provided Icon
+                            imageVector = Icons.Filled.Bookmark,
                             contentDescription = "Watchlist Icon",
-                            tint = Color(0xFF00BFA5), // Teal Accent Color
+                            tint = Color(0xFF00BFA5),
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -74,7 +73,6 @@ fun WatchlistScreen(
                         )
                     }
 
-                    // ⚡ Same 3 Icons from Home Page Layout
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Search,
@@ -100,7 +98,6 @@ fun WatchlistScreen(
                     }
                 }
 
-                // Search Expander for Watchlist explicitly
                 if (isSearchActive) {
                     OutlinedTextField(
                         value = searchQuery,
@@ -120,7 +117,6 @@ fun WatchlistScreen(
                     )
                 }
 
-                // ⚡ Top Scrolling Animation from Home Page
                 if (uiState.tickerQuotes.isNotEmpty()) {
                     MarketTickerRow(quotes = uiState.tickerQuotes)
                 } else {
@@ -129,7 +125,6 @@ fun WatchlistScreen(
                         .height(36.dp))
                 }
 
-                // ⚡ Watchlist Filters Below the Animation
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color(0xFF080F18),
@@ -189,7 +184,6 @@ fun WatchlistScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Apply Search Filtering Locally
                 var filteredAssets = uiState.watchlistedQuotes
 
                 if (searchQuery.isNotBlank()) {
@@ -201,11 +195,10 @@ fun WatchlistScreen(
                     }
                 }
 
-                // Apply Tab Filters Locally
                 val displayedAssets = when (selectedTab) {
-                    1 -> filteredAssets.filter { it.symbol.endsWith(".BO") } // SM REITs
-                    2 -> filteredAssets.filter { it.symbol.endsWith(".NS") } // REITs
-                    else -> filteredAssets // All
+                    1 -> filteredAssets.filter { it.symbol.endsWith(".BO") }
+                    2 -> filteredAssets.filter { it.symbol.endsWith(".NS") }
+                    else -> filteredAssets
                 }
 
                 if (displayedAssets.isEmpty()) {
@@ -221,10 +214,10 @@ fun WatchlistScreen(
                     items(displayedAssets, key = { it.symbol }) { quote ->
                         val isSmReit = quote.symbol.endsWith(".BO")
 
-                        // ⚡ Reuse exact AssetTradingCard from HomeScreen to maintain parity
                         LiveAssetTradingCard(
                             quote = quote,
                             isSmReit = isSmReit,
+                            isSaved = true, // ⚡ FIX: Hardcoded to true because this is the Watchlist screen
                             onCardClick = {
                                 if (isSmReit) onNavigateToSmReitDetail(quote.symbol)
                                 else onNavigateToReitDetail(quote.symbol)

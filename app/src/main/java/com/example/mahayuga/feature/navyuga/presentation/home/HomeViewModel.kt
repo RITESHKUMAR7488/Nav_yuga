@@ -8,6 +8,7 @@ import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val isLoading: Boolean = false,
     val tickerQuotes: List<MarketQuote> = emptyList(),
+    val watchlistedSymbols: List<String> = emptyList(), // ⚡ NEW: Tracks saved assets
     val error: String? = null
 )
 
@@ -36,11 +38,15 @@ class HomeViewModel @Inject constructor(
     private val _supportNumber = MutableStateFlow("919876543210")
     val supportNumber: StateFlow<String> = _supportNumber.asStateFlow()
 
+    private var listenerRegistration: ListenerRegistration? = null
+
     init {
         fetchLiveMarketData()
+        listenToWatchlist() // ⚡ NEW: Start listening immediately
     }
 
     private fun fetchLiveMarketData() {
+        // Coroutine used here to fetch network data safely without blocking the UI
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
@@ -66,7 +72,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // ⚡ NEW: Toggle Watchlist functionality
+    // ⚡ NEW: Real-time listener to keep the bookmark icons updated instantly
+    private fun listenToWatchlist() {
+        val uid = auth.currentUser?.uid ?: return
+        listenerRegistration = firestore.collection("users").document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+
+                val watchlisted = snapshot?.get("watchlistedAssets") as? List<String> ?: emptyList()
+                _uiState.update { it.copy(watchlistedSymbols = watchlisted) }
+            }
+    }
+
     fun toggleWatchlist(symbol: String) {
         val uid = auth.currentUser?.uid ?: return
         val userRef = firestore.collection("users").document(uid)
@@ -79,7 +96,11 @@ class HomeViewModel @Inject constructor(
                 transaction.update(userRef, "watchlistedAssets", FieldValue.arrayRemove(symbol))
             } else {
                 if (!snapshot.exists()) {
-                    transaction.set(userRef, mapOf("watchlistedAssets" to listOf(symbol)), SetOptions.merge())
+                    transaction.set(
+                        userRef,
+                        mapOf("watchlistedAssets" to listOf(symbol)),
+                        SetOptions.merge()
+                    )
                 } else {
                     transaction.update(userRef, "watchlistedAssets", FieldValue.arrayUnion(symbol))
                 }
@@ -87,5 +108,10 @@ class HomeViewModel @Inject constructor(
         }.addOnFailureListener { e ->
             e.printStackTrace()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        listenerRegistration?.remove() // Prevent memory leaks
     }
 }

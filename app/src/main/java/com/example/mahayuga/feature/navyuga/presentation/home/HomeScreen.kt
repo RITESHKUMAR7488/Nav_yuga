@@ -1,8 +1,6 @@
 // main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -21,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SwapVert
@@ -39,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,7 +59,7 @@ private val BorderDark = Color(0xFF1A2A40)
 fun HomeScreen(
     onNavigateToSmReitDetail: (String) -> Unit,
     onNavigateToReitDetail: (String) -> Unit,
-    onNavigateToSearch: () -> Unit,
+    onNavigateToSearch: () -> Unit, // Kept for interface compatibility
     scrollToTopTrigger: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -71,6 +69,10 @@ fun HomeScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
+
+    // ⚡ NEW: Search State variables
+    var isSearchActive by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
@@ -113,42 +115,56 @@ fun HomeScreen(
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Search,
                             desc = "Search/Filter",
-                            onClick = onNavigateToSearch
+                            onClick = {
+                                isSearchActive = !isSearchActive
+                            } // ⚡ NEW: Toggles Inline Search
                         )
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Send,
                             desc = "Messages",
                             onClick = {
-                                Toast.makeText(
-                                    context,
-                                    "Messages coming soon",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         )
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Notifications,
                             desc = "Notifications",
                             onClick = {
-                                Toast.makeText(
-                                    context,
-                                    "No new notifications",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         )
                     }
                 }
 
+                // ⚡ NEW: Workable Inline Search Bar
+                if (isSearchActive) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        placeholder = { Text("Search properties...", color = Color.Gray) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = TradeGreen,
+                            unfocusedBorderColor = BorderDark,
+                            focusedTextColor = TextWhite,
+                            unfocusedTextColor = TextWhite
+                        ),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
                 if (uiState.tickerQuotes.isNotEmpty()) {
                     MarketTickerRow(quotes = uiState.tickerQuotes)
                 } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(36.dp)
-                            .background(TradeBg)
-                    )
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .background(TradeBg))
                 }
 
                 TabRow(
@@ -202,10 +218,20 @@ fun HomeScreen(
             ) {
                 val allAssets =
                     uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
-                val filteredAssets =
-                    if (selectedTab == 0) allAssets.filter { it.symbol.endsWith(".BO") } else allAssets.filter {
-                        it.symbol.endsWith(".NS")
+
+                // ⚡ NEW: Apply Search Filter
+                var filteredAssets =
+                    if (selectedTab == 0) allAssets.filter { it.symbol.endsWith(".BO") }
+                    else allAssets.filter { it.symbol.endsWith(".NS") }
+
+                if (searchQuery.isNotBlank()) {
+                    filteredAssets = filteredAssets.filter {
+                        it.name.contains(searchQuery, ignoreCase = true) || it.symbol.contains(
+                            searchQuery,
+                            ignoreCase = true
+                        )
                     }
+                }
 
                 if (filteredAssets.isEmpty()) {
                     item {
@@ -218,18 +244,22 @@ fun HomeScreen(
                     }
                 } else {
                     items(filteredAssets, key = { it.symbol }) { quote ->
+                        val isSaved =
+                            uiState.watchlistedSymbols.contains(quote.symbol) // ⚡ NEW: Check saved status
+
                         LiveAssetTradingCard(
                             quote = quote,
                             isSmReit = selectedTab == 0,
+                            isSaved = isSaved, // ⚡ NEW: Pass saved status to card
                             onCardClick = {
                                 if (selectedTab == 0) onNavigateToSmReitDetail(quote.symbol)
                                 else onNavigateToReitDetail(quote.symbol)
                             },
                             onSaveClick = {
-                                // ⚡ FIX: Use the ViewModel to save directly to Firebase
                                 viewModel.toggleWatchlist(quote.symbol)
-                                Toast.makeText(context, "Watchlist Updated", Toast.LENGTH_SHORT)
-                                    .show()
+                                val msg =
+                                    if (isSaved) "Removed from Watchlist" else "Added to Watchlist"
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
@@ -312,6 +342,7 @@ fun MarketTickerRow(quotes: List<MarketQuote>) {
 fun LiveAssetTradingCard(
     quote: MarketQuote,
     isSmReit: Boolean,
+    isSaved: Boolean, // ⚡ NEW: Accepts saved state
     onCardClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
@@ -362,10 +393,11 @@ fun LiveAssetTradingCard(
                         .size(24.dp)
                         .offset(x = 8.dp, y = (-4).dp)
                 ) {
+                    // ⚡ NEW: Dynamically change Icon and Color based on saved state
                     Icon(
-                        imageVector = Icons.Default.BookmarkBorder,
+                        imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Default.BookmarkBorder,
                         contentDescription = "Save to Watchlist",
-                        tint = TextGrey
+                        tint = if (isSaved) TradeGreen else TextGrey
                     )
                 }
             }
@@ -387,11 +419,7 @@ fun LiveAssetTradingCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "${if (quote.isPositive) "+" else ""}₹${
-                                String.format(
-                                    Locale.US,
-                                    "%.2f",
-                                    Math.abs(quote.priceChange)
-                                )
+                                String.format(Locale.US, "%.2f", Math.abs(quote.priceChange))
                             }",
                             color = priceColor,
                             fontSize = 14.sp,
@@ -400,11 +428,7 @@ fun LiveAssetTradingCard(
                         Text(" | ", color = TextGrey, fontSize = 12.sp)
                         Text(
                             text = "${if (quote.isPositive) "+" else ""}${
-                                String.format(
-                                    Locale.US,
-                                    "%.2f",
-                                    quote.percentageChange
-                                )
+                                String.format(Locale.US, "%.2f", quote.percentageChange)
                             }%",
                             color = priceColor,
                             fontSize = 14.sp,
@@ -416,8 +440,7 @@ fun LiveAssetTradingCard(
                 Row(
                     modifier = Modifier
                         .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                        .clickable { },
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
