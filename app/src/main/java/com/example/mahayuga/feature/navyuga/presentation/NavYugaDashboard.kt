@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -84,7 +83,6 @@ fun NavYugaDashboard(
                 )
             }
 
-            // ⚡ FIX: Added Navigation Lambdas to Watchlist Screen
             composable("ay_watchlist") {
                 WatchlistScreen(
                     onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
@@ -109,20 +107,18 @@ fun NavYugaDashboard(
             }
         }
 
+        // ⚡ FIX 4: Removed the horizontal/vertical padding to ground it. Lowered height. Added top rounding.
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .background(BottomNavBg, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(68.dp)
-                    .shadow(12.dp, RoundedCornerShape(50))
-                    .clip(RoundedCornerShape(50))
-                    .background(BottomNavBg),
+                    .height(60.dp), // Standard height instead of 68.dp
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {

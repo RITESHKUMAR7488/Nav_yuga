@@ -1,182 +1,528 @@
 // main/java/com/example/mahayuga/feature/navyuga/presentation/discover/DiscoverScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.discover
 
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 
-// Theme Colors
-private val BackgroundDark = Color(0xFF040C17)
-private val CardBackground = Color(0xFF162032)
+// --- THEME COLORS ---
+private val BackgroundDark = Color(0xFF080F18)
+private val CardBackground = Color(0xFF0F1722)
 private val TextPrimary = Color.White
-private val TextSecondary = Color(0xFFA0AEC0)
-private val AccentBlue = Color(0xFF2979FF)
-private val SearchBarBg = Color(0xFF1E293B)
-private val ImagePlaceholderBg = Color(0xFF2D3748)
+private val TextSecondary = Color(0xFF8B9BB4)
+private val AccentTeal = Color(0xFF00BFA5)
+private val StoryGradientStart = Color(0xFFE1306C)
+private val StoryGradientEnd = Color(0xFFF77737)
+private val BricxStoryColor = Color(0xFF2979FF)
 
 @Composable
 fun DiscoverScreen(
     viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Reels", "Education")
+    val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundDark)
-    ) {
-        // Custom Tab Row
-        TabRow(
-            selectedTabIndex = selectedTabIndex,
-            containerColor = BackgroundDark,
-            contentColor = TextPrimary,
-            indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                    color = AccentBlue,
-                    height = 3.dp
-                )
-            },
-            divider = { HorizontalDivider(color = Color.Transparent) },
-            modifier = Modifier.padding(top = 40.dp) // Status bar padding
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = {
+    var isSearchActive by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Overlay States for Details
+    var selectedReel by remember { mutableStateOf<DiscoverReel?>(null) }
+    var selectedEducation by remember { mutableStateOf<DiscoverEducation?>(null) }
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(BackgroundDark)) {
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            // --- HEADER ---
+            Column(
+                modifier = Modifier
+                    .background(BackgroundDark)
+                    .statusBarsPadding()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Discover Icon",
+                            tint = AccentTeal,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = title,
-                            fontSize = 18.sp,
-                            fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selectedTabIndex == index) TextPrimary else TextSecondary
+                            text = "Discover",
+                            color = TextPrimary,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Normal
                         )
                     }
-                )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        DiscoverHeaderIcon(Icons.Default.Search, "Search") {
+                            isSearchActive = !isSearchActive
+                        }
+                        DiscoverHeaderIcon(Icons.Default.Send, "Messages") {
+                            Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                        DiscoverHeaderIcon(Icons.Outlined.Notifications, "Notifications") {
+                            Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    }
+                }
+
+                if (isSearchActive) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        placeholder = {
+                            Text(
+                                "Search reels, and education...",
+                                color = Color.Gray
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AccentTeal,
+                            unfocusedBorderColor = CardBackground,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        ),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+
+            // --- MAIN UNIFIED SCROLL CONTENT ---
+            when (val state = uiState) {
+                is DiscoverState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AccentTeal)
+                    }
+                }
+
+                is DiscoverState.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = state.message, color = Color.Red)
+                    }
+                }
+
+                is DiscoverState.Success -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        // 1. STORIES
+                        item {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(state.stories) { story ->
+                                    StoryCircleItem(story = story)
+                                }
+                            }
+                        }
+
+                        // 2. ADVERTISING BOARD
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    .height(140.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(CardBackground)
+                            ) {
+                                AsyncImage(
+                                    model = state.adBoard.imageUrl,
+                                    contentDescription = "Advertisement",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(
+                                                    Color.Black.copy(alpha = 0.8f),
+                                                    Color.Transparent
+                                                )
+                                            )
+                                        )
+                                )
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.CenterStart)
+                                        .padding(16.dp)
+                                ) {
+                                    Text(
+                                        "Sponsored",
+                                        color = AccentTeal,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        "Invest in Grade-A\nWarehousing",
+                                        color = TextPrimary,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = { },
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(
+                                            horizontal = 12.dp,
+                                            vertical = 0.dp
+                                        ),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        Text(
+                                            "Learn More",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = BackgroundDark
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // 3. REELS SECTION (4 Grid)
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "Trending Reels",
+                                color = TextPrimary,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    bottom = 12.dp
+                                )
+                            )
+
+                            // Split 4 reels into 2 rows for grid layout
+                            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    ReelGridCard(
+                                        state.reels.getOrNull(0),
+                                        Modifier.weight(1f)
+                                    ) { reel -> selectedReel = reel }
+                                    ReelGridCard(
+                                        state.reels.getOrNull(1),
+                                        Modifier.weight(1f)
+                                    ) { reel -> selectedReel = reel }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    ReelGridCard(
+                                        state.reels.getOrNull(2),
+                                        Modifier.weight(1f)
+                                    ) { reel -> selectedReel = reel }
+                                    ReelGridCard(
+                                        state.reels.getOrNull(3),
+                                        Modifier.weight(1f)
+                                    ) { reel -> selectedReel = reel }
+                                }
+                            }
+                        }
+
+                        // 4. EDUCATION SECTION
+                        item {
+                            Spacer(modifier = Modifier.height(32.dp))
+                            Text(
+                                "Learn & Grow",
+                                color = TextPrimary,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    bottom = 12.dp
+                                )
+                            )
+                        }
+
+                        items(state.educationVideos) { video ->
+                            EducationVideoCard(
+                                video = video,
+                                onClick = { selectedEducation = video })
+                        }
+                    }
+                }
             }
         }
 
-        when (val state = uiState) {
-            is DiscoverState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AccentBlue)
-                }
+        // --- FULL SCREEN OVERLAYS ---
+
+        if (selectedReel != null) {
+            Dialog(
+                onDismissRequest = { selectedReel = null },
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false
+                )
+            ) {
+                FullScreenReelView(reel = selectedReel!!, onClose = { selectedReel = null })
             }
-            is DiscoverState.Error -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = state.message, color = Color.Red)
-                }
-            }
-            is DiscoverState.Success -> {
-                if (selectedTabIndex == 0) {
-                    ReelsContent(state.trending, state.reels)
-                } else {
-                    EducationContent(state.heroVideo, state.educationVideos)
-                }
+        }
+
+        if (selectedEducation != null) {
+            Dialog(
+                onDismissRequest = { selectedEducation = null },
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false
+                )
+            ) {
+                YouTubeStyleVideoDetail(
+                    video = selectedEducation!!,
+                    onClose = { selectedEducation = null })
             }
         }
     }
 }
 
+// --- SUB-COMPONENTS ---
+
 @Composable
-fun ReelsContent(trending: List<TrendingItem>, reels: List<ReelItem>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 100.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize()
+fun DiscoverHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(42.dp)
+            .shadow(elevation = 6.dp, shape = CircleShape, spotColor = Color.Black)
+            .clip(CircleShape)
+            .background(CardBackground)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
     ) {
-        // Trending Row spans both columns
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                items(trending) { item ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                                .background(Brush.sweepGradient(listOf(Color(0xFFE1306C), Color(0xFFF77737))))
-                                .padding(3.dp)
-                                .clip(CircleShape)
-                                .background(ImagePlaceholderBg)
+        Icon(
+            imageVector = icon,
+            contentDescription = desc,
+            tint = TextPrimary,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun StoryCircleItem(story: DiscoverStory) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(76.dp)
+                .clip(CircleShape)
+                .background(
+                    if (story.isBricx) Brush.sweepGradient(
+                        listOf(
+                            BricxStoryColor,
+                            AccentTeal,
+                            BricxStoryColor
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = item.name, color = TextPrimary, fontSize = 12.sp)
-                    }
-                }
+                    )
+                    else if (!story.isSeen) Brush.sweepGradient(
+                        listOf(
+                            StoryGradientStart,
+                            StoryGradientEnd,
+                            StoryGradientStart
+                        )
+                    )
+                    else Brush.sweepGradient(listOf(Color.Gray, Color.Gray))
+                )
+                .padding(3.dp)
+                .clip(CircleShape)
+                .background(CardBackground),
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = story.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            )
+            // BRICX special badge
+            if (story.isBricx) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f)))
+                Text("BRICX", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = story.name,
+            color = if (story.isBricx) AccentTeal else TextPrimary,
+            fontSize = 12.sp,
+            fontWeight = if (story.isBricx) FontWeight.Bold else FontWeight.Medium
+        )
+    }
+}
 
-        // Reels Grid Items
-        items(reels) { reel ->
+@Composable
+fun ReelGridCard(reel: DiscoverReel?, modifier: Modifier, onClick: (DiscoverReel) -> Unit) {
+    if (reel == null) {
+        Box(modifier = modifier.aspectRatio(0.6f))
+        return
+    }
+
+    Card(
+        modifier = modifier
+            .aspectRatio(0.6f)
+            .clickable { onClick(reel) },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBackground)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AsyncImage(
+                model = reel.thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Top Gradient for Views
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(0.6f) // Tall rectangular ratio (Instagram/TikTok style)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(ImagePlaceholderBg)
-            ) {
-                // Gradient overlay for text readability
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                                startY = 300f
+                    .height(60.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Transparent
                             )
                         )
-                )
+                    )
+            )
+            // Bottom Gradient for Info
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.9f)
+                            )
+                        )
+                    )
+            )
 
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(12.dp)
+            // Views (Top Right)
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    null,
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    reel.views,
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Info (Bottom)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    reel.subtitle,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = reel.views,
-                        color = TextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        text = reel.assetManager,
+                        color = AccentTeal,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     Text(
-                        text = reel.title,
-                        color = TextPrimary,
-                        fontSize = 14.sp,
-                        maxLines = 2,
+                        text = " • AUM: ${reel.aum}",
+                        color = TextSecondary,
+                        fontSize = 10.sp,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -186,173 +532,353 @@ fun ReelsContent(trending: List<TrendingItem>, reels: List<ReelItem>) {
 }
 
 @Composable
-fun EducationContent(heroVideo: VideoItem, videos: List<VideoItem>) {
-    var searchQuery by remember { mutableStateOf("") }
-
-    LazyColumn(
-        contentPadding = PaddingValues(bottom = 100.dp),
-        modifier = Modifier.fillMaxSize()
+fun EducationVideoCard(video: DiscoverEducation, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // Search & Filter
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    placeholder = { Text("Search classes & tutorials...", color = TextSecondary, fontSize = 14.sp) },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search", tint = TextSecondary) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = SearchBarBg,
-                        unfocusedContainerColor = SearchBarBg,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = TextPrimary
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SearchBarBg),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Outlined.Tune, contentDescription = "Filter", tint = TextSecondary)
-                }
-            }
-        }
-
-        // Hero Carousel (Hotstar Style)
-        item {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(CardBackground)
+        ) {
+            AsyncImage(
+                model = video.thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Duration badge
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp) // Massive hero image
-                    .background(ImagePlaceholderBg)
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
-                // Bottom Gradient
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, BackgroundDark),
-                                startY = 400f
-                            )
-                        )
+                Text(
+                    video.duration,
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
                 )
-
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = heroVideo.title,
-                        color = TextPrimary,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "${heroVideo.time} • ${heroVideo.channel}",
-                        color = TextSecondary,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Action Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = "Play", tint = Color.Black)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Play Now", color = Color.Black, fontWeight = FontWeight.Bold)
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        IconButton(
-                            onClick = { },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.White.copy(alpha = 0.2f))
-                        ) {
-                            Icon(Icons.Filled.Add, contentDescription = "Watchlist", tint = Color.White)
-                        }
-                    }
-                }
             }
         }
 
-        // YouTube Style Video List
-        items(videos) { video ->
-            Column(
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CardBackground),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(video.assetManager.take(1), color = AccentTeal, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    text = video.title,
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        video.assetManager,
+                        color = AccentTeal,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(" • AUM: ${video.aum}", color = TextSecondary, fontSize = 12.sp)
+                    Text(" • ${video.views}", color = TextSecondary, fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+// --- OVERLAY SCREENS ---
+
+@Composable
+fun FullScreenReelView(reel: DiscoverReel, onClose: () -> Unit) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)) {
+        // Pseudo Video Player Background
+        AsyncImage(
+            model = reel.thumbnailUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.3f)))
+
+        // Close Button
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(top = 16.dp, start = 16.dp)
+        ) {
+            Icon(
+                Icons.Default.ArrowBack,
+                "Close",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        // Action Menu (Right)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            ReelActionIcon(Icons.Default.FavoriteBorder, "12K")
+            ReelActionIcon(Icons.Default.Email, "450")
+            ReelActionIcon(Icons.AutoMirrored.Filled.Send, "Share")
+            ReelActionIcon(Icons.Default.MoreVert, null)
+        }
+
+        // Bottom Info
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .navigationBarsPadding()
+                .padding(start = 16.dp, bottom = 40.dp, end = 80.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(AccentTeal, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        reel.assetManager.take(1),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    reel.assetManager,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        "Follow",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(reel.subtitle, color = Color.White, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "AUM: ${reel.aum} • ${reel.views} Views",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun ReelActionIcon(icon: ImageVector, label: String?) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(32.dp))
+        if (label != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .background(BackgroundDark)
+        .statusBarsPadding()) {
+        // Video Player Placeholder
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .background(Color.Black)
+        ) {
+            AsyncImage(
+                model = video.thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    "Play",
+                    tint = Color.White,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+
+            // Close Button over video
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 8.dp, start = 8.dp)
+            ) {
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    "Close",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+
+        // Details Column
+        Column(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
+            Text(video.title, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("${video.views} • 2 days ago", color = TextSecondary, fontSize = 12.sp)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // AM Info Row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(ImagePlaceholderBg)
-                )
+                        .size(40.dp)
+                        .background(CardBackground, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        video.assetManager.take(1),
+                        color = AccentTeal,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        video.assetManager,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    Text("AUM: ${video.aum}", color = TextSecondary, fontSize = 12.sp)
+                }
+                Button(
+                    onClick = { },
+                    colors = ButtonDefaults.buttonColors(containerColor = TextPrimary),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("Subscribe", color = BackgroundDark, fontWeight = FontWeight.Bold)
+                }
+            }
 
-                Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Row(modifier = Modifier.fillMaxWidth()) {
+            // Action Row
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                EduActionBtn(Icons.Default.KeyboardArrowUp, "1.4K")
+                EduActionBtn(Icons.Default.KeyboardArrowDown, "Dislike")
+                EduActionBtn(Icons.AutoMirrored.Filled.Send, "Share")
+                EduActionBtn(Icons.Default.Add, "Save")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(color = CardBackground)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                "Suggested Videos",
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Dummy Suggested List
+            repeat(3) {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.Gray) // Channel Avatar Placeholder
+                            .width(120.dp)
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(CardBackground)
                     )
-
                     Spacer(modifier = Modifier.width(12.dp))
-
                     Column {
                         Text(
-                            text = video.title,
+                            "Understanding fractional real estate laws",
                             color = TextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "${video.channel} • ${video.views} • ${video.time}",
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
+                        Text("Navyuga Assets", color = TextSecondary, fontSize = 12.sp)
+                        Text("34K views • 1 week ago", color = TextSecondary, fontSize = 12.sp)
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun EduActionBtn(icon: ImageVector, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, null, tint = TextPrimary, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(label, color = TextPrimary, fontSize = 12.sp)
     }
 }
