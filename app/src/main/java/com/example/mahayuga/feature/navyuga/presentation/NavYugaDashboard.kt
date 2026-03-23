@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -101,13 +100,13 @@ fun NavYugaDashboard(
                     onNavigateToSecurity = onNavigateToSecurity,
                     onNavigateToHelp = onNavigateToHelp,
                     onNavigateToWallet = { rootNavController.navigate("wallet_screen") },
+                    onNavigateToAbout = { rootNavController.navigate("about_navyuga") }, // ⚡ ADDED THIS ROUTE
                     onNavigateToMenu = onNavigateToMenu,
                     onLogout = onLogout
                 )
             }
         }
 
-        // ⚡ FIX 4: Removed the horizontal/vertical padding to ground it. Lowered height. Added top rounding.
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -118,7 +117,7 @@ fun NavYugaDashboard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp), // Standard height instead of 68.dp
+                    .height(60.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {

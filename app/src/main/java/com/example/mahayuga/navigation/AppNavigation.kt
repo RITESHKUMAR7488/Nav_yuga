@@ -30,7 +30,7 @@ import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen
 import com.example.mahayuga.feature.profile.presentation.AccountDetailsScreen
 import com.example.mahayuga.feature.profile.presentation.HelpCenterScreen
 import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
-import com.example.mahayuga.feature.profile.presentation.ProfileMenuScreen
+import com.example.mahayuga.feature.profile.presentation.ProfileScreen // ⚡ FIX: Imported ProfileScreen instead of ProfileMenuScreen
 import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.profile.presentation.WalletScreen
@@ -79,8 +79,8 @@ fun AppNavigation(
         // --- PROFILE MENU (FULL PAGE) ---
         composable("profile_menu") {
             val authViewModel: AuthViewModel = hiltViewModel()
-            ProfileMenuScreen(
-                onBackClick = { navController.popBackStack() },
+            // ⚡ FIX: Replaced ProfileMenuScreen with ProfileScreen and removed onBackClick
+            ProfileScreen(
                 onNavigateToLiked = { navController.navigate("liked_properties") },
                 onNavigateToAccount = { navController.navigate("account_details") },
                 onNavigateToSettings = { navController.navigate("settings_screen") },
