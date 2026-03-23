@@ -1,107 +1,144 @@
 // main/java/com/example/mahayuga/feature/navyuga/presentation/detail/ReitDetailViewModel.kt
 package com.example.mahayuga.feature.navyuga.presentation.detail
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mahayuga.feature.navyuga.domain.model.ReitModel
-import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Locale
 import javax.inject.Inject
+
+// --- DATA MODELS ---
+data class ReitDetailData(
+    val id: String,
+    val name: String,
+    val symbol: String,
+    val currentPrice: Double,
+    val priceChange: Double,
+    val percentageChange: Double,
+    val isPositive: Boolean,
+
+    // Estate Data
+    val images: List<String>,
+    val description: String,
+    val propertyType: String,
+    val totalArea: String,
+    val occupancyRate: String,
+    val majorTenants: List<String>,
+
+    // Finance Data (Expanded with High/Low/Volume)
+    val chartPoints: List<Pair<Float, Float>>,
+    val marketCap: String,
+    val peRatio: String,
+    val dividendYield: String,
+    val dayLow: String,
+    val dayHigh: String,
+    val week52Low: String,
+    val week52High: String,
+    val volume: String,
+    val avgVolume: String,
+
+    // News Data
+    val newsItems: List<ReitNewsItem>
+)
+
+data class ReitNewsItem(
+    val id: String,
+    val title: String,
+    val source: String,
+    val timeAgo: String
+)
 
 sealed class ReitDetailState {
     object Loading : ReitDetailState()
-    data class Success(val reit: ReitModel) : ReitDetailState()
+    data class Success(val data: ReitDetailData) : ReitDetailState()
     data class Error(val message: String) : ReitDetailState()
 }
 
 @HiltViewModel
-class ReitDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val marketRepository: MarketRepository
-) : ViewModel() {
+class ReitDetailViewModel @Inject constructor() : ViewModel() {
 
-    private val assetId: String = checkNotNull(savedStateHandle["assetId"])
     private val _uiState = MutableStateFlow<ReitDetailState>(ReitDetailState.Loading)
     val uiState: StateFlow<ReitDetailState> = _uiState.asStateFlow()
 
-    init {
-        fetchReitData(assetId)
-    }
+    private val _isWatchlisted = MutableStateFlow(false)
+    val isWatchlisted: StateFlow<Boolean> = _isWatchlisted.asStateFlow()
 
-    private fun fetchReitData(id: String) {
-        // ⚡ COROUTINE USAGE: viewModelScope.launch ties this network call to the lifecycle of this ViewModel.
-        // If the user quickly navigates back before the Yahoo API responds, this coroutine is automatically cancelled,
-        // preventing memory leaks and avoiding crashes caused by trying to update a dead UI.
+    fun fetchAssetDetails(assetId: String) {
         viewModelScope.launch {
             _uiState.value = ReitDetailState.Loading
+            delay(600) // Simulate API call
 
-            val marketResult = marketRepository.getLiveQuotes(listOf(id))
-
-            marketResult.onSuccess { quotes ->
-                val liveQuote = quotes.firstOrNull()
-
-                if (liveQuote != null) {
-                    val cleanName = when (id) {
-                        "MINDSPACE.NS" -> "Mindspace Business Parks"
-                        "EMBASSY.NS" -> "Embassy Office Parks"
-                        "NEXUS.NS" -> "Nexus Select Trust"
-                        "BIRET.NS" -> "Brookfield India Trust"
-                        "PSTITANIA.BO" -> "Prop Share Titania"
-                        "PSPLATINA.BO" -> "Prop Share Platina"
-                        else -> liveQuote.name.split(",")[0]
-                    }
-
-                    val (portVal, holdings, dev) = when (id) {
-                        "MINDSPACE.NS" -> listOf("₹28,000 Cr", 32.3, 2.8)
-                        "EMBASSY.NS" -> listOf("₹48,800 Cr", 42.6, 8.1)
-                        "NEXUS.NS" -> listOf("₹22,000 Cr", 9.8, 0.0)
-                        else -> listOf("₹1,500 Cr", 1.2, 0.0)
-                    }
-
-                    val marketCapInCr = liveQuote.marketCap / 10_000_000.0
-                    val formattedMarketCap =
-                        "₹${String.format(Locale.US, "%.0f", marketCapInCr)} Cr"
-                    val formattedDividend =
-                        "${String.format(Locale.US, "%.1f", liveQuote.dividendYield)}%"
-
-                    val dynamicReit = ReitModel(
-                        id = id,
-                        name = cleanName,
-                        currentPrice = liveQuote.currentPrice,
-                        priceChange = liveQuote.priceChange,
-                        priceChangePercent = liveQuote.percentageChange,
-                        openPrice = liveQuote.openPrice,
-                        lastPrice = liveQuote.previousClose,
-                        marketCap = formattedMarketCap,
-                        dividendYield = formattedDividend,
-                        high52Week = liveQuote.fiftyTwoWeekHigh,
-                        low52Week = liveQuote.fiftyTwoWeekLow,
-                        totalPortfolioValue = portVal as String,
-                        totalHoldingsMsf = holdings as Double,
-                        underDevelopmentMsf = dev as Double,
-                        occupancyPercent = 89,
-                        priceHistory = listOf(
-                            (liveQuote.currentPrice * 0.95).toFloat(),
-                            (liveQuote.currentPrice * 0.98).toFloat(),
-                            liveQuote.currentPrice.toFloat()
-                        ),
-                        properties = emptyList(),
-                        news = emptyList()
+            // Simulating fetching data based on typical REIT market stats
+            val data = ReitDetailData(
+                id = assetId,
+                name = "Mindspace Business Parks REIT",
+                symbol = "MINDSPACE • NSE",
+                currentPrice = 458.90,
+                priceChange = 4.96,
+                percentageChange = 1.09,
+                isPositive = true,
+                images = listOf(
+                    "https://images.unsplash.com/photo-1497366216548-37526070297c",
+                    "https://images.unsplash.com/photo-1416331108676-a22ccb276e35",
+                    "https://images.unsplash.com/photo-1572025442646-866d16c84a54"
+                ),
+                description = "Mindspace Business Parks REIT owns and operates a portfolio of office parks and commercial properties in India.",
+                propertyType = "Commercial Office",
+                totalArea = "31.3M sq ft",
+                occupancyRate = "89.5%",
+                majorTenants = listOf("Accenture", "Barclays", "Cognizant"),
+                chartPoints = generateDummyChartData(),
+                marketCap = "₹27,215 Cr",
+                peRatio = "45.2",
+                dividendYield = "6.2%",
+                dayLow = "450.10",
+                dayHigh = "462.50",
+                week52Low = "385.00",
+                week52High = "480.25",
+                volume = "1.2M",
+                avgVolume = "850K",
+                newsItems = listOf(
+                    ReitNewsItem(
+                        "1",
+                        "Mindspace REIT reports 15% YoY growth in Net Operating Income for Q3.",
+                        "Moneycontrol",
+                        "2h ago"
+                    ),
+                    ReitNewsItem(
+                        "2",
+                        "Global tech giants renew leases at Mindspace Airoli West.",
+                        "Economic Times",
+                        "1d ago"
+                    ),
+                    ReitNewsItem(
+                        "3",
+                        "Analysis: Why Indian Office REITs are bouncing back.",
+                        "Bloomberg",
+                        "3d ago"
                     )
-                    _uiState.value = ReitDetailState.Success(dynamicReit)
-                } else {
-                    _uiState.value =
-                        ReitDetailState.Error("Could not fetch live market data for $id")
-                }
-            }.onFailure {
-                _uiState.value = ReitDetailState.Error(it.message ?: "Unknown error occurred")
-            }
+                )
+            )
+
+            _uiState.value = ReitDetailState.Success(data)
         }
+    }
+
+    fun toggleWatchlist() {
+        _isWatchlisted.value = !_isWatchlisted.value
+    }
+
+    private fun generateDummyChartData(): List<Pair<Float, Float>> {
+        val points = mutableListOf<Pair<Float, Float>>()
+        var currentY = 440f
+        for (i in 0..50) {
+            points.add(Pair(i.toFloat(), currentY))
+            currentY += (-5..6).random().toFloat()
+        }
+        points.add(Pair(51f, 458.9f))
+        return points
     }
 }

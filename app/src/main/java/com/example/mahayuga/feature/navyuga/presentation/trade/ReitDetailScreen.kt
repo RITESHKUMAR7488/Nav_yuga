@@ -1,7 +1,7 @@
 // main/java/com/example/mahayuga/feature/navyuga/presentation/trade/ReitDetailScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.trade
 
-import androidx.compose.foundation.Canvas
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,43 +9,55 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.mahayuga.feature.navyuga.domain.model.ReitModel
-import com.example.mahayuga.feature.navyuga.domain.model.ReitNewsModel
-import com.example.mahayuga.feature.navyuga.domain.model.ReitPropertyModel
+import coil.compose.AsyncImage
+import co.yml.charts.axis.AxisData
+import co.yml.charts.common.model.Point
+import co.yml.charts.ui.linechart.LineChart
+import co.yml.charts.ui.linechart.model.GridLines
+import co.yml.charts.ui.linechart.model.IntersectionPoint
+import co.yml.charts.ui.linechart.model.Line
+import co.yml.charts.ui.linechart.model.LineChartData
+import co.yml.charts.ui.linechart.model.LinePlotData
+import co.yml.charts.ui.linechart.model.LineStyle
+import co.yml.charts.ui.linechart.model.LineType
+import co.yml.charts.ui.linechart.model.SelectionHighlightPoint
+import co.yml.charts.ui.linechart.model.SelectionHighlightPopUp
+import co.yml.charts.ui.linechart.model.ShadowUnderLine
 import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailState
 import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailViewModel
+import kotlinx.coroutines.launch
 
-private val ReitBg = Color(0xFF040C17)
-private val ReitCard = Color(0xFF0B1727)
-private val ReitGreen = Color(0xFF00BFA5)
-private val ReitTabActive = Color(0xFF00BFA5)
-private val ReitTabInactive = Color(0xFF132337)
-private val TextWhite = Color.White
-private val TextGrey = Color(0xFF8B9BB4)
-private val ChartLineColor = Color(0xFF00E676)
-private val PieBlue = Color(0xFF2854A1)
-private val PiePink = Color(0xFFFFD1D1)
+// --- THEME COLORS ---
+private val BgDark = Color(0xFF080F18)
+private val CardDark = Color(0xFF0F1722)
+private val TextPrimary = Color.White
+private val TextSecondary = Color(0xFF8B9BB4)
+private val AccentTeal = Color(0xFF00BFA5)
+private val PositiveGreen = Color(0xFF00C853)
+private val NegativeRed = Color(0xFFFF3B30)
 
 @Composable
 fun ReitDetailScreen(
@@ -54,97 +66,73 @@ fun ReitDetailScreen(
     viewModel: ReitDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Details", "Portfolio", "News")
+    val isWatchlisted by viewModel.isWatchlisted.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(assetId) {
+        viewModel.fetchAssetDetails(assetId)
+    }
 
     Scaffold(
-        containerColor = ReitBg,
-        topBar = {
-            Column(
-                modifier = Modifier
-                    .background(ReitBg)
-                    .statusBarsPadding()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier.size(24.dp)
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextWhite) }
-                    Text(
-                        text = when (uiState) {
-                            is ReitDetailState.Success -> (uiState as ReitDetailState.Success).reit.name; is ReitDetailState.Loading -> "Loading..."; else -> "Error"
-                        },
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 8.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.size(24.dp))
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(if (selectedTab == index) ReitTabActive else ReitTabInactive)
-                                .clickable { selectedTab = index }
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                title,
-                                color = if (selectedTab == index) TextWhite else TextWhite.copy(
-                                    alpha = 0.7f
-                                ),
-                                fontSize = 16.sp,
-                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                        if (index < tabs.size - 1) Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(40.dp)
-                                .background(ReitBg)
-                        )
-                    }
-                }
+        containerColor = BgDark,
+        bottomBar = {
+            if (uiState is ReitDetailState.Success) {
+                ReitBottomActionBar()
             }
         }
-    ) { padding ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
+                .padding(paddingValues)
         ) {
             when (val state = uiState) {
-                is ReitDetailState.Loading -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = ReitGreen) }
+                is ReitDetailState.Loading -> {
+                    CircularProgressIndicator(
+                        color = AccentTeal,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
 
-                is ReitDetailState.Error -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { Text(state.message, color = Color.Red) }
+                is ReitDetailState.Error -> {
+                    Text(
+                        text = state.message,
+                        color = NegativeRed,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
 
                 is ReitDetailState.Success -> {
-                    when (selectedTab) {
-                        0 -> ReitDetailsTab(state.reit); 1 -> ReitPortfolioTab(); 2 -> ReitNewsTab(
-                        state.reit.news
-                    )
+                    val data = state.data
+
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+
+                        // 1. HEADER & PRICE INFO
+                        item {
+                            ReitHeaderSection(
+                                name = data.name,
+                                symbol = data.symbol,
+                                currentPrice = data.currentPrice,
+                                priceChange = data.priceChange,
+                                percentageChange = data.percentageChange,
+                                isPositive = data.isPositive,
+                                isWatchlisted = isWatchlisted,
+                                onBackClick = { navController.popBackStack() },
+                                onWatchlistClick = { viewModel.toggleWatchlist() },
+                                onShareClick = {
+                                    Toast.makeText(
+                                        context,
+                                        "Share coming soon",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                        }
+
+                        // 2. TABS (Estate, Financial, News)
+                        item {
+                            ReitTabsSection(state.data)
+                        }
                     }
                 }
             }
@@ -152,420 +140,482 @@ fun ReitDetailScreen(
     }
 }
 
-@Composable
-fun ReitDetailsTab(reit: ReitModel) {
-    val cardWidth = (LocalConfiguration.current.screenWidthDp.dp - 48.dp) / 2
+// --- SECTIONS ---
 
+@Composable
+fun ReitHeaderSection(
+    name: String,
+    symbol: String,
+    currentPrice: Double,
+    priceChange: Double,
+    percentageChange: Double,
+    isPositive: Boolean,
+    isWatchlisted: Boolean,
+    onBackClick: () -> Unit,
+    onWatchlistClick: () -> Unit,
+    onShareClick: () -> Unit
+) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .fillMaxWidth()
+            .background(BgDark)
+            .padding(top = 40.dp, bottom = 16.dp, start = 20.dp, end = 20.dp)
     ) {
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = ReitCard),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .background(Color(0xFFE8EDF2))
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(CardDark)
+                        .clickable { onBackClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Text(
+                    text = name,
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp)
-                        ) {
-                            Text(
-                                reit.name,
-                                color = TextWhite,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                reit.assetManager,
-                                color = TextGrey,
-                                fontSize = 12.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    "₹${
-                                        String.format(
-                                            java.util.Locale.US,
-                                            "%.2f",
-                                            reit.currentPrice
-                                        )
-                                    }",
-                                    color = TextWhite,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 24.sp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "${if (reit.priceChangePercent >= 0) "+" else ""}${
-                                        String.format(
-                                            java.util.Locale.US,
-                                            "%.2f",
-                                            reit.priceChangePercent
-                                        )
-                                    }%",
-                                    color = if (reit.priceChangePercent >= 0) ReitGreen else Color.Red,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(bottom = 3.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Open Price: ₹${
-                                    String.format(
-                                        java.util.Locale.US,
-                                        "%.2f",
-                                        reit.openPrice
-                                    )
-                                }", color = TextGrey, fontSize = 12.sp
-                            )
-                            Text(
-                                "Last Price: ₹${
-                                    String.format(
-                                        java.util.Locale.US,
-                                        "%.2f",
-                                        reit.lastPrice
-                                    )
-                                }", color = TextGrey, fontSize = 12.sp
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Box(
-                                modifier = Modifier
-                                    .border(
-                                        1.dp,
-                                        TextGrey.copy(alpha = 0.5f),
-                                        RoundedCornerShape(4.dp)
-                                    )
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                // ⚡ STAR ADDED TO HARDCODED REGISTRATION STATUS
-                                Text("Registered under SEBI ⭐", color = TextGrey, fontSize = 8.sp)
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(60.dp)
-                            ) {
-                                SimpleLineChart(
-                                    data = reit.priceHistory,
-                                    lineColor = if (reit.priceChange >= 0) ChartLineColor else Color.Red
-                                )
-                            }
-                        }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Icon(
+                    imageVector = Icons.Outlined.Share,
+                    contentDescription = "Share",
+                    tint = TextPrimary,
+                    modifier = Modifier.clickable { onShareClick() }
+                )
+                Icon(
+                    imageVector = if (isWatchlisted) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Watchlist",
+                    tint = if (isWatchlisted) AccentTeal else TextPrimary,
+                    modifier = Modifier.clickable { onWatchlistClick() }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(text = symbol, color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "₹${currentPrice}",
+            color = TextPrimary,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        val color = if (isPositive) PositiveGreen else NegativeRed
+        val sign = if (isPositive) "+" else "-"
+        Text(
+            text = "$sign$priceChange ($percentageChange%) 1D",
+            color = color,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
+    val tabs = listOf("Estate", "Finance", "News")
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        TabRow(
+            selectedTabIndex = pagerState.currentPage,
+            containerColor = BgDark,
+            contentColor = AccentTeal,
+            indicator = { tabPositions ->
+                TabRowDefaults.SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                    color = AccentTeal
+                )
+            },
+            divider = { HorizontalDivider(color = CardDark) }
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = pagerState.currentPage == index,
+                    onClick = {
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                    text = {
+                        Text(
+                            text = title,
+                            color = if (pagerState.currentPage == index) AccentTeal else TextSecondary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                }
+                )
             }
         }
 
-        // Yahoo Finance real data
-        Card(
-            colors = CardDefaults.cardColors(containerColor = ReitCard),
-            shape = RoundedCornerShape(12.dp),
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 600.dp)
+        ) { page ->
+            when (page) {
+                0 -> EstateTabContent(data)
+                1 -> FinanceTabContent(data)
+                2 -> NewsTabContent(data)
+            }
+        }
+    }
+}
+
+@Composable
+fun EstateTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatItem("Market Cap", reit.marketCap)
+            items(data.images) { imageUrl ->
                 Box(
                     modifier = Modifier
-                        .width(1.dp)
-                        .height(30.dp)
-                        .background(ReitGreen.copy(alpha = 0.6f))
-                )
-                StatItem("Dividend", reit.dividendYield)
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(30.dp)
-                        .background(ReitGreen.copy(alpha = 0.6f))
-                )
-                StatItem(
-                    "52-Wk High",
-                    "₹${String.format(java.util.Locale.US, "%.0f", reit.high52Week)}"
-                )
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(30.dp)
-                        .background(ReitGreen.copy(alpha = 0.6f))
-                )
-                StatItem(
-                    "52-Wk Low",
-                    "₹${String.format(java.util.Locale.US, "%.0f", reit.low52Week)}"
-                )
+                        .width(280.dp)
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                ) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Property Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
 
-        // ⚡ STARS ADDED TO ALL HARDCODED / DUMMY PORTFOLIO DATA HERE
-        Card(
-            colors = CardDefaults.cardColors(containerColor = ReitCard),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            "About the Estate",
+            color = TextPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(data.description, color = TextSecondary, fontSize = 14.sp, lineHeight = 20.sp)
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CardDark, RoundedCornerShape(12.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Portfolio ⭐",
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                    Text("Total Portfolio Value ⭐", color = TextGrey, fontSize = 12.sp)
-                    Text(
-                        reit.totalPortfolioValue,
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        "Total Holdings ⭐: ${reit.totalHoldingsMsf} MSF",
-                        color = ReitGreen,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        "Under Development ⭐: +${reit.underDevelopmentMsf} MSF",
-                        color = ReitGreen,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        "Occupancy ⭐: ${reit.occupancyPercent}%",
-                        color = ReitGreen,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Box(modifier = Modifier.size(100.dp)) { SimpleDonutChart(60f, PieBlue, PiePink) }
-            }
+            EstateDetailRow("Property Type", data.propertyType)
+            HorizontalDivider(color = BgDark)
+            EstateDetailRow("Total Area", data.totalArea)
+            HorizontalDivider(color = BgDark)
+            EstateDetailRow("Occupancy Rate", data.occupancyRate)
+            HorizontalDivider(color = BgDark)
+            EstateDetailRow("Major Tenants", data.majorTenants.joinToString(", "))
         }
 
-        if (reit.properties.isNotEmpty()) {
-            Text(
-                "All Properties ⭐", // ⚡ STAR ADDED TO DUMMY PROPERTY LIST
-                color = TextWhite,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(reit.properties) { prop ->
-                    ReitPropertyCard(
-                        prop,
-                        cardWidth
-                    )
-                }
-            }
-        }
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
 @Composable
-fun ReitPortfolioTab() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) { Text("Portfolio Details Coming Soon", color = TextGrey) }
+fun EstateDetailRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, color = TextSecondary, fontSize = 14.sp)
+        Text(value, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    }
 }
 
 @Composable
-fun ReitNewsTab(newsList: List<ReitNewsModel>) {
-    if (newsList.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) { Text("No news available currently.", color = TextGrey) }; return
-    }
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(newsList) { news ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = ReitCard),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(modifier = Modifier.padding(12.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFE8EDF2))
+fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            listOf("1D", "1W", "1M", "6M", "1Y", "5Y", "All").forEach { tf ->
+                val isSelected = tf == "1D"
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (isSelected) CardDark else Color.Transparent)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        tf,
+                        color = if (isSelected) TextPrimary else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            news.title,
-                            color = TextWhite,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                        Text(news.contentPreview, color = TextWhite.copy(0.9f), fontSize = 12.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        news.bulletPoints.forEach { point ->
-                            Text(
-                                "- $point",
-                                color = TextGrey,
-                                fontSize = 10.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            news.date,
-                            color = TextGrey,
-                            fontSize = 10.sp,
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                    }
                 }
             }
         }
-    }
-}
 
-@Composable
-fun StatItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, color = TextGrey, fontSize = 10.sp)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(value, color = TextWhite, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-    }
-}
+        if (data.chartPoints.isNotEmpty()) {
+            val chartColor = if (data.isPositive) PositiveGreen else NegativeRed
+            val yChartsPoints = data.chartPoints.map { Point(it.first, it.second) }
 
-@Composable
-fun ReitPropertyCard(prop: ReitPropertyModel, cardWidth: androidx.compose.ui.unit.Dp) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = ReitCard),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.width(cardWidth)
-    ) {
-        Column {
-            Box(
+            val xAxisData = AxisData.Builder()
+                .axisStepSize(100.dp)
+                .backgroundColor(BgDark)
+                .steps(yChartsPoints.size - 1)
+                .labelData { i -> i.toString() }
+                .labelAndAxisLinePadding(15.dp)
+                .axisLineColor(Color.Transparent)
+                .axisLabelColor(Color.Transparent)
+                .build()
+
+            val yAxisData = AxisData.Builder()
+                .steps(5)
+                .backgroundColor(BgDark)
+                .labelAndAxisLinePadding(20.dp)
+                .labelData { i ->
+                    val minY = yChartsPoints.minOf { it.y }
+                    val maxY = yChartsPoints.maxOf { it.y }
+                    val yScale = (maxY - minY) / 5
+                    (minY + (i * yScale)).toInt().toString()
+                }
+                .axisLineColor(Color.Transparent)
+                .axisLabelColor(Color.Transparent)
+                .build()
+
+            val lineChartData = LineChartData(
+                linePlotData = LinePlotData(
+                    lines = listOf(
+                        Line(
+                            dataPoints = yChartsPoints,
+                            LineStyle(
+                                color = chartColor,
+                                // ⚡ FIX: Used LineType.Straight() for stock-market style straight connections
+                                lineType = LineType.Straight()
+                            ),
+                            IntersectionPoint(color = Color.Transparent, radius = 0.dp),
+                            SelectionHighlightPoint(color = TextPrimary),
+                            ShadowUnderLine(
+                                alpha = 0.2f,
+                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors = listOf(
+                                        chartColor.copy(alpha = 0.3f),
+                                        Color.Transparent
+                                    )
+                                )
+                            ),
+                            SelectionHighlightPopUp(
+                                backgroundColor = CardDark,
+                                labelColor = TextPrimary,
+                                labelTypeface = android.graphics.Typeface.DEFAULT_BOLD
+                            )
+                        )
+                    )
+                ),
+                backgroundColor = BgDark,
+                xAxisData = xAxisData,
+                yAxisData = yAxisData,
+                gridLines = GridLines(color = Color.Transparent)
+            )
+
+            LineChart(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
-                    .background(Color(0xFFE8EDF2))
+                    .height(250.dp),
+                lineChartData = lineChartData
             )
-            Column(modifier = Modifier.padding(12.dp)) {
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // --- EXTENDED FUNDAMENTALS GRID ---
+        Text(
+            "Fundamentals",
+            color = TextPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Row 1: Day Low & Day High
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                FinanceStatItem("Day Low", data.dayLow, Modifier.weight(1f))
+                FinanceStatItem("Day High", data.dayHigh, Modifier.weight(1f))
+            }
+
+            // Row 2: 52-Week Low & High
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                FinanceStatItem("52W Low", data.week52Low, Modifier.weight(1f))
+                FinanceStatItem("52W High", data.week52High, Modifier.weight(1f))
+            }
+
+            // Row 3: Volume & Avg Volume
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                FinanceStatItem("Volume", data.volume, Modifier.weight(1f))
+                FinanceStatItem("Avg Volume", data.avgVolume, Modifier.weight(1f))
+            }
+
+            // Row 4: Market Cap & P/E Ratio
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                FinanceStatItem("Market Cap", data.marketCap, Modifier.weight(1f))
+                FinanceStatItem("P/E Ratio", data.peRatio, Modifier.weight(1f))
+            }
+
+            // Row 5: Div Yield & ROI
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                FinanceStatItem("Div Yield", data.dividendYield, Modifier.weight(1f))
+                FinanceStatItem("All-Time Adjusted ROI", "14.2%", Modifier.weight(1f))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(100.dp)) // Added bottom padding to clear the Bottom Action Bar
+    }
+}
+
+@Composable
+fun FinanceStatItem(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(label, color = TextSecondary, fontSize = 12.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(value, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun NewsTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        data.newsItems.forEach { news ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(CardDark, RoundedCornerShape(12.dp))
+                    .clickable { /* Open News */ }
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        news.source,
+                        color = AccentTeal,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(news.timeAgo, color = TextSecondary, fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    prop.name,
-                    color = TextWhite,
-                    fontWeight = FontWeight.Bold,
+                    news.title,
+                    color = TextPrimary,
                     fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    prop.location,
-                    color = TextGrey,
-                    fontSize = 12.sp,
-                    lineHeight = 14.sp,
-                    modifier = Modifier.height(32.dp),
+                    fontWeight = FontWeight.Medium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                ) { SimpleLineChart(prop.priceHistory, ChartLineColor) }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Open Price: ",
-                        color = TextGrey,
-                        fontSize = 10.sp
-                    ); Text(
-                    "₹${String.format(java.util.Locale.US, "%.2f", prop.openPrice)}",
-                    color = ReitGreen,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Last Price: ",
-                        color = TextGrey,
-                        fontSize = 10.sp
-                    ); Text(
-                    "₹${String.format(java.util.Locale.US, "%.2f", prop.lastPrice)}",
-                    color = TextWhite,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                }
             }
         }
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
-@Composable
-fun SimpleLineChart(data: List<Float>, lineColor: Color) {
-    if (data.isEmpty()) return
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val width = size.width;
-        val height = size.height;
-        val maxVal = data.maxOrNull() ?: 1f;
-        val minVal = data.minOrNull() ?: 0f;
-        val range = if ((maxVal - minVal) == 0f) 1f else maxVal - minVal
-        val path = Path().apply { moveTo(0f, height - ((data[0] - minVal) / range) * height) }
-        for (i in 1 until data.size) path.lineTo(
-            (i.toFloat() / (data.size - 1)) * width,
-            height - ((data[i] - minVal) / range) * height
-        )
-        drawPath(path, lineColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
-    }
-}
+// --- BOTTOM BAR ---
 
 @Composable
-fun SimpleDonutChart(completedPercent: Float, color1: Color, color2: Color) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val sweep1 = (completedPercent / 100f) * 360f;
-        val sweep2 = 360f - sweep1
-        drawArc(color1, -90f, sweep1, true); drawArc(
-        color2,
-        -90f + sweep1,
-        sweep2,
-        true
-    ); drawCircle(ReitCard, size.minDimension / 3f)
+fun ReitBottomActionBar() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BgDark)
+            .border(1.dp, CardDark, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .navigationBarsPadding(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = { },
+            colors = ButtonDefaults.buttonColors(containerColor = NegativeRed),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+        ) {
+            Text("SELL", fontWeight = FontWeight.Bold, color = Color.White)
+        }
+
+        Button(
+            onClick = { },
+            colors = ButtonDefaults.buttonColors(containerColor = PositiveGreen),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+        ) {
+            Text("BUY", fontWeight = FontWeight.Bold, color = Color.White)
+        }
+
+        Button(
+            onClick = { },
+            colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+        ) {
+            Text("SIP", fontWeight = FontWeight.Bold, color = BgDark)
+        }
     }
 }

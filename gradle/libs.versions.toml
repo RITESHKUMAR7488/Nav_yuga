@@ -31,6 +31,7 @@ espressoCore = "3.7.0"
 junit = "4.13.2"
 firebaseCrashlytics = "20.0.3"
 googleFirebaseCrashlytics = "3.0.6"
+ycharts = "2.1.0"
 
 
 [libraries]
@@ -71,6 +72,7 @@ logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", ver
 material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics", version.ref = "firebaseCrashlytics" }
+ycharts = { module = "co.yml:ycharts", version.ref = "ycharts" }
 
 
 [plugins]
