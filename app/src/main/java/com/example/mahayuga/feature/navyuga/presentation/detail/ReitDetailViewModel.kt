@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
-// --- MISSING UI STATE MODELS ADDED HERE ---
 data class ReitDetailData(
     val id: String,
     val name: String,
@@ -43,7 +43,6 @@ sealed class ReitDetailState {
     data class Success(val data: ReitDetailData) : ReitDetailState()
     data class Error(val message: String) : ReitDetailState()
 }
-// ------------------------------------------
 
 @HiltViewModel
 class ReitDetailViewModel @Inject constructor(
@@ -62,49 +61,46 @@ class ReitDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = ReitDetailState.Loading
 
-            // 1. Fetch Fundamental Historical Data using Lisuns REST API
+            // Historical data is now guaranteed to succeed via API or Fallback
             val histResult = marketRepository.getHistoricalData(cleanSymbol)
-            val historicalQuote = histResult.getOrNull()
+            val quote = histResult.getOrNull() ?: return@launch
 
-            // 2. Connect to the Websocket stream for Real-Time data
-            marketRepository.getLiveQuotesFlow(listOf(cleanSymbol)).collect { quotes ->
-                val liveQuote = quotes.firstOrNull() ?: return@collect
+            // Format Market Cap dynamically
+            val mCapString = if (quote.marketCap > 0) {
+                "₹${quote.marketCap / 10000000} Cr"
+            } else "N/A"
 
-                val mCapString = if (historicalQuote?.marketCap != null && historicalQuote.marketCap > 0) {
-                    "₹${historicalQuote.marketCap / 10000000} Cr"
-                } else "N/A"
+            val data = ReitDetailData(
+                id = assetId,
+                name = cleanSymbol,
+                symbol = "$cleanSymbol • NSE",
+                currentPrice = quote.currentPrice,
+                priceChange = String.format(Locale.US, "%.2f", quote.priceChange).toDouble(),
+                percentageChange = String.format(Locale.US, "%.2f", quote.percentageChange)
+                    .toDouble(),
+                isPositive = quote.isPositive,
+                images = listOf(
+                    "https://images.unsplash.com/photo-1497366216548-37526070297c",
+                    "https://images.unsplash.com/photo-1416331108676-a22ccb276e35"
+                ),
+                description = "Real estate investment trust offering consistent yields through premium commercial properties.",
+                propertyType = "Commercial Office",
+                totalArea = "31.3M sq ft",
+                occupancyRate = "89.5%",
+                majorTenants = listOf("Accenture", "Barclays", "Cognizant"),
+                chartPoints = generateDummyChartData(),
+                marketCap = mCapString,
+                peRatio = "45.2",
+                dividendYield = "${quote.dividendYield}%",
+                dayLow = quote.dayLow.toString(),
+                dayHigh = quote.dayHigh.toString(),
+                week52Low = quote.fiftyTwoWeekLow.toString(),
+                week52High = quote.fiftyTwoWeekHigh.toString(),
+                volume = quote.volume.toString(),
+                avgVolume = "850K"
+            )
 
-                val data = ReitDetailData(
-                    id = assetId,
-                    name = cleanSymbol,
-                    symbol = "$cleanSymbol • NSE",
-                    currentPrice = liveQuote.currentPrice,
-                    priceChange = liveQuote.priceChange,
-                    percentageChange = liveQuote.percentageChange,
-                    isPositive = liveQuote.isPositive,
-                    images = listOf(
-                        "https://images.unsplash.com/photo-1497366216548-37526070297c",
-                        "https://images.unsplash.com/photo-1416331108676-a22ccb276e35"
-                    ),
-                    description = "Real estate investment trust offering consistent yields through premium commercial properties.",
-                    propertyType = "Commercial Office",
-                    totalArea = "31.3M sq ft",
-                    occupancyRate = "89.5%",
-                    majorTenants = listOf("Accenture", "Barclays", "Cognizant"),
-                    chartPoints = generateDummyChartData(),
-                    marketCap = mCapString,
-                    peRatio = "45.2",
-                    dividendYield = "6.2%",
-                    dayLow = liveQuote.dayLow.toString(),
-                    dayHigh = liveQuote.dayHigh.toString(),
-                    week52Low = "385.00",
-                    week52High = "480.25",
-                    volume = historicalQuote?.volume?.toString() ?: "N/A",
-                    avgVolume = "850K"
-                )
-
-                _uiState.value = ReitDetailState.Success(data)
-            }
+            _uiState.value = ReitDetailState.Success(data)
         }
     }
 

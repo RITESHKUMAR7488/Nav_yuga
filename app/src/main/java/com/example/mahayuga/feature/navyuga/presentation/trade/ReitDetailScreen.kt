@@ -49,7 +49,6 @@ import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailState
 import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailViewModel
 import kotlinx.coroutines.launch
 
-// --- THEME COLORS ---
 private val BgDark = Color(0xFF080F18)
 private val CardDark = Color(0xFF0F1722)
 private val TextPrimary = Color.White
@@ -102,9 +101,7 @@ fun ReitDetailScreen(
 
                 is ReitDetailState.Success -> {
                     val data = state.data
-
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-
                         item {
                             ReitHeaderSection(
                                 name = data.name,
@@ -117,15 +114,11 @@ fun ReitDetailScreen(
                                 onBackClick = { navController.popBackStack() },
                                 onWatchlistClick = { viewModel.toggleWatchlist() },
                                 onShareClick = {
-                                    Toast.makeText(
-                                        context,
-                                        "Share coming soon",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(context, "Share coming soon", Toast.LENGTH_SHORT)
+                                        .show()
                                 }
                             )
                         }
-
                         item {
                             ReitTabsSection(state.data)
                         }
@@ -135,8 +128,6 @@ fun ReitDetailScreen(
         }
     }
 }
-
-// --- SECTIONS ---
 
 @Composable
 fun ReitHeaderSection(
@@ -178,9 +169,7 @@ fun ReitHeaderSection(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-
                 Spacer(modifier = Modifier.width(12.dp))
-
                 Text(
                     text = name,
                     color = TextPrimary,
@@ -190,14 +179,12 @@ fun ReitHeaderSection(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Icon(
                     imageVector = Icons.Outlined.Share,
                     contentDescription = "Share",
                     tint = TextPrimary,
-                    modifier = Modifier.clickable { onShareClick() }
-                )
+                    modifier = Modifier.clickable { onShareClick() })
                 Icon(
                     imageVector = if (isWatchlisted) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
                     contentDescription = "Watchlist",
@@ -206,9 +193,7 @@ fun ReitHeaderSection(
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(24.dp))
-
         Text(text = symbol, color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -218,11 +203,10 @@ fun ReitHeaderSection(
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(4.dp))
-
         val color = if (isPositive) BuyTeal else SellOrange
-        val sign = if (isPositive) "+" else "-"
+        val sign = if (isPositive) "+" else ""
         Text(
-            text = "$sign$priceChange ($percentageChange%) 1D",
+            text = "$sign$priceChange ($sign$percentageChange%) 1D",
             color = color,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium
@@ -252,9 +236,7 @@ fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.deta
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = pagerState.currentPage == index,
-                    onClick = {
-                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                    },
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
                     text = {
                         Text(
                             text = title,
@@ -265,7 +247,6 @@ fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.deta
                 )
             }
         }
-
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
@@ -283,12 +264,9 @@ fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.deta
 
 @Composable
 fun EstateTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -309,9 +287,7 @@ fun EstateTabContent(data: com.example.mahayuga.feature.navyuga.presentation.det
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(24.dp))
-
         Text(
             "About the Estate",
             color = TextPrimary,
@@ -320,15 +296,12 @@ fun EstateTabContent(data: com.example.mahayuga.feature.navyuga.presentation.det
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(data.description, color = TextSecondary, fontSize = 14.sp, lineHeight = 20.sp)
-
         Spacer(modifier = Modifier.height(24.dp))
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(CardDark, RoundedCornerShape(12.dp))
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             EstateDetailRow("Property Type", data.propertyType)
             HorizontalDivider(color = BgDark)
@@ -338,7 +311,6 @@ fun EstateTabContent(data: com.example.mahayuga.feature.navyuga.presentation.det
             HorizontalDivider(color = BgDark)
             EstateDetailRow("Major Tenants", data.majorTenants.joinToString(", "))
         }
-
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
@@ -354,7 +326,6 @@ fun EstateDetailRow(label: String, value: String) {
 @Composable
 fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
     Column(modifier = Modifier.fillMaxWidth()) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -412,10 +383,7 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                     lines = listOf(
                         Line(
                             dataPoints = yChartsPoints,
-                            LineStyle(
-                                color = chartColor,
-                                lineType = LineType.Straight()
-                            ),
+                            LineStyle(color = chartColor, lineType = LineType.Straight()),
                             IntersectionPoint(color = Color.Transparent, radius = 0.dp),
                             SelectionHighlightPoint(color = TextPrimary),
                             ShadowUnderLine(
@@ -450,7 +418,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-
         Text(
             "Fundamentals",
             color = TextPrimary,
@@ -473,7 +440,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("Day Low", data.dayLow, Modifier.weight(1f))
                 FinanceStatItem("Day High", data.dayHigh, Modifier.weight(1f))
             }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -481,7 +447,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("52W Low", data.week52Low, Modifier.weight(1f))
                 FinanceStatItem("52W High", data.week52High, Modifier.weight(1f))
             }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -489,7 +454,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("Volume", data.volume, Modifier.weight(1f))
                 FinanceStatItem("Avg Volume", data.avgVolume, Modifier.weight(1f))
             }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -497,7 +461,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("Market Cap", data.marketCap, Modifier.weight(1f))
                 FinanceStatItem("P/E Ratio", data.peRatio, Modifier.weight(1f))
             }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -506,7 +469,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("All-Time Adjusted ROI", "14.2%", Modifier.weight(1f))
             }
         }
-
         Spacer(modifier = Modifier.height(100.dp))
     }
 }
@@ -528,9 +490,6 @@ fun NewsTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detai
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        data.newsItems.forEach { news ->
-            /* Placeholder layout since news is Any right now */
-        }
         Text(
             "No recent news found for this asset.",
             color = TextSecondary,
@@ -561,7 +520,6 @@ fun ReitBottomActionBar() {
         ) {
             Text("SELL", fontWeight = FontWeight.Bold, color = Color.White)
         }
-
         Button(
             onClick = { },
             colors = ButtonDefaults.buttonColors(containerColor = BuyTeal),
@@ -572,7 +530,6 @@ fun ReitBottomActionBar() {
         ) {
             Text("BUY", fontWeight = FontWeight.Bold, color = Color.White)
         }
-
         Button(
             onClick = { },
             colors = ButtonDefaults.buttonColors(containerColor = Color.White),
