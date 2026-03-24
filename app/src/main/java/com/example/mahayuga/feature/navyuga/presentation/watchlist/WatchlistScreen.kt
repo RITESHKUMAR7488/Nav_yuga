@@ -8,10 +8,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -26,7 +26,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mahayuga.feature.navyuga.presentation.home.CircularHeaderIcon
 import com.example.mahayuga.feature.navyuga.presentation.home.LiveAssetTradingCard
-import com.example.mahayuga.feature.navyuga.presentation.home.MarketTickerRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +79,7 @@ fun WatchlistScreen(
                             onClick = { isSearchActive = !isSearchActive }
                         )
                         CircularHeaderIcon(
-                            icon = Icons.Outlined.Send,
+                            icon = Icons.AutoMirrored.Outlined.Send,
                             desc = "Messages",
                             onClick = {
                                 Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT)
@@ -117,13 +116,7 @@ fun WatchlistScreen(
                     )
                 }
 
-                if (uiState.tickerQuotes.isNotEmpty()) {
-                    MarketTickerRow(quotes = uiState.tickerQuotes)
-                } else {
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(36.dp))
-                }
+                // ⚡ FIX: Removed the broken MarketTickerRow reference
 
                 TabRow(
                     selectedTabIndex = selectedTab,
@@ -217,7 +210,7 @@ fun WatchlistScreen(
                         LiveAssetTradingCard(
                             quote = quote,
                             isSmReit = isSmReit,
-                            isSaved = true, // ⚡ FIX: Hardcoded to true because this is the Watchlist screen
+                            isSaved = true, // Watchlist screen implies items are saved
                             onCardClick = {
                                 if (isSmReit) onNavigateToSmReitDetail(quote.symbol)
                                 else onNavigateToReitDetail(quote.symbol)

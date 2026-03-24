@@ -2,25 +2,29 @@
 package com.example.mahayuga.feature.navyuga.presentation.home
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Home
@@ -44,22 +48,25 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
+import kotlinx.coroutines.isActive
 import java.util.Locale
 
 private val TradeBg = Color(0xFF080F18)
 private val TradeCardBg = Color(0xFF0F1722)
-private val TradeGreen = Color(0xFF00BFA5)
-private val TradeRed = Color(0xFFFF3B30)
 private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF8B9BB4)
 private val BorderDark = Color(0xFF1A2A40)
+
+// ⚡ NEW BRAND COLORS
+private val BuyTeal = Color(0xFF14B8A6)
+private val SellOrange = Color(0xFFF97316)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToSmReitDetail: (String) -> Unit,
     onNavigateToReitDetail: (String) -> Unit,
-    onNavigateToSearch: () -> Unit, // Kept for interface compatibility
+    onNavigateToSearch: () -> Unit,
     scrollToTopTrigger: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -70,9 +77,11 @@ fun HomeScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("SM REITS", "REITS")
 
-    // ⚡ NEW: Search State variables
     var isSearchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+
+    // ⚡ STATE FOR RIGHT-SIDE TICKER
+    var isTickerOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(scrollToTopTrigger) {
         if (scrollToTopTrigger) {
@@ -99,7 +108,7 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Outlined.Home,
                             contentDescription = "Home Icon",
-                            tint = TradeGreen,
+                            tint = BuyTeal,
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -115,30 +124,33 @@ fun HomeScreen(
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Search,
                             desc = "Search/Filter",
-                            onClick = {
-                                isSearchActive = !isSearchActive
-                            } // ⚡ NEW: Toggles Inline Search
+                            onClick = { isSearchActive = !isSearchActive }
                         )
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Send,
                             desc = "Messages",
                             onClick = {
-                                Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(
+                                    context,
+                                    "Messages coming soon",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         )
                         CircularHeaderIcon(
                             icon = Icons.Outlined.Notifications,
                             desc = "Notifications",
                             onClick = {
-                                Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(
+                                    context,
+                                    "No new notifications",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         )
                     }
                 }
 
-                // ⚡ NEW: Workable Inline Search Bar
                 if (isSearchActive) {
                     OutlinedTextField(
                         value = searchQuery,
@@ -148,7 +160,7 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         placeholder = { Text("Search properties...", color = Color.Gray) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = TradeGreen,
+                            focusedBorderColor = BuyTeal,
                             unfocusedBorderColor = BorderDark,
                             focusedTextColor = TextWhite,
                             unfocusedTextColor = TextWhite
@@ -158,15 +170,6 @@ fun HomeScreen(
                     )
                 }
 
-                if (uiState.tickerQuotes.isNotEmpty()) {
-                    MarketTickerRow(quotes = uiState.tickerQuotes)
-                } else {
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(36.dp)
-                        .background(TradeBg))
-                }
-
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = TradeBg,
@@ -174,7 +177,7 @@ fun HomeScreen(
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = TradeGreen
+                            color = BuyTeal
                         )
                     },
                     divider = { HorizontalDivider(color = BorderDark.copy(alpha = 0.5f)) }
@@ -197,73 +200,194 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = TradeGreen)
-            }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(TradeBg),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                val allAssets =
-                    uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    color = BuyTeal,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(TradeBg),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    val allAssets =
+                        uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
 
-                // ⚡ NEW: Apply Search Filter
-                var filteredAssets =
-                    if (selectedTab == 0) allAssets.filter { it.symbol.endsWith(".BO") }
-                    else allAssets.filter { it.symbol.endsWith(".NS") }
+                    var filteredAssets =
+                        if (selectedTab == 0) allAssets.filter { it.symbol.endsWith(".BO") }
+                        else allAssets.filter { it.symbol.endsWith(".NS") }
 
-                if (searchQuery.isNotBlank()) {
-                    filteredAssets = filteredAssets.filter {
-                        it.name.contains(searchQuery, ignoreCase = true) || it.symbol.contains(
-                            searchQuery,
-                            ignoreCase = true
-                        )
+                    if (searchQuery.isNotBlank()) {
+                        filteredAssets = filteredAssets.filter {
+                            it.name.contains(searchQuery, ignoreCase = true) || it.symbol.contains(
+                                searchQuery,
+                                ignoreCase = true
+                            )
+                        }
+                    }
+
+                    if (filteredAssets.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(40.dp),
+                                contentAlignment = Alignment.Center
+                            ) { Text("No assets available right now.", color = TextGrey) }
+                        }
+                    } else {
+                        items(filteredAssets, key = { it.symbol }) { quote ->
+                            val isSaved = uiState.watchlistedSymbols.contains(quote.symbol)
+
+                            LiveAssetTradingCard(
+                                quote = quote,
+                                isSmReit = selectedTab == 0,
+                                isSaved = isSaved,
+                                onCardClick = {
+                                    if (selectedTab == 0) onNavigateToSmReitDetail(quote.symbol)
+                                    else onNavigateToReitDetail(quote.symbol)
+                                },
+                                onSaveClick = {
+                                    viewModel.toggleWatchlist(quote.symbol)
+                                    val msg =
+                                        if (isSaved) "Removed from Watchlist" else "Added to Watchlist"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                        item { Spacer(Modifier.height(100.dp)) }
                     }
                 }
+            }
 
-                if (filteredAssets.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(40.dp),
-                            contentAlignment = Alignment.Center
-                        ) { Text("No assets available right now.", color = TextGrey) }
-                    }
-                } else {
-                    items(filteredAssets, key = { it.symbol }) { quote ->
-                        val isSaved =
-                            uiState.watchlistedSymbols.contains(quote.symbol) // ⚡ NEW: Check saved status
-
-                        LiveAssetTradingCard(
-                            quote = quote,
-                            isSmReit = selectedTab == 0,
-                            isSaved = isSaved, // ⚡ NEW: Pass saved status to card
-                            onCardClick = {
-                                if (selectedTab == 0) onNavigateToSmReitDetail(quote.symbol)
-                                else onNavigateToReitDetail(quote.symbol)
-                            },
-                            onSaveClick = {
-                                viewModel.toggleWatchlist(quote.symbol)
-                                val msg =
-                                    if (isSaved) "Removed from Watchlist" else "Added to Watchlist"
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            }
+            // --- ⚡ RIGHT-CENTER TICKER OVERLAY (Moved from ReitDetail) ---
+            Row(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // The toggle button tab
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
+                        .background(TradeCardBg.copy(alpha = 0.9f))
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.1f),
+                            RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
                         )
+                        .clickable { isTickerOpen = !isTickerOpen }
+                        .padding(horizontal = 4.dp, vertical = 24.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isTickerOpen) Icons.Default.ChevronRight else Icons.Default.ChevronLeft,
+                        contentDescription = "Toggle Ticker",
+                        tint = TextWhite,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // The scrolling ticker panel
+                AnimatedVisibility(
+                    visible = isTickerOpen,
+                    enter = slideInHorizontally(initialOffsetX = { it }),
+                    exit = slideOutHorizontally(targetOffsetX = { it })
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(110.dp)
+                            .fillMaxHeight(0.5f) // Takes 50% of screen height
+                            .background(TradeCardBg.copy(alpha = 0.95f))
+                            .border(
+                                1.dp,
+                                Color.White.copy(alpha = 0.1f),
+                                RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
+                            )
+                    ) {
+                        val tickerListState = rememberLazyListState()
+
+                        // Auto-scroll logic
+                        LaunchedEffect(isTickerOpen) {
+                            if (isTickerOpen) {
+                                while (isActive) {
+                                    tickerListState.animateScrollBy(
+                                        value = 60f, // Scroll speed
+                                        animationSpec = tween(
+                                            durationMillis = 1000,
+                                            easing = LinearEasing
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        val tickerQuotes =
+                            uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
+
+                        LazyColumn(
+                            state = tickerListState,
+                            modifier = Modifier.fillMaxSize(),
+                            userScrollEnabled = false, // Prevents manual interference for a true marquee
+                            contentPadding = PaddingValues(vertical = 16.dp)
+                        ) {
+                            if (tickerQuotes.isNotEmpty()) {
+                                // Infinite loop via large count
+                                items(10000) { index ->
+                                    val quote = tickerQuotes[index % tickerQuotes.size]
+                                    val displayName =
+                                        quote.name.split(",")[0].take(10).uppercase(Locale.ROOT)
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            displayName,
+                                            color = TextWhite,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            "₹${
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.2f",
+                                                    quote.currentPrice
+                                                )
+                                            }", color = TextWhite, fontSize = 12.sp
+                                        )
+                                        Text(
+                                            "${if (quote.isPositive) "+" else ""}${
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.2f",
+                                                    quote.percentageChange
+                                                )
+                                            }%",
+                                            color = if (quote.isPositive) BuyTeal else SellOrange,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                                    }
+                                }
+                            }
+                        }
                     }
-                    item { Spacer(Modifier.height(100.dp)) }
                 }
             }
         }
@@ -290,63 +414,16 @@ fun CircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun MarketTickerRow(quotes: List<MarketQuote>) {
-    val scrollState = rememberScrollState()
-
-    LaunchedEffect(scrollState.maxValue, quotes) {
-        if (scrollState.maxValue > 0 && quotes.isNotEmpty()) {
-            while (true) {
-                val remainingScroll = scrollState.maxValue - scrollState.value
-                if (remainingScroll > 0) scrollState.animateScrollTo(
-                    scrollState.maxValue,
-                    tween(remainingScroll * 30, easing = LinearEasing)
-                )
-                else scrollState.scrollTo(0)
-            }
-        }
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(TradeBg)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .horizontalScroll(scrollState),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val mappedQuotes = quotes + quotes
-        mappedQuotes.forEach { quote ->
-            val displayName = when (quote.symbol) {
-                "^NSEI" -> "NIFTY"; "^BSESN" -> "SENSEX"; "PSTITANIA.BO" -> "TITANIA"; "EMBASSY.NS" -> "EMBASSY"; else -> quote.name.uppercase(
-                    Locale.ROOT
-                ).take(8)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(displayName, color = TextGrey, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Text(" : ", color = TextGrey, fontSize = 12.sp)
-                Text(
-                    String.format(Locale.US, "%.2f", quote.currentPrice),
-                    color = if (quote.isPositive) TradeGreen else TradeRed,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Text("  |  ", color = TextGrey.copy(alpha = 0.5f), fontSize = 12.sp)
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LiveAssetTradingCard(
     quote: MarketQuote,
     isSmReit: Boolean,
-    isSaved: Boolean, // ⚡ NEW: Accepts saved state
+    isSaved: Boolean,
     onCardClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
-    val priceColor = if (quote.isPositive) TradeGreen else TradeRed
+    val priceColor = if (quote.isPositive) BuyTeal else SellOrange
 
     val location = if (isSmReit) "Sector 62, Gurugram" else null
     val managerName = "Nikhil Kamath"
@@ -393,11 +470,10 @@ fun LiveAssetTradingCard(
                         .size(24.dp)
                         .offset(x = 8.dp, y = (-4).dp)
                 ) {
-                    // ⚡ NEW: Dynamically change Icon and Color based on saved state
                     Icon(
                         imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Default.BookmarkBorder,
                         contentDescription = "Save to Watchlist",
-                        tint = if (isSaved) TradeGreen else TextGrey
+                        tint = if (isSaved) BuyTeal else TextGrey
                     )
                 }
             }
@@ -502,7 +578,7 @@ fun LiveAssetTradingCard(
                 ) {
                     repeat(pagerState.pageCount) { iteration ->
                         val color =
-                            if (pagerState.currentPage == iteration) TradeGreen else Color.LightGray
+                            if (pagerState.currentPage == iteration) BuyTeal else Color.LightGray
                         Box(
                             modifier = Modifier
                                 .padding(2.dp)

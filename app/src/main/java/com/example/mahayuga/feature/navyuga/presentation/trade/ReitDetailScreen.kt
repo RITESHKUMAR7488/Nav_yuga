@@ -55,9 +55,10 @@ private val BgDark = Color(0xFF080F18)
 private val CardDark = Color(0xFF0F1722)
 private val TextPrimary = Color.White
 private val TextSecondary = Color(0xFF8B9BB4)
-private val AccentTeal = Color(0xFF00BFA5)
-private val PositiveGreen = Color(0xFF00C853)
-private val NegativeRed = Color(0xFFFF3B30)
+
+// ⚡ NEW BRAND COLORS
+private val BuyTeal = Color(0xFF14B8A6)
+private val SellOrange = Color(0xFFF97316)
 
 @Composable
 fun ReitDetailScreen(
@@ -89,7 +90,7 @@ fun ReitDetailScreen(
             when (val state = uiState) {
                 is ReitDetailState.Loading -> {
                     CircularProgressIndicator(
-                        color = AccentTeal,
+                        color = BuyTeal,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -97,7 +98,7 @@ fun ReitDetailScreen(
                 is ReitDetailState.Error -> {
                     Text(
                         text = state.message,
-                        color = NegativeRed,
+                        color = SellOrange,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -107,7 +108,6 @@ fun ReitDetailScreen(
 
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
 
-                        // 1. HEADER & PRICE INFO
                         item {
                             ReitHeaderSection(
                                 name = data.name,
@@ -129,7 +129,6 @@ fun ReitDetailScreen(
                             )
                         }
 
-                        // 2. TABS (Estate, Financial, News)
                         item {
                             ReitTabsSection(state.data)
                         }
@@ -205,7 +204,7 @@ fun ReitHeaderSection(
                 Icon(
                     imageVector = if (isWatchlisted) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
                     contentDescription = "Watchlist",
-                    tint = if (isWatchlisted) AccentTeal else TextPrimary,
+                    tint = if (isWatchlisted) BuyTeal else TextPrimary,
                     modifier = Modifier.clickable { onWatchlistClick() }
                 )
             }
@@ -223,7 +222,7 @@ fun ReitHeaderSection(
         )
         Spacer(modifier = Modifier.height(4.dp))
 
-        val color = if (isPositive) PositiveGreen else NegativeRed
+        val color = if (isPositive) BuyTeal else SellOrange
         val sign = if (isPositive) "+" else "-"
         Text(
             text = "$sign$priceChange ($percentageChange%) 1D",
@@ -244,11 +243,11 @@ fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.deta
         TabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = BgDark,
-            contentColor = AccentTeal,
+            contentColor = BuyTeal,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(
                     Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                    color = AccentTeal
+                    color = BuyTeal
                 )
             },
             divider = { HorizontalDivider(color = CardDark) }
@@ -262,7 +261,7 @@ fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.deta
                     text = {
                         Text(
                             text = title,
-                            color = if (pagerState.currentPage == index) AccentTeal else TextSecondary,
+                            color = if (pagerState.currentPage == index) BuyTeal else TextSecondary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -382,7 +381,7 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
         }
 
         if (data.chartPoints.isNotEmpty()) {
-            val chartColor = if (data.isPositive) PositiveGreen else NegativeRed
+            val chartColor = if (data.isPositive) BuyTeal else SellOrange
             val yChartsPoints = data.chartPoints.map { Point(it.first, it.second) }
 
             val xAxisData = AxisData.Builder()
@@ -416,7 +415,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                             dataPoints = yChartsPoints,
                             LineStyle(
                                 color = chartColor,
-                                // ⚡ FIX: Used LineType.Straight() for stock-market style straight connections
                                 lineType = LineType.Straight()
                             ),
                             IntersectionPoint(color = Color.Transparent, radius = 0.dp),
@@ -454,7 +452,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- EXTENDED FUNDAMENTALS GRID ---
         Text(
             "Fundamentals",
             color = TextPrimary,
@@ -470,7 +467,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Row 1: Day Low & Day High
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -479,7 +475,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("Day High", data.dayHigh, Modifier.weight(1f))
             }
 
-            // Row 2: 52-Week Low & High
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -488,7 +483,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("52W High", data.week52High, Modifier.weight(1f))
             }
 
-            // Row 3: Volume & Avg Volume
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -497,7 +491,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("Avg Volume", data.avgVolume, Modifier.weight(1f))
             }
 
-            // Row 4: Market Cap & P/E Ratio
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -506,7 +499,6 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
                 FinanceStatItem("P/E Ratio", data.peRatio, Modifier.weight(1f))
             }
 
-            // Row 5: Div Yield & ROI
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -516,7 +508,7 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
             }
         }
 
-        Spacer(modifier = Modifier.height(100.dp)) // Added bottom padding to clear the Bottom Action Bar
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
@@ -551,7 +543,7 @@ fun NewsTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detai
                 ) {
                     Text(
                         news.source,
-                        color = AccentTeal,
+                        color = BuyTeal,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -587,7 +579,7 @@ fun ReitBottomActionBar() {
     ) {
         Button(
             onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = NegativeRed),
+            colors = ButtonDefaults.buttonColors(containerColor = SellOrange),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier
                 .weight(1f)
@@ -598,7 +590,7 @@ fun ReitBottomActionBar() {
 
         Button(
             onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = PositiveGreen),
+            colors = ButtonDefaults.buttonColors(containerColor = BuyTeal),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier
                 .weight(1f)
@@ -609,7 +601,7 @@ fun ReitBottomActionBar() {
 
         Button(
             onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier
                 .weight(1f)
