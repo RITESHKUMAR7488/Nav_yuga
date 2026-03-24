@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/watchlist/WatchlistViewModel.kt
 package com.example.mahayuga.feature.navyuga.presentation.watchlist
 
 import androidx.lifecycle.ViewModel
@@ -41,57 +40,39 @@ class WatchlistViewModel @Inject constructor(
     }
 
     private fun fetchWatchlistData() {
-        val uid = auth.currentUser?.uid
-        if (uid == null) {
-            _uiState.update { it.copy(isLoading = false, error = "User not logged in") }
-            return
-        }
+        val uid = auth.currentUser?.uid ?: return
 
-        // Live stream the arrays saved by the user
         listenerRegistration = firestore.collection("users").document(uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     _uiState.update { it.copy(isLoading = false, error = error.message) }
                     return@addSnapshotListener
                 }
-
                 val symbols = snapshot?.get("watchlistedAssets") as? List<String> ?: emptyList()
                 fetchLiveQuotes(symbols)
             }
     }
 
-    private fun fetchLiveQuotes(symbols: List<String>) {
+    private fun fetchLiveQuotes(savedSymbols: List<String>) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Retrieve live data based on saved list
-            val quotes = if (symbols.isNotEmpty()) {
-                marketRepository.getLiveQuotes(symbols).getOrNull() ?: emptyList()
-            } else {
-                emptyList()
-            }
+            val cleanSaved = savedSymbols.map { it.replace(".NS", "").replace(".BO", "") }
+            val tickerSymbols = listOf("EMBASSY", "MINDSPACE", "NEXUS", "BIRET")
+            val allSymbols = (cleanSaved + tickerSymbols).distinct()
 
-            // Also retrieve standard index data for the ticker animation exactly like Home
-            val tickerSymbols = listOf(
-                "^NSEI",
-                "^BSESN",
-                "EMBASSY.NS",
-                "MINDSPACE.NS",
-                "NEXUS.NS",
-                "BIRET.NS",
-                "PSTITANIA.BO",
-                "PSPLATINA.BO"
-            )
-            val tickerQuotes =
-                marketRepository.getLiveQuotes(tickerSymbols).getOrNull() ?: emptyList()
+            marketRepository.getLiveQuotesFlow(allSymbols).collect { quotes ->
+                val watchlisted = quotes.filter { cleanSaved.contains(it.symbol) }
+                val ticker = quotes.filter { tickerSymbols.contains(it.symbol) }
 
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    watchlistedQuotes = quotes,
-                    tickerQuotes = tickerQuotes,
-                    error = null
-                )
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        watchlistedQuotes = watchlisted,
+                        tickerQuotes = ticker,
+                        error = null
+                    )
+                }
             }
         }
     }

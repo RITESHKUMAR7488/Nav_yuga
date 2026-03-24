@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/watchlist/WatchlistScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.watchlist
 
 import android.widget.Toast
@@ -70,12 +69,11 @@ fun WatchlistScreen(
                             text = "Watchlist",
                             color = Color.White,
                             fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold // ⚡ FIX: Bold Header
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // ⚡ FIX: Grouped Header Icons styling to match Home
                         GroupedHeaderIcons(
                             listOf(Icons.Outlined.Search to { isSearchActive = !isSearchActive })
                         )
@@ -100,7 +98,6 @@ fun WatchlistScreen(
                     }
                 }
 
-                // ⚡ FIX: Divider separating the header and the options
                 HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
 
                 if (isSearchActive) {
@@ -192,9 +189,11 @@ fun WatchlistScreen(
                     }
                 }
 
+                // FIXED LIST FILTERING
+                val smReitSymbols = listOf("PSTITANIA", "PSPLATINA")
                 val displayedAssets = when (selectedTab) {
-                    1 -> filteredAssets.filter { it.symbol.endsWith(".BO") }
-                    2 -> filteredAssets.filter { it.symbol.endsWith(".NS") }
+                    1 -> filteredAssets.filter { smReitSymbols.contains(it.symbol) }
+                    2 -> filteredAssets.filterNot { smReitSymbols.contains(it.symbol) }
                     else -> filteredAssets
                 }
 
@@ -209,7 +208,7 @@ fun WatchlistScreen(
                     }
                 } else {
                     items(displayedAssets, key = { it.symbol }) { quote ->
-                        val isSmReit = quote.symbol.endsWith(".BO")
+                        val isSmReit = smReitSymbols.contains(quote.symbol)
 
                         LiveAssetTradingCard(
                             quote = quote,

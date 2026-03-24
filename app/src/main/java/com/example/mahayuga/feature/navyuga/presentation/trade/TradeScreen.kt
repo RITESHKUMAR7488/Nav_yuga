@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -40,10 +41,12 @@ class TradeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Fetch real data for Trade Screen
-            val result =
-                marketRepository.getLiveQuotes(listOf("EMBASSY.NS", "MINDSPACE.NS", "BIRET.NS"))
-            result.onSuccess { _uiState.value = it }
+            // FIXED: Using getLiveQuotesFlow to hook into the new WebSocket stream.
+            // FIXED: Removed `.NS` to match clean data.
+            marketRepository.getLiveQuotesFlow(listOf("EMBASSY", "MINDSPACE", "BIRET"))
+                .collect { quotes ->
+                    _uiState.value = quotes
+                }
         }
     }
 }
@@ -100,7 +103,7 @@ fun TradeScreen(
                             Text(
                                 "Buy",
                                 modifier = Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                textAlign = TextAlign.Center
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
@@ -121,13 +124,12 @@ fun TradeScreen(
                             Text(
                                 "Sell",
                                 modifier = Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                textAlign = TextAlign.Center
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(
-                                0xFFFF5252
-                            ), selectedLabelColor = Color.White
+                            selectedContainerColor = Color(0xFFFF5252),
+                            selectedLabelColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
@@ -146,18 +148,18 @@ fun TradeScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (liveQuotes == null) {
+            if (liveQuotes == null || liveQuotes!!.isEmpty()) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = BrandBlue)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(liveQuotes!!) { quote ->
-                        // Clean up Yahoo Finance Name
+                        // FIXED NAME MAPPING (Removed .NS)
                         val cleanName = when (quote.symbol) {
-                            "MINDSPACE.NS" -> "Mindspace Business Parks"
-                            "EMBASSY.NS" -> "Embassy Office Parks"
-                            "BIRET.NS" -> "Brookfield India Trust"
+                            "MINDSPACE" -> "Mindspace Business Parks"
+                            "EMBASSY" -> "Embassy Office Parks"
+                            "BIRET" -> "Brookfield India Trust"
                             else -> quote.name.split(",")[0]
                         }
 
@@ -172,7 +174,6 @@ fun TradeScreen(
                                 )
                             }%",
                             isPositive = quote.isPositive,
-                            // ⚡ Pass the real symbol to the Detail screen to prevent crashes
                             onClick = { navController.navigate("trade_asset_detail/${quote.symbol}") }
                         )
                     }
@@ -206,7 +207,6 @@ fun ReitListItem(
         ) {
             Column {
                 Text(name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                // ⭐ Marked as hardcoded context
                 Text("Real Estate Investment Trust ⭐", color = Color.Gray, fontSize = 12.sp)
             }
             Column(horizontalAlignment = Alignment.End) {

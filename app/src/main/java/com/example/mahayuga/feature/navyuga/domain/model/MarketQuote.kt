@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/domain/model/MarketQuote.kt
 package com.example.mahayuga.feature.navyuga.domain.model
 
 data class MarketQuote(
@@ -9,7 +8,7 @@ data class MarketQuote(
     val percentageChange: Double,
     val isPositive: Boolean,
 
-    // REAL DATA FIELDS ADDED HERE:
+    // REAL DATA FIELDS:
     val openPrice: Double = 0.0,
     val previousClose: Double = 0.0,
     val dayHigh: Double = 0.0,
@@ -17,5 +16,8 @@ data class MarketQuote(
     val fiftyTwoWeekHigh: Double = 0.0,
     val fiftyTwoWeekLow: Double = 0.0,
     val marketCap: Long = 0L,
-    val dividendYield: Double = 0.0
+    val dividendYield: Double = 0.0,
+
+    // NEW LISUNS DATA:
+    val volume: Long = 0L
 )

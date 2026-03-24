@@ -7,8 +7,9 @@ import com.example.mahayuga.feature.admin.domain.repository.AdminRepository
 import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepositoryImpl
 import com.example.mahayuga.feature.auth.domain.repository.AuthRepository
-import com.example.mahayuga.feature.navyuga.data.remote.YahooFinanceApi
-import com.example.mahayuga.feature.navyuga.data.repository.MarketRepositoryImpl
+import com.example.mahayuga.feature.navyuga.data.remote.LisunsApi
+import com.example.mahayuga.feature.navyuga.data.remote.LisunsWebSocketClient
+import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepositoryImpl
 import com.example.mahayuga.feature.navyuga.data.repository.PropertyRepositoryImpl
 import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -42,7 +43,6 @@ object AppModule {
         return PreferenceManager(context)
     }
 
-    // ⚡ KEEP THIS (Delete the separate AdminModule file)
     @Provides
     @Singleton
     fun provideAdminRepository(firestore: FirebaseFirestore): AdminRepository {
@@ -54,11 +54,14 @@ object AppModule {
     fun providePropertyRepository(firestore: FirebaseFirestore): PropertyRepository {
         return PropertyRepositoryImpl(firestore)
     }
+
+    // ⚡ INJECT NEW LISUNS DEPENDENCIES
     @Provides
     @Singleton
     fun provideMarketRepository(
-        api: YahooFinanceApi
+        api: LisunsApi,
+        wsClient: LisunsWebSocketClient
     ): MarketRepository {
-        return MarketRepositoryImpl(api)
+        return MarketRepositoryImpl(api, wsClient)
     }
 }

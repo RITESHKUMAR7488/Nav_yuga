@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/trade/ReitDetailScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.trade
 
 import android.widget.Toast
@@ -55,8 +54,6 @@ private val BgDark = Color(0xFF080F18)
 private val CardDark = Color(0xFF0F1722)
 private val TextPrimary = Color.White
 private val TextSecondary = Color(0xFF8B9BB4)
-
-// ⚡ NEW BRAND COLORS
 private val BuyTeal = Color(0xFF14B8A6)
 private val SellOrange = Color(0xFFF97316)
 
@@ -286,9 +283,11 @@ fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.deta
 
 @Composable
 fun EstateTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -530,41 +529,16 @@ fun NewsTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detai
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         data.newsItems.forEach { news ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(CardDark, RoundedCornerShape(12.dp))
-                    .clickable { /* Open News */ }
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        news.source,
-                        color = BuyTeal,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(news.timeAgo, color = TextSecondary, fontSize = 12.sp)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    news.title,
-                    color = TextPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            /* Placeholder layout since news is Any right now */
         }
+        Text(
+            "No recent news found for this asset.",
+            color = TextSecondary,
+            modifier = Modifier.padding(16.dp)
+        )
         Spacer(modifier = Modifier.height(100.dp))
     }
 }
-
-// --- BOTTOM BAR ---
 
 @Composable
 fun ReitBottomActionBar() {

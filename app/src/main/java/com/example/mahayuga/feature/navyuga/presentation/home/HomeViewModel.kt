@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeViewModel.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
 import androidx.lifecycle.ViewModel
@@ -21,7 +20,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val isLoading: Boolean = false,
     val tickerQuotes: List<MarketQuote> = emptyList(),
-    val watchlistedSymbols: List<String> = emptyList(), // ⚡ NEW: Tracks saved assets
+    val watchlistedSymbols: List<String> = emptyList(),
     val error: String? = null
 )
 
@@ -35,30 +34,22 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _supportNumber = MutableStateFlow("919876543210")
-    val supportNumber: StateFlow<String> = _supportNumber.asStateFlow()
-
     private var listenerRegistration: ListenerRegistration? = null
 
     init {
         fetchLiveMarketData()
-        listenToWatchlist() // ⚡ NEW: Start listening immediately
+        listenToWatchlist()
     }
 
     private fun fetchLiveMarketData() {
-        // Coroutine used here to fetch network data safely without blocking the UI
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val symbolsToFetch = listOf(
-                "^NSEI", "^BSESN",
-                "EMBASSY.NS", "MINDSPACE.NS", "NEXUS.NS", "BIRET.NS",
-                "PSTITANIA.BO", "PSPLATINA.BO"
-            )
+            // ⚡ FIXED: Added SM REITs to the Lisuns fetch list
+            val symbolsToFetch =
+                listOf("EMBASSY", "MINDSPACE", "NEXUS", "BIRET", "PSTITANIA", "PSPLATINA")
 
-            val result = marketRepository.getLiveQuotes(symbolsToFetch)
-
-            result.onSuccess { liveQuotes ->
+            marketRepository.getLiveQuotesFlow(symbolsToFetch).collect { liveQuotes ->
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
@@ -66,19 +57,15 @@ class HomeViewModel @Inject constructor(
                         error = null
                     )
                 }
-            }.onFailure { exception ->
-                _uiState.update { it.copy(isLoading = false, error = exception.message) }
             }
         }
     }
 
-    // ⚡ NEW: Real-time listener to keep the bookmark icons updated instantly
     private fun listenToWatchlist() {
         val uid = auth.currentUser?.uid ?: return
         listenerRegistration = firestore.collection("users").document(uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) return@addSnapshotListener
-
                 val watchlisted = snapshot?.get("watchlistedAssets") as? List<String> ?: emptyList()
                 _uiState.update { it.copy(watchlistedSymbols = watchlisted) }
             }
@@ -105,13 +92,11 @@ class HomeViewModel @Inject constructor(
                     transaction.update(userRef, "watchlistedAssets", FieldValue.arrayUnion(symbol))
                 }
             }
-        }.addOnFailureListener { e ->
-            e.printStackTrace()
         }
     }
 
     override fun onCleared() {
         super.onCleared()
-        listenerRegistration?.remove() // Prevent memory leaks
+        listenerRegistration?.remove()
     }
 }

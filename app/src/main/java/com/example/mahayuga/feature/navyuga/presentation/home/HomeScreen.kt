@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
 import android.widget.Toast
@@ -157,10 +156,18 @@ fun HomeScreen(
                         GroupedHeaderIcons(
                             listOf(
                                 Icons.Outlined.Send to {
-                                    Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Messages coming soon",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 },
                                 Icons.Outlined.Notifications to {
-                                    Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "No new notifications",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             )
                         )
@@ -240,9 +247,14 @@ fun HomeScreen(
                     val allAssets =
                         uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
 
-                    var filteredAssets =
-                        if (selectedTab == 0) allAssets.filter { it.symbol.endsWith(".BO") }
-                        else allAssets.filter { it.symbol.endsWith(".NS") }
+                    // FIXED SYMBOL ROUTING
+                    val smReitsList = listOf("PSTITANIA", "PSPLATINA")
+
+                    var filteredAssets = if (selectedTab == 0) {
+                        allAssets.filter { smReitsList.contains(it.symbol) }
+                    } else {
+                        allAssets.filterNot { smReitsList.contains(it.symbol) }
+                    }
 
                     if (searchQuery.isNotBlank()) {
                         filteredAssets = filteredAssets.filter {
@@ -337,7 +349,6 @@ fun HomeScreen(
                         modifier = Modifier
                             .width(110.dp)
                             .fillMaxHeight()
-                            // ⚡ FIX: Added bottom padding so the ticker physically stops above the navigation bar
                             .padding(bottom = 100.dp)
                             .background(
                                 color = TradeCardBg.copy(alpha = 0.95f),
@@ -440,14 +451,49 @@ fun LiveAssetTradingCard(
 ) {
     val priceColor = if (quote.isPositive) BuyTeal else SellOrange
 
+    // FIXED HARDCODED SUFFIXES FOR MAPPING
     val assetData = when (quote.symbol) {
-        "PSTITANIA.BO" -> Triple("PropShare Titania", "Property Share", listOf("https://images.unsplash.com/photo-1497366216548-37526070297c"))
-        "PSPLATINA.BO" -> Triple("PropShare Platina", "Property Share", listOf("https://images.unsplash.com/photo-1416331108676-a22ccb276e35"))
-        "EMBASSY.NS" -> Triple("Embassy REIT", "Embassy Group", listOf("https://images.unsplash.com/photo-1572025442646-866d16c84a54"))
-        "MINDSPACE.NS" -> Triple("Mindspace REIT", "Mindspace Group", listOf("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab"))
-        "NEXUS.NS" -> Triple("Nexus Select REIT", "Nexus Group", listOf("https://images.unsplash.com/photo-1554118811-1e0d58224f24"))
-        "BIRET.NS" -> Triple("Brookfield India REIT", "Brookfield Group", listOf("https://images.unsplash.com/photo-1582037928769-181f2422677e"))
-        else -> Triple(quote.name.split(",")[0], "Knowledge Group", listOf("https://images.unsplash.com/photo-1552566626-52f8b828add9"))
+        "PSTITANIA" -> Triple(
+            "PropShare Titania",
+            "Property Share",
+            listOf("https://images.unsplash.com/photo-1497366216548-37526070297c")
+        )
+
+        "PSPLATINA" -> Triple(
+            "PropShare Platina",
+            "Property Share",
+            listOf("https://images.unsplash.com/photo-1416331108676-a22ccb276e35")
+        )
+
+        "EMBASSY" -> Triple(
+            "Embassy REIT",
+            "Embassy Group",
+            listOf("https://images.unsplash.com/photo-1572025442646-866d16c84a54")
+        )
+
+        "MINDSPACE" -> Triple(
+            "Mindspace REIT",
+            "Mindspace Group",
+            listOf("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab")
+        )
+
+        "NEXUS" -> Triple(
+            "Nexus Select REIT",
+            "Nexus Group",
+            listOf("https://images.unsplash.com/photo-1554118811-1e0d58224f24")
+        )
+
+        "BIRET" -> Triple(
+            "Brookfield India REIT",
+            "Brookfield Group",
+            listOf("https://images.unsplash.com/photo-1582037928769-181f2422677e")
+        )
+
+        else -> Triple(
+            quote.name.split(",")[0],
+            "Knowledge Group",
+            listOf("https://images.unsplash.com/photo-1552566626-52f8b828add9")
+        )
     }
 
     val (displayName, managerName, images) = assetData
