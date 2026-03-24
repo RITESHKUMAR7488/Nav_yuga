@@ -5,6 +5,8 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -12,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,7 +28,6 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Notifications
@@ -40,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
 import kotlinx.coroutines.isActive
 import java.util.Locale
@@ -57,9 +61,36 @@ private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF8B9BB4)
 private val BorderDark = Color(0xFF1A2A40)
 
-// ⚡ NEW BRAND COLORS
 private val BuyTeal = Color(0xFF14B8A6)
 private val SellOrange = Color(0xFFF97316)
+
+@Composable
+fun GroupedHeaderIcons(icons: List<Pair<ImageVector, () -> Unit>>) {
+    Row(
+        modifier = Modifier
+            .shadow(elevation = 6.dp, shape = RoundedCornerShape(50))
+            .background(TradeCardBg.copy(alpha = 0.85f), RoundedCornerShape(50))
+            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icons.forEach { (icon, onClick) ->
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = TextWhite,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onClick
+                    )
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +111,6 @@ fun HomeScreen(
     var isSearchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // ⚡ STATE FOR RIGHT-SIDE TICKER
     var isTickerOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(scrollToTopTrigger) {
@@ -116,40 +146,28 @@ fun HomeScreen(
                             text = "Home",
                             color = TextWhite,
                             fontSize = 24.sp,
-                            fontWeight = FontWeight.Normal
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CircularHeaderIcon(
-                            icon = Icons.Outlined.Search,
-                            desc = "Search/Filter",
-                            onClick = { isSearchActive = !isSearchActive }
+                        GroupedHeaderIcons(
+                            listOf(Icons.Outlined.Search to { isSearchActive = !isSearchActive })
                         )
-                        CircularHeaderIcon(
-                            icon = Icons.Outlined.Send,
-                            desc = "Messages",
-                            onClick = {
-                                Toast.makeText(
-                                    context,
-                                    "Messages coming soon",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        )
-                        CircularHeaderIcon(
-                            icon = Icons.Outlined.Notifications,
-                            desc = "Notifications",
-                            onClick = {
-                                Toast.makeText(
-                                    context,
-                                    "No new notifications",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                        GroupedHeaderIcons(
+                            listOf(
+                                Icons.Outlined.Send to {
+                                    Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT).show()
+                                },
+                                Icons.Outlined.Notifications to {
+                                    Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT).show()
+                                }
+                            )
                         )
                     }
                 }
+
+                HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
 
                 if (isSearchActive) {
                     OutlinedTextField(
@@ -269,12 +287,27 @@ fun HomeScreen(
                 }
             }
 
-            // --- ⚡ RIGHT-CENTER TICKER OVERLAY (Moved from ReitDetail) ---
+            AnimatedVisibility(
+                visible = isTickerOpen,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { isTickerOpen = false }
+                )
+            }
+
+            // --- RIGHT-CENTER TICKER OVERLAY ---
             Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // The toggle button tab
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
@@ -295,7 +328,6 @@ fun HomeScreen(
                     )
                 }
 
-                // The scrolling ticker panel
                 AnimatedVisibility(
                     visible = isTickerOpen,
                     enter = slideInHorizontally(initialOffsetX = { it }),
@@ -304,22 +336,26 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .width(110.dp)
-                            .fillMaxHeight(0.5f) // Takes 50% of screen height
-                            .background(TradeCardBg.copy(alpha = 0.95f))
+                            .fillMaxHeight()
+                            // ⚡ FIX: Added bottom padding so the ticker physically stops above the navigation bar
+                            .padding(bottom = 100.dp)
+                            .background(
+                                color = TradeCardBg.copy(alpha = 0.95f),
+                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                            )
                             .border(
-                                1.dp,
-                                Color.White.copy(alpha = 0.1f),
-                                RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
+                                width = 1.dp,
+                                color = Color.White.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
                             )
                     ) {
                         val tickerListState = rememberLazyListState()
 
-                        // Auto-scroll logic
                         LaunchedEffect(isTickerOpen) {
                             if (isTickerOpen) {
                                 while (isActive) {
                                     tickerListState.animateScrollBy(
-                                        value = 60f, // Scroll speed
+                                        value = 60f,
                                         animationSpec = tween(
                                             durationMillis = 1000,
                                             easing = LinearEasing
@@ -335,11 +371,10 @@ fun HomeScreen(
                         LazyColumn(
                             state = tickerListState,
                             modifier = Modifier.fillMaxSize(),
-                            userScrollEnabled = false, // Prevents manual interference for a true marquee
+                            userScrollEnabled = false,
                             contentPadding = PaddingValues(vertical = 16.dp)
                         ) {
                             if (tickerQuotes.isNotEmpty()) {
-                                // Infinite loop via large count
                                 items(10000) { index ->
                                     val quote = tickerQuotes[index % tickerQuotes.size]
                                     val displayName =
@@ -394,26 +429,6 @@ fun HomeScreen(
     }
 }
 
-@Composable
-fun CircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(42.dp)
-            .shadow(elevation = 6.dp, shape = CircleShape, spotColor = Color.Black)
-            .clip(CircleShape)
-            .background(TradeCardBg)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = desc,
-            tint = TextWhite,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LiveAssetTradingCard(
@@ -425,11 +440,18 @@ fun LiveAssetTradingCard(
 ) {
     val priceColor = if (quote.isPositive) BuyTeal else SellOrange
 
-    val location = if (isSmReit) "Sector 62, Gurugram" else null
-    val managerName = "Nikhil Kamath"
-    val managerTitle = "Asset Manager"
+    val assetData = when (quote.symbol) {
+        "PSTITANIA.BO" -> Triple("PropShare Titania", "Property Share", listOf("https://images.unsplash.com/photo-1497366216548-37526070297c"))
+        "PSPLATINA.BO" -> Triple("PropShare Platina", "Property Share", listOf("https://images.unsplash.com/photo-1416331108676-a22ccb276e35"))
+        "EMBASSY.NS" -> Triple("Embassy REIT", "Embassy Group", listOf("https://images.unsplash.com/photo-1572025442646-866d16c84a54"))
+        "MINDSPACE.NS" -> Triple("Mindspace REIT", "Mindspace Group", listOf("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab"))
+        "NEXUS.NS" -> Triple("Nexus Select REIT", "Nexus Group", listOf("https://images.unsplash.com/photo-1554118811-1e0d58224f24"))
+        "BIRET.NS" -> Triple("Brookfield India REIT", "Brookfield Group", listOf("https://images.unsplash.com/photo-1582037928769-181f2422677e"))
+        else -> Triple(quote.name.split(",")[0], "Knowledge Group", listOf("https://images.unsplash.com/photo-1552566626-52f8b828add9"))
+    }
 
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val (displayName, managerName, images) = assetData
+    val pagerState = rememberPagerState(pageCount = { images.size })
 
     Card(
         modifier = Modifier
@@ -448,21 +470,19 @@ fun LiveAssetTradingCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = quote.name.split(",")[0],
+                        text = displayName,
                         color = TextWhite,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (isSmReit && location != null) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = location,
-                            color = TextGrey,
-                            fontSize = 12.sp
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (isSmReit) "SM REIT" else "REIT",
+                        color = TextGrey,
+                        fontSize = 12.sp
+                    )
                 }
                 IconButton(
                     onClick = onSaveClick,
@@ -548,24 +568,12 @@ fun LiveAssetTradingCard(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.Image,
-                                contentDescription = "Media Placeholder",
-                                tint = Color.LightGray,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Text(
-                                "Media Swipe Area (Page ${page + 1})",
-                                color = Color.Gray,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
+                    AsyncImage(
+                        model = images.getOrElse(page) { images.first() },
+                        contentDescription = "Property Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
 
                 Row(
@@ -597,22 +605,18 @@ fun LiveAssetTradingCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                if (isSmReit) {
-                    Column {
-                        Text(
-                            text = managerName,
-                            color = TextWhite,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = managerTitle,
-                            color = TextGrey,
-                            fontSize = 12.sp
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                Column {
+                    Text(
+                        text = managerName,
+                        color = TextWhite,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Asset Manager",
+                        color = TextGrey,
+                        fontSize = 12.sp
+                    )
                 }
 
                 Column(

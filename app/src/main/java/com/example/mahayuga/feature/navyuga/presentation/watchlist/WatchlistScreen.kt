@@ -24,8 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.mahayuga.feature.navyuga.presentation.home.CircularHeaderIcon
+import com.example.mahayuga.feature.navyuga.presentation.home.GroupedHeaderIcons
 import com.example.mahayuga.feature.navyuga.presentation.home.LiveAssetTradingCard
+
+private val BorderDark = Color(0xFF1A2A40)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,34 +70,38 @@ fun WatchlistScreen(
                             text = "Watchlist",
                             color = Color.White,
                             fontSize = 24.sp,
-                            fontWeight = FontWeight.Normal
+                            fontWeight = FontWeight.Bold // ⚡ FIX: Bold Header
                         )
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CircularHeaderIcon(
-                            icon = Icons.Outlined.Search,
-                            desc = "Search Watchlist",
-                            onClick = { isSearchActive = !isSearchActive }
+                        // ⚡ FIX: Grouped Header Icons styling to match Home
+                        GroupedHeaderIcons(
+                            listOf(Icons.Outlined.Search to { isSearchActive = !isSearchActive })
                         )
-                        CircularHeaderIcon(
-                            icon = Icons.AutoMirrored.Outlined.Send,
-                            desc = "Messages",
-                            onClick = {
-                                Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                        )
-                        CircularHeaderIcon(
-                            icon = Icons.Outlined.Notifications,
-                            desc = "Notifications",
-                            onClick = {
-                                Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
+                        GroupedHeaderIcons(
+                            listOf(
+                                Icons.AutoMirrored.Outlined.Send to {
+                                    Toast.makeText(
+                                        context,
+                                        "Messages coming soon",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                Icons.Outlined.Notifications to {
+                                    Toast.makeText(
+                                        context,
+                                        "No new notifications",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
                         )
                     }
                 }
+
+                // ⚡ FIX: Divider separating the header and the options
+                HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
 
                 if (isSearchActive) {
                     OutlinedTextField(
@@ -115,8 +121,6 @@ fun WatchlistScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
-
-                // ⚡ FIX: Removed the broken MarketTickerRow reference
 
                 TabRow(
                     selectedTabIndex = selectedTab,
@@ -210,7 +214,7 @@ fun WatchlistScreen(
                         LiveAssetTradingCard(
                             quote = quote,
                             isSmReit = isSmReit,
-                            isSaved = true, // Watchlist screen implies items are saved
+                            isSaved = true,
                             onCardClick = {
                                 if (isSmReit) onNavigateToSmReitDetail(quote.symbol)
                                 else onNavigateToReitDetail(quote.symbol)

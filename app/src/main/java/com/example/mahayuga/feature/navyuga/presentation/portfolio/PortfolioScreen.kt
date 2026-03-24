@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mahayuga.feature.navyuga.presentation.home.GroupedHeaderIcons
 
 // --- UI COLORS ---
 private val PortBg = Color(0xFF080F18)
@@ -93,24 +94,42 @@ fun PortfolioScreen(
                             text = "Portfolio",
                             color = PortTextWhite,
                             fontSize = 24.sp,
-                            fontWeight = FontWeight.Normal
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PortCircularHeaderIcon(Icons.Outlined.Search, "Search") {
-                            Toast.makeText(context, "Search", Toast.LENGTH_SHORT).show()
-                        }
-                        PortCircularHeaderIcon(Icons.Outlined.Send, "Messages") {
-                            Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-                        PortCircularHeaderIcon(Icons.Outlined.Notifications, "Notifications") {
-                            Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT)
-                                .show()
-                        }
+                        GroupedHeaderIcons(
+                            listOf(Icons.Outlined.Search to {
+                                Toast.makeText(
+                                    context,
+                                    "Search",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            })
+                        )
+                        GroupedHeaderIcons(
+                            listOf(
+                                Icons.Outlined.Send to {
+                                    Toast.makeText(
+                                        context,
+                                        "Messages coming soon",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                Icons.Outlined.Notifications to {
+                                    Toast.makeText(
+                                        context,
+                                        "No new notifications",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                        )
                     }
                 }
+
+                HorizontalDivider(color = PortCardLighter.copy(alpha = 0.5f))
 
                 // 2. Holdings vs Positions Tabs
                 TabRow(
@@ -337,26 +356,6 @@ fun PortfolioScreen(
 // --- SUB-COMPONENTS ---
 
 @Composable
-fun PortCircularHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(42.dp)
-            .shadow(elevation = 6.dp, shape = CircleShape, spotColor = Color.Black)
-            .clip(CircleShape)
-            .background(PortCard)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = desc,
-            tint = PortTextWhite,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
-@Composable
 fun LegendBox(title: String, value: String, color: Color) {
     Box(
         modifier = Modifier
@@ -366,9 +365,11 @@ fun LegendBox(title: String, value: String, color: Color) {
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier
-                    .size(8.dp)
-                    .background(color, CircleShape))
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(color, CircleShape)
+                )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(title, color = PortTextGrey, fontSize = 10.sp)
             }

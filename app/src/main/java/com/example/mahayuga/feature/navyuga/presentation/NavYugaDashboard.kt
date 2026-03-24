@@ -2,6 +2,7 @@
 package com.example.mahayuga.feature.navyuga.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +33,11 @@ import com.example.mahayuga.feature.navyuga.presentation.discover.DiscoverScreen
 import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScreen
 
 private val NavyBlue = Color(0xFF080F18)
-private val BottomNavBg = Color(0xFF00BFA5)
 private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
-private val SelectedIconColor = Color.White
+// ⚡ FIX: Selected icon is now Brand Blue
+private val SelectedIconColor = Color(0xFF2979FF)
+// ⚡ FIX: Translucent Metallic Background
+private val FloatingNavBg = Color(0xFF0F172A).copy(alpha = 0.85f)
 
 @Composable
 fun NavYugaDashboard(
@@ -100,24 +104,28 @@ fun NavYugaDashboard(
                     onNavigateToSecurity = onNavigateToSecurity,
                     onNavigateToHelp = onNavigateToHelp,
                     onNavigateToWallet = { rootNavController.navigate("wallet_screen") },
-                    onNavigateToAbout = { rootNavController.navigate("about_navyuga") }, // ⚡ ADDED THIS ROUTE
+                    onNavigateToAbout = { rootNavController.navigate("about_navyuga") },
                     onNavigateToMenu = onNavigateToMenu,
                     onLogout = onLogout
                 )
             }
         }
 
+        // ⚡ FIX: Oval, Translucent, Floating Navigation Bar
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(BottomNavBg, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                 .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .fillMaxWidth()
+                .shadow(elevation = 8.dp, shape = RoundedCornerShape(50))
+                .background(FloatingNavBg, RoundedCornerShape(50))
+                .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp),
+                    .height(64.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {

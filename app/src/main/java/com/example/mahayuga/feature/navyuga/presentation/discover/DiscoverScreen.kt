@@ -35,6 +35,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.mahayuga.feature.navyuga.presentation.home.GroupedHeaderIcons
 
 // --- THEME COLORS ---
 private val BackgroundDark = Color(0xFF080F18)
@@ -60,9 +61,11 @@ fun DiscoverScreen(
     var selectedReel by remember { mutableStateOf<DiscoverReel?>(null) }
     var selectedEducation by remember { mutableStateOf<DiscoverEducation?>(null) }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(BackgroundDark)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundDark)
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
             // --- HEADER ---
@@ -90,24 +93,36 @@ fun DiscoverScreen(
                             text = "Discover",
                             color = TextPrimary,
                             fontSize = 24.sp,
-                            fontWeight = FontWeight.Normal
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        DiscoverHeaderIcon(Icons.Default.Search, "Search") {
-                            isSearchActive = !isSearchActive
-                        }
-                        DiscoverHeaderIcon(Icons.Default.Send, "Messages") {
-                            Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-                        DiscoverHeaderIcon(Icons.Outlined.Notifications, "Notifications") {
-                            Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT)
-                                .show()
-                        }
+                        GroupedHeaderIcons(
+                            listOf(Icons.Default.Search to { isSearchActive = !isSearchActive })
+                        )
+                        GroupedHeaderIcons(
+                            listOf(
+                                Icons.Default.Send to {
+                                    Toast.makeText(
+                                        context,
+                                        "Messages coming soon",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                Icons.Outlined.Notifications to {
+                                    Toast.makeText(
+                                        context,
+                                        "No new notifications",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                        )
                     }
                 }
+
+                HorizontalDivider(color = CardBackground.copy(alpha = 0.5f))
 
                 if (isSearchActive) {
                     OutlinedTextField(
@@ -342,26 +357,6 @@ fun DiscoverScreen(
 // --- SUB-COMPONENTS ---
 
 @Composable
-fun DiscoverHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(42.dp)
-            .shadow(elevation = 6.dp, shape = CircleShape, spotColor = Color.Black)
-            .clip(CircleShape)
-            .background(CardBackground)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = desc,
-            tint = TextPrimary,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
-@Composable
 fun StoryCircleItem(story: DiscoverStory) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
@@ -400,9 +395,11 @@ fun StoryCircleItem(story: DiscoverStory) {
             )
             // BRICX special badge
             if (story.isBricx) {
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f)))
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f))
+                )
                 Text("BRICX", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
@@ -613,9 +610,11 @@ fun EducationVideoCard(video: DiscoverEducation, onClick: () -> Unit) {
 
 @Composable
 fun FullScreenReelView(reel: DiscoverReel, onClose: () -> Unit) {
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Black)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
         // Pseudo Video Player Background
         AsyncImage(
             model = reel.thumbnailUrl,
@@ -623,9 +622,11 @@ fun FullScreenReelView(reel: DiscoverReel, onClose: () -> Unit) {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.3f)))
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f))
+        )
 
         // Close Button
         IconButton(
@@ -724,10 +725,12 @@ fun ReelActionIcon(icon: ImageVector, label: String?) {
 
 @Composable
 fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(BackgroundDark)
-        .statusBarsPadding()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundDark)
+            .statusBarsPadding()
+    ) {
         // Video Player Placeholder
         Box(
             modifier = Modifier
@@ -772,9 +775,11 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
         }
 
         // Details Column
-        Column(modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
             Text(video.title, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Text("${video.views} • 2 days ago", color = TextSecondary, fontSize = 12.sp)
@@ -844,9 +849,11 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
 
             // Dummy Suggested List
             repeat(3) {
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                ) {
                     Box(
                         modifier = Modifier
                             .width(120.dp)

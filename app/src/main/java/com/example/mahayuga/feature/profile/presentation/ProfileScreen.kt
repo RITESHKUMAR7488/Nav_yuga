@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.navyuga.presentation.home.GroupedHeaderIcons
 
 // --- THEME COLORS (Matched to Portfolio Command Centre) ---
 private val BgDark = Color(0xFF080F18)
@@ -95,22 +96,42 @@ fun ProfileScreen(
                         text = "Profile",
                         color = TextPrimary,
                         fontSize = 24.sp,
-                        fontWeight = FontWeight.Normal
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ProfileHeaderIcon(Icons.Outlined.Search, "Search") {
-                        Toast.makeText(context, "Search coming soon", Toast.LENGTH_SHORT).show()
-                    }
-                    ProfileHeaderIcon(Icons.AutoMirrored.Filled.Send, "Messages") {
-                        Toast.makeText(context, "Messages coming soon", Toast.LENGTH_SHORT).show()
-                    }
-                    ProfileHeaderIcon(Icons.Outlined.Notifications, "Notifications") {
-                        Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT).show()
-                    }
+                    GroupedHeaderIcons(
+                        listOf(Icons.Outlined.Search to {
+                            Toast.makeText(
+                                context,
+                                "Search coming soon",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        })
+                    )
+                    GroupedHeaderIcons(
+                        listOf(
+                            Icons.AutoMirrored.Filled.Send to {
+                                Toast.makeText(
+                                    context,
+                                    "Messages coming soon",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            Icons.Outlined.Notifications to {
+                                Toast.makeText(
+                                    context,
+                                    "No new notifications",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                    )
                 }
             }
+
+            HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -202,7 +223,9 @@ fun ProfileScreen(
                 icon = Icons.Outlined.Description,
                 title = "Documents",
                 badge = "NEW",
-                onClick = { Toast.makeText(context, "Documents coming soon", Toast.LENGTH_SHORT).show() }
+                onClick = {
+                    Toast.makeText(context, "Documents coming soon", Toast.LENGTH_SHORT).show()
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -226,26 +249,6 @@ fun ProfileScreen(
 }
 
 // --- SUB-COMPONENTS ---
-
-@Composable
-fun ProfileHeaderIcon(icon: ImageVector, desc: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(42.dp)
-            .shadow(elevation = 6.dp, shape = CircleShape, spotColor = Color.Black)
-            .clip(CircleShape)
-            .background(CardDark)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = desc,
-            tint = TextPrimary,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
 
 @Composable
 fun ProfileOptionCard(
