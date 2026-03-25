@@ -1,9 +1,12 @@
 package com.example.mahayuga.feature.navyuga.domain.repository
 
+import android.content.SharedPreferences
 import com.example.mahayuga.feature.navyuga.data.remote.LisunsApi
 import com.example.mahayuga.feature.navyuga.data.remote.LisunsWebSocketClient
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
 import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -15,9 +18,14 @@ import javax.inject.Inject
 
 class MarketRepositoryImpl @Inject constructor(
     private val api: LisunsApi,
-    private val wsClient: LisunsWebSocketClient
+    private val wsClient: LisunsWebSocketClient,
+    private val prefs: SharedPreferences,
+    private val gson: Gson
 ) : MarketRepository {
 
+    private val CACHE_KEY = "cached_market_quotes"
+
+    // Lisuns REST strictly requires BSE scrip codes
     private val bseScripMapper = mapOf(
         "EMBASSY" to "542602",
         "MINDSPACE" to "543217",
@@ -27,127 +35,100 @@ class MarketRepositoryImpl @Inject constructor(
         "PSPLATINA" to "544305"
     )
 
-    // Rock-solid fallback data if the API is offline
-    private val fallbackData = mapOf(
-        "EMBASSY" to MarketQuote(
-            symbol = "EMBASSY",
-            name = "Embassy REIT",
-            currentPrice = 380.5,
-            priceChange = -2.1,
-            percentageChange = -0.5,
-            isPositive = false,
-            openPrice = 382.0,
-            previousClose = 382.6,
-            dayHigh = 385.0,
-            dayLow = 379.0,
-            fiftyTwoWeekHigh = 405.0,
-            fiftyTwoWeekLow = 295.0,
-            marketCap = 36000000000L,
-            dividendYield = 5.2,
-            volume = 120000L
-        ),
-        "MINDSPACE" to MarketQuote(
-            symbol = "MINDSPACE",
-            name = "Mindspace REIT",
-            currentPrice = 345.2,
-            priceChange = 1.5,
-            percentageChange = 0.4,
-            isPositive = true,
-            openPrice = 343.0,
-            previousClose = 343.7,
-            dayHigh = 348.0,
-            dayLow = 340.0,
-            fiftyTwoWeekHigh = 360.0,
-            fiftyTwoWeekLow = 270.0,
-            marketCap = 20000000000L,
-            dividendYield = 4.8,
-            volume = 85000L
-        ),
-        "BIRET" to MarketQuote(
-            symbol = "BIRET",
-            name = "Brookfield REIT",
-            currentPrice = 255.0,
-            priceChange = 3.2,
-            percentageChange = 1.2,
-            isPositive = true,
-            openPrice = 252.0,
-            previousClose = 251.8,
-            dayHigh = 258.0,
-            dayLow = 250.0,
-            fiftyTwoWeekHigh = 280.0,
-            fiftyTwoWeekLow = 210.0,
-            marketCap = 15000000000L,
-            dividendYield = 6.1,
-            volume = 60000L
-        ),
-        "NEXUS" to MarketQuote(
-            symbol = "NEXUS",
-            name = "Nexus Select",
-            currentPrice = 135.8,
-            priceChange = -0.5,
-            percentageChange = -0.3,
-            isPositive = false,
-            openPrice = 136.0,
-            previousClose = 136.3,
-            dayHigh = 137.0,
-            dayLow = 134.0,
-            fiftyTwoWeekHigh = 145.0,
-            fiftyTwoWeekLow = 95.0,
-            marketCap = 10000000000L,
-            dividendYield = 5.5,
-            volume = 45000L
-        ),
-        "PSTITANIA" to MarketQuote(
-            symbol = "PSTITANIA",
-            name = "PropShare Titania",
-            currentPrice = 1020.0,
-            priceChange = 5.0,
-            percentageChange = 0.5,
-            isPositive = true,
-            openPrice = 1015.0,
-            previousClose = 1015.0,
-            dayHigh = 1025.0,
-            dayLow = 1010.0,
-            fiftyTwoWeekHigh = 1050.0,
-            fiftyTwoWeekLow = 990.0,
-            marketCap = 5000000000L,
-            dividendYield = 7.0,
-            volume = 5000L
-        ),
-        "PSPLATINA" to MarketQuote(
-            symbol = "PSPLATINA",
-            name = "PropShare Platina",
-            currentPrice = 1540.0,
-            priceChange = -10.0,
-            percentageChange = -0.6,
-            isPositive = false,
-            openPrice = 1550.0,
-            previousClose = 1550.0,
-            dayHigh = 1560.0,
-            dayLow = 1530.0,
-            fiftyTwoWeekHigh = 1600.0,
-            fiftyTwoWeekLow = 1500.0,
-            marketCap = 8000000000L,
-            dividendYield = 6.8,
-            volume = 3000L
-        )
-    )
+    // --- CACHING LOGIC ---
+    private fun saveToCache(quotesMap: Map<String, MarketQuote>) {
+        val jsonString = gson.toJson(quotesMap)
+        prefs.edit().putString(CACHE_KEY, jsonString).apply()
+    }
+
+    private fun loadFromCache(): MutableMap<String, MarketQuote> {
+        val jsonString = prefs.getString(CACHE_KEY, null) ?: return mutableMapOf()
+        return try {
+            val type = object : TypeToken<Map<String, MarketQuote>>() {}.type
+            gson.fromJson(jsonString, type) ?: mutableMapOf()
+        } catch (e: Exception) {
+            mutableMapOf()
+        }
+    }
+
+    // --- VERIFIED POSTMAN REST FETCHER ---
+    private suspend fun fetchVerifiedRestData(cleanSymbol: String, bseIdentifier: String): MarketQuote? {
+        try {
+            // Look back 15 days to guarantee we hit data, even on the test server
+            val toTime = System.currentTimeMillis() / 1000
+            val fromTime = toTime - (15 * 24 * 60 * 60)
+
+            val response = api.getHistoricalData(
+                instrumentIdentifier = bseIdentifier,
+                from = fromTime,
+                to = toTime
+            )
+
+            val snapshots = response.Value
+            if (!snapshots.isNullOrEmpty()) {
+                val lastSnapshot = snapshots.last()
+                val previousSnapshot = if (snapshots.size > 1) snapshots[snapshots.size - 2] else lastSnapshot
+
+                val currentPrice = lastSnapshot.Close ?: 0.0
+                val previousClose = previousSnapshot.Close ?: currentPrice
+                val priceChange = currentPrice - previousClose
+                val percentageChange = if (previousClose > 0) (priceChange / previousClose) * 100 else 0.0
+
+                return MarketQuote(
+                    symbol = cleanSymbol,
+                    name = cleanSymbol,
+                    currentPrice = currentPrice,
+                    priceChange = priceChange,
+                    percentageChange = percentageChange,
+                    isPositive = priceChange >= 0,
+                    openPrice = lastSnapshot.Open ?: currentPrice,
+                    previousClose = previousClose,
+                    dayHigh = lastSnapshot.High ?: currentPrice,
+                    dayLow = lastSnapshot.Low ?: currentPrice,
+                    marketCap = lastSnapshot.MCap ?: 0L,
+                    volume = lastSnapshot.Volume ?: 0L
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
 
     override fun getLiveQuotesFlow(symbols: List<String>): Flow<List<MarketQuote>> = flow {
         val cleanSymbols = symbols.map { it.replace(".NS", "").replace(".BO", "") }
-        val currentQuotesMap = mutableMapOf<String, MarketQuote>()
 
+        // ⚡ PHASE 1: INSTANT CACHE LOAD
+        val currentQuotesMap = loadFromCache()
+
+        if (currentQuotesMap.isNotEmpty()) {
+            emit(currentQuotesMap.values.toList())
+        }
+
+        // ⚡ PHASE 2: VERIFIED REST FETCH
         coroutineScope {
             val deferredQuotes = cleanSymbols.map { sym ->
-                async { getHistoricalData(sym).getOrNull() }
+                async {
+                    val bseId = bseScripMapper[sym] ?: sym
+                    fetchVerifiedRestData(sym, bseId) // Uses the GetScripMCap we know works
+                }
             }
+
             deferredQuotes.awaitAll().filterNotNull().forEach { quote ->
                 currentQuotesMap[quote.symbol] = quote
             }
         }
 
-        emit(currentQuotesMap.values.toList())
+        // Save fresh data to memory and update UI
+        if (currentQuotesMap.isNotEmpty()) {
+            saveToCache(currentQuotesMap)
+            emit(currentQuotesMap.values.toList())
+        } else {
+            // Failsafe empty emission to kill loading spinners
+            emit(emptyList())
+        }
 
+        // ⚡ PHASE 3: LIVE WEBSOCKET CONNECTION
         wsClient.subscribe(cleanSymbols)
 
         wsClient.quotesFlow.collect { liveQuotes ->
@@ -160,13 +141,14 @@ class MarketRepositoryImpl @Inject constructor(
                         priceChange = liveQuote.priceChange,
                         percentageChange = liveQuote.percentageChange,
                         isPositive = liveQuote.isPositive,
-                        dayHigh = if (liveQuote.dayHigh > 0) liveQuote.dayHigh else existing.dayHigh,
-                        dayLow = if (liveQuote.dayLow > 0) liveQuote.dayLow else existing.dayLow
+                        dayHigh = if (liveQuote.dayHigh > 0) liveQuote.dayHigh else existing?.dayHigh ?: 0.0,
+                        dayLow = if (liveQuote.dayLow > 0) liveQuote.dayLow else existing?.dayLow ?: 0.0
                     ) ?: liveQuote
                     updated = true
                 }
             }
             if (updated) {
+                saveToCache(currentQuotesMap)
                 emit(currentQuotesMap.values.toList())
             }
         }
@@ -177,61 +159,20 @@ class MarketRepositoryImpl @Inject constructor(
             val cleanSymbol = symbol.replace(".NS", "").replace(".BO", "")
             val bseIdentifier = bseScripMapper[cleanSymbol] ?: cleanSymbol
 
-            // Expanded to 15 days to guarantee we hit active trading data even over long holiday weekends
-            val toTime = System.currentTimeMillis() / 1000
-            val fromTime = toTime - (15 * 24 * 60 * 60)
-
-            try {
-                val response = api.getHistoricalData(
-                    instrumentIdentifier = bseIdentifier,
-                    from = fromTime,
-                    to = toTime
-                )
-
-                val snapshots = response.Value
-
-                if (!snapshots.isNullOrEmpty()) {
-                    val lastSnapshot = snapshots.last()
-                    // Get the second-to-last item to accurately calculate the Previous Close
-                    val previousSnapshot =
-                        if (snapshots.size > 1) snapshots[snapshots.size - 2] else lastSnapshot
-
-                    val currentPrice = lastSnapshot.Close ?: 0.0
-                    val previousClose = previousSnapshot.Close ?: currentPrice
-                    val priceChange = currentPrice - previousClose
-                    val percentageChange =
-                        if (previousClose > 0) (priceChange / previousClose) * 100 else 0.0
-
-                    val quote = MarketQuote(
-                        symbol = cleanSymbol,
-                        name = cleanSymbol,
-                        currentPrice = currentPrice,
-                        priceChange = priceChange,
-                        percentageChange = percentageChange,
-                        isPositive = priceChange >= 0,
-                        openPrice = lastSnapshot.Open ?: currentPrice,
-                        previousClose = previousClose,
-                        dayHigh = lastSnapshot.High ?: currentPrice,
-                        dayLow = lastSnapshot.Low ?: currentPrice,
-                        marketCap = lastSnapshot.MCap ?: 0L,
-                        volume = lastSnapshot.Volume ?: 0L
-                    )
-                    return@withContext Result.success(quote)
-                }
-            } catch (e: Exception) {
-                // If API throws an exception (offline server), fall through to the fallback block
+            // 1. Try REST API (GetScripMCap)
+            val restData = fetchVerifiedRestData(cleanSymbol, bseIdentifier)
+            if (restData != null && restData.currentPrice > 0.0) {
+                return@withContext Result.success(restData)
             }
 
-            // GUARANTEED FALLBACK: Never return failure, always return cached data.
-            val fallbackQuote = fallbackData[cleanSymbol] ?: MarketQuote(
-                symbol = cleanSymbol,
-                name = cleanSymbol,
-                currentPrice = 100.0,
-                priceChange = 0.0,
-                percentageChange = 0.0,
-                isPositive = true
-            )
-            Result.success(fallbackQuote)
+            // 2. Try Memory Cache
+            val cachedMap = loadFromCache()
+            if (cachedMap.containsKey(cleanSymbol)) {
+                return@withContext Result.success(cachedMap[cleanSymbol]!!)
+            }
+
+            // 3. Complete Failure
+            Result.failure(Exception("Lisuns server offline and no cached memory available."))
         }
     }
 }

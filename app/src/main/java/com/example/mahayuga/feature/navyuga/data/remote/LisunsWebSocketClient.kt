@@ -71,8 +71,11 @@ class LisunsWebSocketClient @Inject constructor(
             val type = object : TypeToken<Map<String, Any>>() {}.type
             val map: Map<String, Any> = gson.fromJson(text, type)
 
-            if (map["MessageType"] == "QuoteResult") {
+            // ⚡ THE FIX: Changed from "QuoteResult" to "RealtimeResult" to match your live payload
+            if (map["MessageType"] == "RealtimeResult" || map["MessageType"] == "QuoteResult") {
                 val rawSymbol = map["InstrumentIdentifier"] as? String ?: return
+
+                // Strip the .RR suffix so it matches the UI identifiers (e.g., EMBASSY)
                 val symbol = rawSymbol.replace(".RR", "")
 
                 val lastPrice = (map["LastTradePrice"] as? Number)?.toDouble() ?: 0.0
@@ -94,12 +97,12 @@ class LisunsWebSocketClient @Inject constructor(
 
                 latestQuotes[symbol] = quote
                 _quotesFlow.update { latestQuotes.values.toList() }
+                Log.d("LisunsWS", "TICK RECEIVED: $symbol @ $lastPrice") // Added log so you can see it working
             }
         } catch (e: Exception) {
             Log.e("LisunsWS", "Parsing Error", e)
         }
     }
-
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
         isSocketOpen = false
         this.webSocket = null
