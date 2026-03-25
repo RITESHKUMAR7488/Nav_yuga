@@ -71,18 +71,30 @@ class LisunsWebSocketClient @Inject constructor(
             val type = object : TypeToken<Map<String, Any>>() {}.type
             val map: Map<String, Any> = gson.fromJson(text, type)
 
-            // ⚡ THE FIX: Changed from "QuoteResult" to "RealtimeResult" to match your live payload
             if (map["MessageType"] == "RealtimeResult" || map["MessageType"] == "QuoteResult") {
                 val rawSymbol = map["InstrumentIdentifier"] as? String ?: return
-
-                // Strip the .RR suffix so it matches the UI identifiers (e.g., EMBASSY)
                 val symbol = rawSymbol.replace(".RR", "")
 
+                // Extracting all the real data from the payload
                 val lastPrice = (map["LastTradePrice"] as? Number)?.toDouble() ?: 0.0
                 val change = (map["PriceChange"] as? Number)?.toDouble() ?: 0.0
                 val changePct = (map["PriceChangePercentage"] as? Number)?.toDouble() ?: 0.0
                 val high = (map["High"] as? Number)?.toDouble() ?: 0.0
                 val low = (map["Low"] as? Number)?.toDouble() ?: 0.0
+                val open = (map["Open"] as? Number)?.toDouble() ?: 0.0
+                val close = (map["Close"] as? Number)?.toDouble() ?: 0.0
+                val volume = (map["TotalQtyTraded"] as? Number)?.toLong() ?: 0L
+
+                // ⚡ NEW FIELDS
+                val avgPrice = (map["AverageTradedPrice"] as? Number)?.toDouble() ?: 0.0
+                val buyPrice = (map["BuyPrice"] as? Number)?.toDouble() ?: 0.0
+                val buyQty = (map["BuyQty"] as? Number)?.toLong() ?: 0L
+                val sellPrice = (map["SellPrice"] as? Number)?.toDouble() ?: 0.0
+                val sellQty = (map["SellQty"] as? Number)?.toLong() ?: 0L
+                val lastTradeQty = (map["LastTradeQty"] as? Number)?.toLong() ?: 0L
+                val openInterest = (map["OpenInterest"] as? Number)?.toLong() ?: 0L
+                val quotationLot = (map["QuotationLot"] as? Number)?.toDouble() ?: 0.0
+                val tradedValue = (map["Value"] as? Number)?.toDouble() ?: 0.0
 
                 val quote = MarketQuote(
                     symbol = symbol,
@@ -92,12 +104,24 @@ class LisunsWebSocketClient @Inject constructor(
                     percentageChange = changePct,
                     isPositive = change >= 0,
                     dayHigh = high,
-                    dayLow = low
+                    dayLow = low,
+                    openPrice = open,
+                    previousClose = close,
+                    volume = volume,
+                    averageTradedPrice = avgPrice,
+                    buyPrice = buyPrice,
+                    buyQty = buyQty,
+                    sellPrice = sellPrice,
+                    sellQty = sellQty,
+                    lastTradeQty = lastTradeQty,
+                    openInterest = openInterest,
+                    quotationLot = quotationLot,
+                    tradedValue = tradedValue
                 )
 
                 latestQuotes[symbol] = quote
                 _quotesFlow.update { latestQuotes.values.toList() }
-                Log.d("LisunsWS", "TICK RECEIVED: $symbol @ $lastPrice") // Added log so you can see it working
+                Log.d("LisunsWS", "TICK RECEIVED: $symbol @ $lastPrice")
             }
         } catch (e: Exception) {
             Log.e("LisunsWS", "Parsing Error", e)

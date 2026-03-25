@@ -26,18 +26,26 @@ data class ReitDetailData(
     val occupancyRate: String,
     val majorTenants: List<String>,
     val chartPoints: List<Pair<Float, Float>>,
-    val marketCap: String,
-    val peRatio: String,
-    val dividendYield: String,
+
+    // ⚡ REPLACED HARDCODED FIELDS WITH NEW REAL ONES
+    val openPrice: String,
+    val previousClose: String,
     val dayLow: String,
     val dayHigh: String,
-    val week52Low: String,
-    val week52High: String,
     val volume: String,
-    val avgVolume: String,
+    val averageTradedPrice: String,
+    val buyPrice: String,
+    val buyQty: String,
+    val sellPrice: String,
+    val sellQty: String,
+    val lastTradeQty: String,
+    val openInterest: String,
+    val quotationLot: String,
+    val tradedValue: String,
+    val isDummy: Boolean,
+
     val newsItems: List<Any> = emptyList()
 )
-
 sealed class ReitDetailState {
     object Loading : ReitDetailState()
     data class Success(val data: ReitDetailData) : ReitDetailState()
@@ -76,30 +84,33 @@ class ReitDetailViewModel @Inject constructor(
                 symbol = "$cleanSymbol • NSE",
                 currentPrice = quote.currentPrice,
                 priceChange = String.format(Locale.US, "%.2f", quote.priceChange).toDouble(),
-                percentageChange = String.format(Locale.US, "%.2f", quote.percentageChange)
-                    .toDouble(),
+                percentageChange = String.format(Locale.US, "%.2f", quote.percentageChange).toDouble(),
                 isPositive = quote.isPositive,
-                images = listOf(
-                    "https://images.unsplash.com/photo-1497366216548-37526070297c",
-                    "https://images.unsplash.com/photo-1416331108676-a22ccb276e35"
-                ),
+                images = listOf("https://images.unsplash.com/photo-1497366216548-37526070297c", "https://images.unsplash.com/photo-1416331108676-a22ccb276e35"),
                 description = "Real estate investment trust offering consistent yields through premium commercial properties.",
                 propertyType = "Commercial Office",
                 totalArea = "31.3M sq ft",
                 occupancyRate = "89.5%",
                 majorTenants = listOf("Accenture", "Barclays", "Cognizant"),
                 chartPoints = generateDummyChartData(),
-                marketCap = mCapString,
-                peRatio = "45.2",
-                dividendYield = "${quote.dividendYield}%",
+
+                // ⚡ Mapping the Real Data directly from the WebSocket
+                openPrice = quote.openPrice.toString(),
+                previousClose = quote.previousClose.toString(),
                 dayLow = quote.dayLow.toString(),
                 dayHigh = quote.dayHigh.toString(),
-                week52Low = quote.fiftyTwoWeekLow.toString(),
-                week52High = quote.fiftyTwoWeekHigh.toString(),
                 volume = quote.volume.toString(),
-                avgVolume = "850K"
+                averageTradedPrice = quote.averageTradedPrice.toString(),
+                buyPrice = quote.buyPrice.toString(),
+                buyQty = quote.buyQty.toString(),
+                sellPrice = quote.sellPrice.toString(),
+                sellQty = quote.sellQty.toString(),
+                lastTradeQty = quote.lastTradeQty.toString(),
+                openInterest = quote.openInterest.toString(),
+                quotationLot = quote.quotationLot.toString(),
+                tradedValue = quote.tradedValue.toString(),
+                isDummy = quote.isDummy
             )
-
             _uiState.value = ReitDetailState.Success(data)
         }
     }

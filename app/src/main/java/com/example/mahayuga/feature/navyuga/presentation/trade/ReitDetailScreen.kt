@@ -325,27 +325,15 @@ fun EstateDetailRow(label: String, value: String) {
 
 @Composable
 fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
+    // ⚡ Dynamically assign a star if the data is dummy/fallback
+    val star = if (data.isDummy) "*" else ""
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             listOf("1D", "1W", "1M", "6M", "1Y", "5Y", "All").forEach { tf ->
                 val isSelected = tf == "1D"
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (isSelected) CardDark else Color.Transparent)
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        tf,
-                        color = if (isSelected) TextPrimary else TextSecondary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                Box(modifier = Modifier.clip(CircleShape).background(if (isSelected) CardDark else Color.Transparent).padding(horizontal = 12.dp, vertical = 6.dp)) {
+                    Text(tf, color = if (isSelected) TextPrimary else TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -355,120 +343,80 @@ fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.de
             val yChartsPoints = data.chartPoints.map { Point(it.first, it.second) }
 
             val xAxisData = AxisData.Builder()
-                .axisStepSize(100.dp)
-                .backgroundColor(BgDark)
-                .steps(yChartsPoints.size - 1)
-                .labelData { i -> i.toString() }
-                .labelAndAxisLinePadding(15.dp)
-                .axisLineColor(Color.Transparent)
-                .axisLabelColor(Color.Transparent)
-                .build()
+                .axisStepSize(100.dp).backgroundColor(BgDark).steps(yChartsPoints.size - 1)
+                .labelData { i -> i.toString() }.labelAndAxisLinePadding(15.dp)
+                .axisLineColor(Color.Transparent).axisLabelColor(Color.Transparent).build()
 
             val yAxisData = AxisData.Builder()
-                .steps(5)
-                .backgroundColor(BgDark)
-                .labelAndAxisLinePadding(20.dp)
+                .steps(5).backgroundColor(BgDark).labelAndAxisLinePadding(20.dp)
                 .labelData { i ->
                     val minY = yChartsPoints.minOf { it.y }
                     val maxY = yChartsPoints.maxOf { it.y }
                     val yScale = (maxY - minY) / 5
                     (minY + (i * yScale)).toInt().toString()
                 }
-                .axisLineColor(Color.Transparent)
-                .axisLabelColor(Color.Transparent)
-                .build()
+                .axisLineColor(Color.Transparent).axisLabelColor(Color.Transparent).build()
 
             val lineChartData = LineChartData(
                 linePlotData = LinePlotData(
-                    lines = listOf(
-                        Line(
-                            dataPoints = yChartsPoints,
-                            LineStyle(color = chartColor, lineType = LineType.Straight()),
-                            IntersectionPoint(color = Color.Transparent, radius = 0.dp),
-                            SelectionHighlightPoint(color = TextPrimary),
-                            ShadowUnderLine(
-                                alpha = 0.2f,
-                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    colors = listOf(
-                                        chartColor.copy(alpha = 0.3f),
-                                        Color.Transparent
-                                    )
-                                )
-                            ),
-                            SelectionHighlightPopUp(
-                                backgroundColor = CardDark,
-                                labelColor = TextPrimary,
-                                labelTypeface = android.graphics.Typeface.DEFAULT_BOLD
-                            )
-                        )
-                    )
+                    lines = listOf(Line(
+                        dataPoints = yChartsPoints, LineStyle(color = chartColor, lineType = LineType.Straight()), IntersectionPoint(color = Color.Transparent, radius = 0.dp),
+                        SelectionHighlightPoint(color = TextPrimary),
+                        ShadowUnderLine(alpha = 0.2f, brush = androidx.compose.ui.graphics.Brush.verticalGradient(colors = listOf(chartColor.copy(alpha = 0.3f), Color.Transparent))),
+                        SelectionHighlightPopUp(backgroundColor = CardDark, labelColor = TextPrimary, labelTypeface = android.graphics.Typeface.DEFAULT_BOLD)
+                    ))
                 ),
-                backgroundColor = BgDark,
-                xAxisData = xAxisData,
-                yAxisData = yAxisData,
-                gridLines = GridLines(color = Color.Transparent)
+                backgroundColor = BgDark, xAxisData = xAxisData, yAxisData = yAxisData, gridLines = GridLines(color = Color.Transparent)
             )
 
-            LineChart(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(250.dp),
-                lineChartData = lineChartData
-            )
+            LineChart(modifier = Modifier.fillMaxWidth().height(250.dp), lineChartData = lineChartData)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            "Fundamentals",
-            color = TextPrimary,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
+        Text("Market Fundamentals", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
         Spacer(modifier = Modifier.height(16.dp))
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                FinanceStatItem("Day Low", data.dayLow, Modifier.weight(1f))
-                FinanceStatItem("Day High", data.dayHigh, Modifier.weight(1f))
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                FinanceStatItem("Open", "₹${data.openPrice}$star", Modifier.weight(1f))
+                FinanceStatItem("Prev Close", "₹${data.previousClose}$star", Modifier.weight(1f))
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                FinanceStatItem("52W Low", data.week52Low, Modifier.weight(1f))
-                FinanceStatItem("52W High", data.week52High, Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                FinanceStatItem("Day Low", "₹${data.dayLow}$star", Modifier.weight(1f))
+                FinanceStatItem("Day High", "₹${data.dayHigh}$star", Modifier.weight(1f))
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                FinanceStatItem("Volume", data.volume, Modifier.weight(1f))
-                FinanceStatItem("Avg Volume", data.avgVolume, Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                FinanceStatItem("Avg Traded Price", "₹${data.averageTradedPrice}$star", Modifier.weight(1f))
+                FinanceStatItem("Traded Value", "₹${data.tradedValue}$star", Modifier.weight(1f))
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                FinanceStatItem("Market Cap", data.marketCap, Modifier.weight(1f))
-                FinanceStatItem("P/E Ratio", data.peRatio, Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                FinanceStatItem("Volume (Qty)", "${data.volume}$star", Modifier.weight(1f))
+                FinanceStatItem("Last Trade Qty", "${data.lastTradeQty}$star", Modifier.weight(1f))
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                FinanceStatItem("Div Yield", data.dividendYield, Modifier.weight(1f))
-                FinanceStatItem("All-Time Adjusted ROI", "14.2%", Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                FinanceStatItem("Buy Price", "₹${data.buyPrice}$star", Modifier.weight(1f))
+                FinanceStatItem("Buy Qty", "${data.buyQty}$star", Modifier.weight(1f))
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                FinanceStatItem("Sell Price", "₹${data.sellPrice}$star", Modifier.weight(1f))
+                FinanceStatItem("Sell Qty", "${data.sellQty}$star", Modifier.weight(1f))
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                FinanceStatItem("Open Interest", "${data.openInterest}$star", Modifier.weight(1f))
+                FinanceStatItem("Quotation Lot", "${data.quotationLot}$star", Modifier.weight(1f))
             }
         }
+        // ⚡ NEW: Disclaimer at the bottom
+        if (data.isDummy) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "* Showing simulated data. The live market API is currently offline or outside of active trading hours.",
+                color = SellOrange,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(100.dp))
     }
 }
