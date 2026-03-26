@@ -9,6 +9,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +36,9 @@ class WatchlistViewModel @Inject constructor(
 
     private var listenerRegistration: ListenerRegistration? = null
 
+    // Tracks the active Flow collection to prevent memory leaks
+    private var quotesFetchJob: Job? = null
+
     init {
         fetchWatchlistData()
     }
@@ -54,7 +58,10 @@ class WatchlistViewModel @Inject constructor(
     }
 
     private fun fetchLiveQuotes(savedSymbols: List<String>) {
-        viewModelScope.launch {
+        // MEMORY LEAK FIX: Cancel the previous collection before starting a new one
+        quotesFetchJob?.cancel()
+
+        quotesFetchJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
             val cleanSaved = savedSymbols.map { it.replace(".NS", "").replace(".BO", "") }
@@ -86,5 +93,6 @@ class WatchlistViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         listenerRegistration?.remove()
+        quotesFetchJob?.cancel() // Ensure cleanup when ViewModel dies
     }
 }

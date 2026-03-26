@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -406,15 +407,21 @@ fun HomeScreen(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            "₹${
+
+                                        // UPDATED: Ticker Realtime Flicker
+                                        RealtimeFlickerText(
+                                            text = "₹${
                                                 String.format(
                                                     Locale.US,
                                                     "%.2f",
                                                     quote.currentPrice
                                                 )
-                                            }", color = TextWhite, fontSize = 12.sp
+                                            }",
+                                            currentValue = quote.currentPrice,
+                                            defaultColor = TextWhite,
+                                            textStyle = TextStyle(fontSize = 12.sp)
                                         )
+
                                         Text(
                                             "${if (quote.isPositive) "+" else ""}${
                                                 String.format(
@@ -451,7 +458,6 @@ fun LiveAssetTradingCard(
 ) {
     val priceColor = if (quote.isPositive) BuyTeal else SellOrange
 
-    // FIXED HARDCODED SUFFIXES FOR MAPPING
     val assetData = when (quote.symbol) {
         "PSTITANIA" -> Triple(
             "PropShare Titania",
@@ -552,11 +558,15 @@ fun LiveAssetTradingCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(
+                    // UPDATED: Main Card Realtime Flicker
+                    RealtimeFlickerText(
                         text = "₹${String.format(Locale.US, "%,.2f", quote.currentPrice)}",
-                        color = TextWhite,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                        currentValue = quote.currentPrice,
+                        defaultColor = TextWhite,
+                        textStyle = TextStyle(
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
