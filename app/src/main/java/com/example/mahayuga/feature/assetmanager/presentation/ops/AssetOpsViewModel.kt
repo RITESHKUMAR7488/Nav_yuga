@@ -3,145 +3,130 @@ package com.example.mahayuga.feature.assetmanager.presentation.ops
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.feature.navyuga.domain.repository.PropertyRepository
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.random.Random
 
-data class AssetOpsModel(
-    val property: PropertyModel,
-    val daysToVacancy: Long,
-    val isHighRisk: Boolean,
-    val maintenanceSpendYtd: Double,
-    val capexForecast: Double,
-    val transparencyScore: Int
-)
+// --- DOMAIN MODELS ---
+enum class AssetStatus { LISTED, PENDING }
 
-data class OpsState(
-    val isLoading: Boolean = true,
-    val assets: List<AssetOpsModel> = emptyList(),
-    val totalMaintenanceSpend: Double = 0.0,
-    val highRiskCount: Int = 0
-)
+sealed class TrustAsset {
+    abstract val id: String
+    abstract val trustName: String
+    abstract val stockPrice: Double
+    abstract val status: AssetStatus
+
+    data class SmReit(
+        override val id: String,
+        override val trustName: String,
+        override val stockPrice: Double,
+        override val status: AssetStatus,
+        val propertyName: String,
+        val spvTenants: List<String> // SPV1, SPV2, etc.
+    ) : TrustAsset()
+
+    data class Reit(
+        override val id: String,
+        override val trustName: String,
+        override val stockPrice: Double,
+        override val status: AssetStatus,
+        val spvBuildings: List<SpvBuilding>
+    ) : TrustAsset()
+}
+
+data class SpvBuilding(val buildingName: String, val tenants: List<String>)
+
+// --- STATE ---
+sealed class AssetsUiState {
+    object Loading : AssetsUiState()
+    data class Success(val assets: List<TrustAsset>) : AssetsUiState()
+    data class Error(val message: String) : AssetsUiState()
+}
 
 @HiltViewModel
-class AssetOpsViewModel @Inject constructor(
-    private val propertyRepository: PropertyRepository,
-    private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
-) : ViewModel() {
+class AssetOpsViewModel @Inject constructor() : ViewModel() {
 
-    private val _state = MutableStateFlow(OpsState())
-    val state: StateFlow<OpsState> = _state.asStateFlow()
+    private val _uiState = MutableStateFlow<AssetsUiState>(AssetsUiState.Loading)
+    val uiState: StateFlow<AssetsUiState> = _uiState.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private var allAssets = listOf<TrustAsset>()
 
     init {
-        loadOpsData()
+        fetchAssets()
     }
 
-    private fun loadOpsData() {
+    // ⚡ COROUTINE USAGE HERE ⚡
+    private fun fetchAssets() {
+        // viewModelScope.launch starts a coroutine tied to the ViewModel's lifecycle.
+        // It prevents the UI thread from blocking while we wait for backend data.
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
-            var amName = ""
-            try {
-                val uid = auth.currentUser?.uid
-                if (uid != null) {
-                    val doc = firestore.collection("asset_managers").document(uid).get().await()
-                    if (doc.exists()) {
-                        val brand = doc.getString("brandName")
-                        val legal = doc.getString("entityLegalName")
-                        val contact = doc.getString("contactName")
-                        amName = when {
-                            !brand.isNullOrBlank() -> brand
-                            !legal.isNullOrBlank() -> legal
-                            !contact.isNullOrBlank() -> contact
-                            else -> "PARTNER"
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            _uiState.value = AssetsUiState.Loading
 
-            propertyRepository.getAllProperties().collectLatest { uiState ->
-                when (uiState) {
-                    is UiState.Success -> {
-                        val myProps = uiState.data.filter { it.assetManager.equals(amName, true) }
-                        processAssets(myProps)
-                    }
+            // suspend function simulating network latency.
+            // In reality, this would be a suspend function call to your Repository/Retrofit.
+            delay(1500)
 
-                    is UiState.Loading -> _state.value = _state.value.copy(isLoading = true)
-                    is UiState.Failure -> _state.value = _state.value.copy(isLoading = false)
-                    else -> {}
-                }
-            }
+            allAssets = listOf(
+                TrustAsset.Reit(
+                    id = "R-101",
+                    trustName = "Bricx Nexus REIT Trust",
+                    stockPrice = 345.50,
+                    status = AssetStatus.LISTED,
+                    spvBuildings = listOf(
+                        SpvBuilding(
+                            "SPV1 (Alpha Tower)",
+                            listOf("SPVa (TechCorp)", "SPVb (FinServe)")
+                        ),
+                        SpvBuilding(
+                            "SPV2 (Beta Block)",
+                            listOf("SPVa (Retail)", "SPVb (Logistics)")
+                        )
+                    )
+                ),
+                TrustAsset.SmReit(
+                    id = "SM-205",
+                    trustName = "CyberHub SM-REIT",
+                    stockPrice = 112.75,
+                    status = AssetStatus.PENDING,
+                    propertyName = "SPV Main (CyberHub)",
+                    spvTenants = listOf("SPV1 (WeWork)", "SPV2 (Starbucks)", "SPV3 (Cisco)")
+                ),
+                TrustAsset.Reit(
+                    id = "R-102",
+                    trustName = "Bricx Horizon Trust",
+                    stockPrice = 420.00,
+                    status = AssetStatus.LISTED,
+                    spvBuildings = listOf(
+                        SpvBuilding("SPV1 (Horizon A)", listOf("SPVa (Oracle)", "SPVb (SAP)")),
+                        SpvBuilding("SPV3 (Horizon B)", listOf("SPVa (Adobe)"))
+                    )
+                )
+            )
+            _uiState.value = AssetsUiState.Success(allAssets)
         }
     }
 
-    private suspend fun processAssets(properties: List<PropertyModel>) {
-        withContext(Dispatchers.Default) {
-            val today = Calendar.getInstance()
-            today.set(Calendar.HOUR_OF_DAY, 0)
-            today.set(Calendar.MINUTE, 0)
-            today.set(Calendar.SECOND, 0)
-            today.set(Calendar.MILLISECOND, 0)
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+        filterAssets(query)
+    }
 
-            var riskCounter = 0
-            var totalMaint = 0.0
-
-            val opsAssets = properties.map { prop ->
-                val tenure = prop.occupationPeriod.toIntOrNull() ?: 5
-                val leaseStart = Calendar.getInstance()
-                leaseStart.timeInMillis = today.timeInMillis
-                leaseStart.add(Calendar.YEAR, -tenure)
-                leaseStart.add(Calendar.DAY_OF_YEAR, Random.nextInt(60, 400))
-
-                val leaseEnd = Calendar.getInstance()
-                leaseEnd.timeInMillis = leaseStart.timeInMillis
-                leaseEnd.add(Calendar.YEAR, tenure)
-
-                val diffMillis = leaseEnd.timeInMillis - today.timeInMillis
-                val daysLeft = TimeUnit.MILLISECONDS.toDays(diffMillis).coerceAtLeast(0)
-
-                val isRisk = daysLeft < 90
-                if (isRisk) riskCounter++
-
-                val simulatedMaint =
-                    (prop.totalValuation.replace(",", "").replace("₹", "").take(3).toDoubleOrNull()
-                        ?: 10.0) * 1000
-                totalMaint += simulatedMaint
-
-                val forecast = simulatedMaint * 1.1
-
-                AssetOpsModel(
-                    property = prop,
-                    daysToVacancy = daysLeft,
-                    isHighRisk = isRisk,
-                    maintenanceSpendYtd = simulatedMaint,
-                    capexForecast = forecast,
-                    transparencyScore = Random.nextInt(70, 100)
-                )
-            }.sortedBy { it.daysToVacancy }
-
-            _state.value = OpsState(
-                isLoading = false,
-                assets = opsAssets,
-                totalMaintenanceSpend = totalMaint,
-                highRiskCount = riskCounter
-            )
+    private fun filterAssets(query: String) {
+        val currentState = _uiState.value
+        if (currentState is AssetsUiState.Success || allAssets.isNotEmpty()) {
+            val filtered = if (query.isBlank()) {
+                allAssets
+            } else {
+                allAssets.filter { it.trustName.contains(query, ignoreCase = true) }
+            }
+            _uiState.value = AssetsUiState.Success(filtered)
         }
     }
 }
