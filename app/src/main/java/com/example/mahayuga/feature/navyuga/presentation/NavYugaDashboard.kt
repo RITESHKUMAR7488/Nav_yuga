@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,10 +36,9 @@ import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScre
 
 private val NavyBlue = Color(0xFF080F18)
 private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
-// ⚡ FIX: Selected icon is now Brand Blue
-private val SelectedIconColor = Color(0xFF2979FF)
-// ⚡ FIX: Translucent Metallic Background
-private val FloatingNavBg = Color(0xFF0F172A).copy(alpha = 0.85f)
+private val SelectedIconColor = Color(0xFF14B8A6)
+private val FloatingNavBg = Color(0xFF0F1722).copy(alpha = 0.65f)
+private val SelectedOvalBg = Color(0xFF000000).copy(alpha = 0.4f)
 
 @Composable
 fun NavYugaDashboard(
@@ -81,7 +82,10 @@ fun NavYugaDashboard(
                 HomeScreen(
                     onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") },
-                    onNavigateToSearch = { },
+                    // ⚡ FIX: Directly triggering the exact Phase 2 routes in AppNavigation
+                    onNavigateToSearch = { rootNavController.navigate("search_screen") },
+                    onNavigateToNotifications = { rootNavController.navigate("notifications_screen") },
+                    onNavigateToMessages = { rootNavController.navigate("messages_screen") },
                     scrollToTopTrigger = homeScrollTrigger
                 )
             }
@@ -111,7 +115,6 @@ fun NavYugaDashboard(
             }
         }
 
-        // ⚡ FIX: Oval, Translucent, Floating Navigation Bar
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -120,12 +123,12 @@ fun NavYugaDashboard(
                 .fillMaxWidth()
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(50))
                 .background(FloatingNavBg, RoundedCornerShape(50))
-                .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp),
+                    .height(68.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -162,13 +165,21 @@ fun NavYugaDashboard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                            contentDescription = item.label,
-                            tint = color,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(if (isSelected) SelectedOvalBg else Color.Transparent)
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label,
+                                tint = color,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = item.label,
                             color = color,

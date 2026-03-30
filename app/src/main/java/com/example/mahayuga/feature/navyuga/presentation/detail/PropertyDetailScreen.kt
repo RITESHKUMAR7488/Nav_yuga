@@ -1,767 +1,409 @@
 // main/java/com/example/mahayuga/feature/navyuga/presentation/detail/PropertyDetailScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.detail
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.feature.auth.presentation.components.formatIndian
 
-private val DeepDarkBlue = Color(0xFF0F172A)
-private val BrandBlue = Color(0xFF4361EE)
+private val TradeBg = Color(0xFF080F18)
+private val TradeCardBg = Color(0xFF0F1722)
+private val TextWhite = Color(0xFFFFFFFF)
+private val TextGrey = Color(0xFF8B9BB4)
+private val BorderDark = Color(0xFF1A2A40)
+private val BuyTeal = Color(0xFF14B8A6)
+private val SellOrange = Color(0xFFF97316)
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PropertyDetailScreen(
     propertyId: String,
     onNavigateBack: () -> Unit,
     viewModel: PropertyDetailViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.state.collectAsState()
     val context = LocalContext.current
-    val supportNumber = "+919876543210" // Default support number fallback
+    val uiState by viewModel.state.collectAsState()
 
-    // ⚡ Tab State: 0 = Details, 1 = Calculate
-    var selectedTab by remember { mutableIntStateOf(0) }
+    // Local state for watchlist icon since it's not in the provided ViewModel yet
+    var isSaved by remember { mutableStateOf(false) }
 
-    when (val currentState = uiState) {
-        is PropertyDetailState.Loading -> {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(DeepDarkBlue), contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = BrandBlue)
-            }
-        }
-
-        is PropertyDetailState.Error -> {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(DeepDarkBlue),
-                contentAlignment = Alignment.Center
-            ) { Text(currentState.message, color = Color.White) }
-        }
-
-        is PropertyDetailState.Success -> {
-            val property = currentState.property
-            val isExited = property.status == "Exited"
-            val isFunded = property.status == "Funded"
-            val showBottomBar = !isExited && !isFunded
-
-            Scaffold(
-                containerColor = DeepDarkBlue,
-                bottomBar = {
-                    if (showBottomBar) {
-                        InvestBottomBar(
-                            property = property,
-                            onInvestClicked = {
-                                try {
-                                    val message =
-                                        "Hello, I am interested in investing in *${property.title}*."
-                                    val url =
-                                        "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                            Uri.encode(message)
-                                        }"
-                                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                                        data = Uri.parse(url); setPackage("com.whatsapp")
-                                    }
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    Toast.makeText(
-                                        context,
-                                        "WhatsApp not found",
-                                        Toast.LENGTH_SHORT
-                                    )
-                                        .show()
-                                }
-                            }
+    Scaffold(
+        containerColor = TradeBg,
+        topBar = {
+            TopAppBar(
+                title = { Text("Overview", color = TextWhite, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextWhite
                         )
                     }
-                }
-            ) { innerPadding ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    // --- IMAGE SLIDER SECTION ---
-                    Box(
-                        modifier = Modifier
-                            .height(300.dp)
-                            .fillMaxWidth()
-                    ) {
-                        val images =
-                            if (property.imageUrls.isNotEmpty()) property.imageUrls else listOf("")
-                        val pagerState = rememberPagerState(pageCount = { images.size })
-
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize()
-                        ) { page ->
-                            AsyncImage(
-                                model = images[page],
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-
-                        // Gradients & Controls
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
-                                .align(Alignment.TopCenter)
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(
-                                            Color.Black.copy(alpha = 0.7f),
-                                            Color.Transparent
-                                        )
-                                    )
-                                )
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp)
-                                .align(Alignment.BottomCenter)
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.6f)
-                                        )
-                                    )
-                                )
-                        )
-
-                        IconButton(
-                            onClick = onNavigateBack,
-                            modifier = Modifier
-                                .padding(top = 16.dp, start = 8.dp)
-                                .align(Alignment.TopStart)
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                        }
-
-                        if (images.size > 1) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(16.dp)
-                                    .background(
-                                        Color.Black.copy(alpha = 0.6f),
-                                        RoundedCornerShape(12.dp)
-                                    )
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = "${pagerState.currentPage + 1}/${images.size}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(bottom = 12.dp),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                repeat(images.size) { iteration ->
-                                    val isSelected = pagerState.currentPage == iteration
-                                    val color =
-                                        if (isSelected) Color.White else Color.White.copy(alpha = 0.5f)
-                                    val size = if (isSelected) 8.dp else 6.dp
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(4.dp)
-                                            .clip(CircleShape)
-                                            .background(color)
-                                            .size(size)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // --- TABS SECTION ---
+                },
+                actions = {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                            .padding(4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                            .padding(end = 16.dp)
+                            .background(TradeCardBg, RoundedCornerShape(50))
+                            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TabButton("Details", selectedTab == 0, Modifier.weight(1f)) {
-                            selectedTab = 0
-                        }
-                        TabButton("Calculate", selectedTab == 1, Modifier.weight(1f)) {
-                            selectedTab = 1
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = TextWhite,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    Toast.makeText(
+                                        context,
+                                        "Sharing...",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                        )
+                        Icon(
+                            imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Watchlist",
+                            tint = if (isSaved) BuyTeal else TextWhite,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    isSaved = !isSaved
+                                    Toast.makeText(
+                                        context,
+                                        if (isSaved) "Saved" else "Removed",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                        )
                     }
-
-                    // --- CONTENT SWITCHER ---
-                    if (selectedTab == 0) {
-                        PropertyDetailsContent(property, isExited)
-                    } else {
-                        PropertyCalculatorContent(property)
-                    }
-
-                    // Bottom padding for scroll
-                    Spacer(modifier = Modifier.height(100.dp))
-                }
-            }
-        }
-    }
-}
-
-// ⚡ NEW: Tab Button Component
-@Composable
-fun TabButton(
-    text: String,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    val containerColor = if (isSelected) BrandBlue else Color.Transparent
-    val contentColor = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f)
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(containerColor)
-            .clickable { onClick() }
-            .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = contentColor,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            style = MaterialTheme.typography.bodyMedium
-        )
-    }
-}
-
-// ⚡ NEW: Calculator Content
-@Composable
-fun PropertyCalculatorContent(property: PropertyModel) {
-    // Parsing Helper
-    fun parseDouble(str: String): Double {
-        val clean = str.replace("₹", "").replace(",", "").trim().lowercase()
-        return when {
-            clean.contains("cr") -> clean.replace("cr", "").trim().toDoubleOrNull()?.times(10000000)
-                ?: 0.0
-
-            clean.contains("l") -> clean.replace("l", "").trim().toDoubleOrNull()?.times(100000)
-                ?: 0.0
-
-            clean.contains("lakh") -> clean.replace("lakhs", "").replace("lakh", "").trim()
-                .toDoubleOrNull()?.times(100000) ?: 0.0
-
-            else -> clean.toDoubleOrNull() ?: 0.0
-        }
-    }
-
-    val totalUnits = property.totalUnits.toIntOrNull() ?: 0
-    val totalValuation = parseDouble(property.totalValuation)
-    val costPerUnit = if (totalUnits > 0) totalValuation / totalUnits else 0.0
-    val totalArea = parseDouble(property.area)
-
-    // ⚡ UPDATED LOGIC: Subtract Property Tax
-    val rawAnnualRent =
-        if (property.grossAnnualRent.isNotEmpty()) parseDouble(property.grossAnnualRent) else parseDouble(
-            property.monthlyRent
-        ) * 12
-    val annualPropertyTax = parseDouble(property.annualPropertyTax)
-
-    // Net Rent after Tax
-    val netAnnualRentFull = rawAnnualRent - annualPropertyTax
-    val netMonthlyRentFull = netAnnualRentFull / 12
-
-    var sharesInput by remember { mutableStateOf("") }
-    var resultState by remember { mutableStateOf<CalculatorResult?>(null) }
-
-    Column(modifier = Modifier.padding(24.dp)) {
-
-        // A. Fractional Details
-        SectionTitle("Fractional Details")
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                InfoRow(
-                    "Total Fractional Units",
-                    if (totalUnits > 0) totalUnits.toString() else "N/A"
-                )
-                Divider(
-                    color = Color.White.copy(0.1f),
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
-                InfoRow(
-                    "Cost / Unit",
-                    if (costPerUnit > 0) "₹${formatIndian(costPerUnit)}" else "N/A",
-                    isBold = true,
-                    valueColor = BrandBlue
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // B. Calculate My Investment
-        SectionTitle("Calculate My Investment")
-        OutlinedTextField(
-            value = sharesInput,
-            onValueChange = { if (it.all { char -> char.isDigit() }) sharesInput = it },
-            label = { Text("My Share (Number of Units)") },
-            placeholder = { Text("Ex: 5") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BrandBlue,
-                unfocusedBorderColor = Color.White.copy(0.2f),
-                focusedLabelColor = BrandBlue,
-                unfocusedLabelColor = Color.White.copy(0.6f),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                val shares = sharesInput.toIntOrNull() ?: 0
-                if (shares > 0 && totalUnits > 0) {
-                    val percentage = (shares.toDouble() / totalUnits.toDouble()) * 100
-                    val shareArea = (percentage / 100) * totalArea
-                    val investment = shares * costPerUnit
-
-                    // ⚡ Use NET rents here
-                    val rentMonth = (percentage / 100) * netMonthlyRentFull
-                    val rentAnnual = (percentage / 100) * netAnnualRentFull
-
-                    resultState = CalculatorResult(
-                        sharesBought = shares,
-                        percentageShare = percentage,
-                        areaShare = shareArea,
-                        netInvestment = investment,
-                        monthlyRent = rentMonth,
-                        annualRent = rentAnnual,
-                        netRoi = property.roi
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
-        ) {
-            Icon(Icons.Default.Calculate, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Calculate", fontWeight = FontWeight.Bold)
-        }
-
-        // C. ROI Details (Results)
-        if (resultState != null) {
-            Spacer(modifier = Modifier.height(32.dp))
-            SectionTitle("ROI Details (Post-Tax)")
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, BrandBlue.copy(0.3f), RoundedCornerShape(16.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    val res = resultState!!
-                    InfoRow("Shares Bought", res.sharesBought.toString())
-                    InfoRow("Percentage Share", String.format("%.4f%%", res.percentageShare))
-                    InfoRow("Area (Sq Ft)", String.format("%.2f", res.areaShare))
-                    Divider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 12.dp)
-                    )
-                    InfoRow("Net Investment", "₹${formatIndian(res.netInvestment)}", isBold = true)
-                    Divider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 12.dp)
-                    )
-                    InfoRow("Net Monthly Rent", "₹${formatIndian(res.monthlyRent)}")
-                    InfoRow("Net Annual Rent", "₹${formatIndian(res.annualRent)}")
-                    Divider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 12.dp)
-                    )
-                    InfoRow(
-                        "NET ROI",
-                        "${res.netRoi}%",
-                        isBold = true,
-                        valueColor = Color(0xFF00E676)
-                    )
-                }
-            }
-        }
-    }
-}
-
-data class CalculatorResult(
-    val sharesBought: Int,
-    val percentageShare: Double,
-    val areaShare: Double,
-    val netInvestment: Double,
-    val monthlyRent: Double,
-    val annualRent: Double,
-    val netRoi: Double
-)
-
-// ⚡ REFACTORED: Original Content now in a separate composable
-@Composable
-fun PropertyDetailsContent(property: PropertyModel, isExited: Boolean) {
-    Column(modifier = Modifier.padding(24.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    property.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    property.fullLocation,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-            }
-            SuggestionChip(
-                onClick = {},
-                label = {
-                    Text(
-                        property.status,
-                        color = if (isExited) Color.Red else BrandBlue
-                    )
                 },
-                colors = SuggestionChipDefaults.suggestionChipColors(
-                    containerColor = if (isExited) Color.Red.copy(0.1f) else BrandBlue.copy(alpha = 0.1f)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = TradeBg)
             )
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        if (!isExited) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "Funded",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(0.7f)
-                )
-                Text(
-                    "${property.fundedPercent}%",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = BrandBlue
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { property.fundedPercent / 100f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = BrandBlue,
-                trackColor = Color.White.copy(alpha = 0.1f)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        // Stats Box
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            if (isExited) {
-                StatItem(label = "Entry", value = "₹${formatIndian(property.totalValuation)}")
-                VerticalDivider(
+    ) { paddingValues ->
+        when (val state = uiState) {
+            is PropertyDetailState.Loading -> {
+                Box(
                     modifier = Modifier
-                        .height(40.dp)
-                        .width(1.dp),
-                    color = Color.White.copy(alpha = 0.1f)
-                )
-                StatItem(label = "Exit", value = "₹${formatIndian(property.exitPrice)}")
-                VerticalDivider(
-                    modifier = Modifier
-                        .height(40.dp)
-                        .width(1.dp),
-                    color = Color.White.copy(alpha = 0.1f)
-                )
-                StatItem(
-                    label = "Profit",
-                    value = "₹${formatIndian(property.totalProfit)}",
-                    isHighlight = false
-                )
-            } else {
-                StatItem(label = "Price", value = "₹${formatIndian(property.totalValuation)}")
-                VerticalDivider(
-                    modifier = Modifier
-                        .height(40.dp)
-                        .width(1.dp),
-                    color = Color.White.copy(alpha = 0.1f)
-                )
-                val rentToShow = if (property.grossAnnualRent.isNotEmpty()) {
-                    property.grossAnnualRent
-                } else {
-                    val monthly = property.monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
-                    (monthly * 12).toString()
-                }
-                StatItem(label = "Rent/Year", value = "₹${formatIndian(rentToShow)}")
-                VerticalDivider(
-                    modifier = Modifier
-                        .height(40.dp)
-                        .width(1.dp),
-                    color = Color.White.copy(alpha = 0.1f)
-                )
-                StatItem(label = "ROI", value = "${property.roi}%", isHighlight = false)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        SectionTitle("Property Overview")
-        GridItem(label1 = "Area", value1 = property.area, label2 = "Floor", value2 = property.floor)
-        GridItem(
-            label1 = "Age",
-            value1 = property.age,
-            label2 = "Parking",
-            value2 = property.carPark
-        )
-
-        if (property.assetManager.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            InfoRow("Asset Manager", property.assetManager)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (isExited) {
-            SectionTitle("Exit Performance")
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-                shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow("Entry Price", "₹${formatIndian(property.totalValuation)}")
-                    InfoRow("Exit Price", "₹${formatIndian(property.exitPrice)}")
-                    Divider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        color = Color.White.copy(alpha = 0.1f)
-                    )
-                    InfoRow(
-                        "Total Profit",
-                        "₹${formatIndian(property.totalProfit)}",
-                        isBold = true,
-                        valueColor = Color.White
-                    )
-                }
-            }
-        } else {
-            SectionTitle("Lease Details")
-            InfoRow("Tenant", property.tenantName)
-            InfoRow("Occupancy", "${property.occupationPeriod} Years")
-            InfoRow("Escalation", property.escalation)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            SectionTitle("Financial Breakdown")
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-                shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow("Monthly Rent", "₹${formatIndian(property.monthlyRent)}")
-                    InfoRow("Gross Annual", "₹${formatIndian(property.grossAnnualRent)}")
-                    InfoRow("Property Tax", "₹${formatIndian(property.annualPropertyTax)}")
-                    Divider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        color = Color.White.copy(alpha = 0.1f)
-                    )
-                    InfoRow("Net ROI", "${property.roi}%", isBold = true, valueColor = Color.White)
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        SectionTitle("Description")
-        Text(
-            property.description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.8f)
-        )
-    }
-}
-
-// Helpers
-@Composable
-fun StatItem(label: String, value: String, isHighlight: Boolean = false) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            value,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color.White
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-fun SectionTitle(title: String) {
-    Text(
-        title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = Color.White,
-        modifier = Modifier.padding(bottom = 12.dp)
-    )
-}
-
-@Composable
-fun GridItem(label1: String, value1: String, label2: String, value2: String) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(label1, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.5f))
-            Text(value1, style = MaterialTheme.typography.bodyLarge, color = Color.White)
-        }
-        Column(Modifier.weight(1f)) {
-            Text(label2, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.5f))
-            Text(value2, style = MaterialTheme.typography.bodyLarge, color = Color.White)
-        }
-    }
-}
-
-@Composable
-fun InfoRow(
-    label: String,
-    value: String,
-    isBold: Boolean = false,
-    valueColor: Color = Color.White
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(0.7f))
-        Text(
-            value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
-            color = valueColor
-        )
-    }
-}
-
-@Composable
-fun InvestBottomBar(property: PropertyModel, onInvestClicked: () -> Unit) {
-    Surface(
-        color = DeepDarkBlue,
-        tonalElevation = 8.dp,
-        shadowElevation = 16.dp,
-        modifier = Modifier.navigationBarsPadding()
-    ) {
-        Column {
-            Divider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        "Min Investment",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        "₹${formatIndian(property.minInvest)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-                Button(
-                    onClick = onInvestClicked,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "Invest Now",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    CircularProgressIndicator(color = BuyTeal)
+                }
+            }
+
+            is PropertyDetailState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Outlined.Warning,
+                            contentDescription = "Error",
+                            tint = SellOrange,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = state.message, color = TextWhite)
+                    }
+                }
+            }
+
+            is PropertyDetailState.Success -> {
+                val property = state.property
+                val priceColor = BuyTeal // Assuming property ROI is generally positive for display
+
+                // Format price string to ensure it has ₹
+                val formattedPrice =
+                    if (property.totalValuation.startsWith("₹")) property.totalValuation else "₹${property.totalValuation}"
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    // 1. Header Details (Mapped from PropertyModel)
+                    item {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = property.title,
+                                color = TextWhite,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = property.location, color = TextGrey, fontSize = 14.sp)
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                Column {
+                                    Text(
+                                        text = formattedPrice,
+                                        color = TextWhite,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        // Mocking a flat price change for the UI stock look
+                                        Text(
+                                            text = "+₹1,50,000",
+                                            color = priceColor,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(" | ", color = TextGrey, fontSize = 12.sp)
+                                        Text(
+                                            text = "+${property.roi}%",
+                                            color = priceColor,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "1D",
+                                            color = TextWhite,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "NSE",
+                                        color = TextWhite,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.SwapVert,
+                                        contentDescription = "Switch Market",
+                                        tint = TextGrey,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Property Images (Mapped from PropertyModel.imageUrls)
+                    if (property.imageUrls.isNotEmpty()) {
+                        item {
+                            val pagerState =
+                                rememberPagerState(pageCount = { property.imageUrls.size })
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(250.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                            ) {
+                                HorizontalPager(
+                                    state = pagerState,
+                                    modifier = Modifier.fillMaxSize()
+                                ) { page ->
+                                    AsyncImage(
+                                        model = property.imageUrls[page],
+                                        contentDescription = "Property Photo",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                                Row(
+                                    Modifier
+                                        .height(20.dp)
+                                        .fillMaxWidth()
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = 8.dp),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    repeat(pagerState.pageCount) { iteration ->
+                                        val color =
+                                            if (pagerState.currentPage == iteration) BuyTeal else Color.LightGray
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(2.dp)
+                                                .clip(CircleShape)
+                                                .background(color)
+                                                .size(6.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Portfolio Details Grid
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(TradeCardBg, RoundedCornerShape(12.dp))
+                                .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                "Portfolio Details",
+                                color = TextWhite,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                PortfolioMetric("Total Area", "${property.area} sq ft")
+                                PortfolioMetric("Status", property.status)
+                                PortfolioMetric("WALE", "${property.occupationPeriod} yrs")
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                PortfolioMetric("Gross Rent", "₹${property.grossAnnualRent}")
+                                PortfolioMetric("Min Invest", "₹${property.minInvest}")
+                                PortfolioMetric("Funded", "${property.fundedPercent}%")
+                            }
+                        }
+                    }
+
+                    // 4. About Section
+                    item {
+                        Column {
+                            Text(
+                                "About",
+                                color = TextWhite,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Major Tenant: ", color = TextGrey, fontSize = 14.sp)
+                                Text(
+                                    property.tenantName.ifEmpty { "Multiple Tenants" },
+                                    color = TextWhite,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = property.description,
+                                color = TextGrey,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp
+                            )
+                        }
+                    }
+
+                    // 5. SM REIT Details Block
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(TradeCardBg, RoundedCornerShape(12.dp))
+                                .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                "Asset Manager Details",
+                                color = TextWhite,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(horizontalAlignment = Alignment.Start) {
+                                    Text(text = "Asset Manager", color = TextGrey, fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = property.assetManager.ifEmpty { "Navyuga Assets" },
+                                        color = TextWhite,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.Start) {
+                                    Text(text = "Target IRR", color = TextGrey, fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "${property.roi}% - ${property.roi + 2}%",
+                                        color = BuyTeal,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item { Spacer(modifier = Modifier.height(40.dp)) }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun PortfolioMetric(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.Start) {
+        Text(text = label, color = TextGrey, fontSize = 12.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = value, color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }

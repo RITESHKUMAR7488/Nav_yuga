@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/trade/ReitDetailScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.trade
 
 import android.widget.Toast
@@ -6,18 +7,18 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,467 +27,443 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import co.yml.charts.axis.AxisData
-import co.yml.charts.common.model.Point
-import co.yml.charts.ui.linechart.LineChart
-import co.yml.charts.ui.linechart.model.GridLines
-import co.yml.charts.ui.linechart.model.IntersectionPoint
-import co.yml.charts.ui.linechart.model.Line
-import co.yml.charts.ui.linechart.model.LineChartData
-import co.yml.charts.ui.linechart.model.LinePlotData
-import co.yml.charts.ui.linechart.model.LineStyle
-import co.yml.charts.ui.linechart.model.LineType
-import co.yml.charts.ui.linechart.model.SelectionHighlightPoint
-import co.yml.charts.ui.linechart.model.SelectionHighlightPopUp
-import co.yml.charts.ui.linechart.model.ShadowUnderLine
 import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailState
 import com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailViewModel
-import kotlinx.coroutines.launch
+import java.util.Locale
 
-private val BgDark = Color(0xFF080F18)
-private val CardDark = Color(0xFF0F1722)
-private val TextPrimary = Color.White
-private val TextSecondary = Color(0xFF8B9BB4)
+private val TradeBg = Color(0xFF080F18)
+private val TradeCardBg = Color(0xFF0F1722)
+private val TextWhite = Color(0xFFFFFFFF)
+private val TextGrey = Color(0xFF8B9BB4)
+private val BorderDark = Color(0xFF1A2A40)
 private val BuyTeal = Color(0xFF14B8A6)
 private val SellOrange = Color(0xFFF97316)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReitDetailScreen(
     assetId: String,
-    navController: NavController,
+    onNavigateBack: () -> Unit = {},
+    navController: NavController? = null,
     viewModel: ReitDetailViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val isWatchlisted by viewModel.isWatchlisted.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(assetId) {
         viewModel.fetchAssetDetails(assetId)
     }
 
     Scaffold(
-        containerColor = BgDark,
-        bottomBar = {
-            if (uiState is ReitDetailState.Success) {
-                ReitBottomActionBar()
-            }
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (val state = uiState) {
-                is ReitDetailState.Loading -> {
-                    CircularProgressIndicator(
-                        color = BuyTeal,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                is ReitDetailState.Error -> {
-                    Text(
-                        text = state.message,
-                        color = SellOrange,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                is ReitDetailState.Success -> {
-                    val data = state.data
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        item {
-                            ReitHeaderSection(
-                                name = data.name,
-                                symbol = data.symbol,
-                                currentPrice = data.currentPrice,
-                                priceChange = data.priceChange,
-                                percentageChange = data.percentageChange,
-                                isPositive = data.isPositive,
-                                isWatchlisted = isWatchlisted,
-                                onBackClick = { navController.popBackStack() },
-                                onWatchlistClick = { viewModel.toggleWatchlist() },
-                                onShareClick = {
-                                    Toast.makeText(context, "Share coming soon", Toast.LENGTH_SHORT)
-                                        .show()
-                                }
-                            )
-                        }
-                        item {
-                            ReitTabsSection(state.data)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ReitHeaderSection(
-    name: String,
-    symbol: String,
-    currentPrice: Double,
-    priceChange: Double,
-    percentageChange: Double,
-    isPositive: Boolean,
-    isWatchlisted: Boolean,
-    onBackClick: () -> Unit,
-    onWatchlistClick: () -> Unit,
-    onShareClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BgDark)
-            .padding(top = 40.dp, bottom = 16.dp, start = 20.dp, end = 20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(CardDark)
-                        .clickable { onBackClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = TextPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = name,
-                    color = TextPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.Share,
-                    contentDescription = "Share",
-                    tint = TextPrimary,
-                    modifier = Modifier.clickable { onShareClick() })
-                Icon(
-                    imageVector = if (isWatchlisted) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = "Watchlist",
-                    tint = if (isWatchlisted) BuyTeal else TextPrimary,
-                    modifier = Modifier.clickable { onWatchlistClick() }
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(text = symbol, color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "₹${currentPrice}",
-            color = TextPrimary,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        val color = if (isPositive) BuyTeal else SellOrange
-        val sign = if (isPositive) "+" else ""
-        Text(
-            text = "$sign$priceChange ($sign$percentageChange%) 1D",
-            color = color,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-fun ReitTabsSection(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
-    val tabs = listOf("Estate", "Finance", "News")
-    val pagerState = rememberPagerState(pageCount = { tabs.size })
-    val coroutineScope = rememberCoroutineScope()
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TabRow(
-            selectedTabIndex = pagerState.currentPage,
-            containerColor = BgDark,
-            contentColor = BuyTeal,
-            indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                    color = BuyTeal
-                )
-            },
-            divider = { HorizontalDivider(color = CardDark) }
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
-                    text = {
-                        Text(
-                            text = title,
-                            color = if (pagerState.currentPage == index) BuyTeal else TextSecondary,
-                            fontWeight = FontWeight.Bold
+        containerColor = TradeBg,
+        topBar = {
+            TopAppBar(
+                title = { Text("Overview", color = TextWhite, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (navController != null) navController.popBackStack() else onNavigateBack()
+                    }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextWhite
                         )
                     }
-                )
-            }
+                },
+                actions = {
+                    // ⚡ Phase 3: Oval Background for Action Icons
+                    Row(
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .background(TradeCardBg, RoundedCornerShape(50))
+                            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = TextWhite,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    Toast.makeText(
+                                        context,
+                                        "Sharing...",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                        )
+                        Icon(
+                            imageVector = if (isWatchlisted) Icons.Filled.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Watchlist",
+                            tint = if (isWatchlisted) BuyTeal else TextWhite,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    viewModel.toggleWatchlist()
+                                    Toast.makeText(
+                                        context,
+                                        if (isWatchlisted) "Removed" else "Saved",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = TradeBg)
+            )
         }
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 600.dp)
-        ) { page ->
-            when (page) {
-                0 -> EstateTabContent(data)
-                1 -> FinanceTabContent(data)
-                2 -> NewsTabContent(data)
-            }
-        }
-    }
-}
-
-@Composable
-fun EstateTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp)) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(data.images) { imageUrl ->
+    ) { paddingValues ->
+        when (val state = uiState) {
+            is ReitDetailState.Loading -> {
                 Box(
                     modifier = Modifier
-                        .width(280.dp)
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = "Property Image",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                    CircularProgressIndicator(color = BuyTeal)
+                }
+            }
+
+            is ReitDetailState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = state.message, color = SellOrange)
+                }
+            }
+
+            is ReitDetailState.Success -> {
+                val data = state.data
+                val priceColor = if (data.isPositive) BuyTeal else SellOrange
+
+                // Fallback location since it's not in the data class
+                val locationText = if (data.name.contains(
+                        "EMBASSY",
+                        ignoreCase = true
                     )
+                ) "Bangalore, Pune, Mumbai" else "Multiple Locations, India"
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    // 1. Live API Header Details & Price Section (Graph Removed)
+                    item {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = data.name,
+                                color = TextWhite,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = locationText, color = TextGrey, fontSize = 14.sp)
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "₹${
+                                            String.format(
+                                                Locale.US,
+                                                "%.2f",
+                                                data.currentPrice
+                                            )
+                                        }",
+                                        color = TextWhite,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "${if (data.isPositive) "+" else ""}₹${
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.2f",
+                                                    Math.abs(data.priceChange)
+                                                )
+                                            }",
+                                            color = priceColor,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(" | ", color = TextGrey, fontSize = 12.sp)
+                                        Text(
+                                            text = "${if (data.isPositive) "+" else ""}${
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.2f",
+                                                    data.percentageChange
+                                                )
+                                            }%",
+                                            color = priceColor,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "1D",
+                                            color = TextWhite,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "NSE",
+                                        color = TextWhite,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.SwapVert,
+                                        contentDescription = "Switch Market",
+                                        tint = TextGrey,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Estate Photos Horizontal Scroll (Mapped to your ViewModel images)
+                    if (data.images.isNotEmpty()) {
+                        item {
+                            Column {
+                                Text(
+                                    "Estate",
+                                    color = TextWhite,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                val pagerState =
+                                    rememberPagerState(pageCount = { data.images.size })
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                ) {
+                                    HorizontalPager(
+                                        state = pagerState,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) { page ->
+                                        AsyncImage(
+                                            model = data.images[page],
+                                            contentDescription = "Estate Photo",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    Row(
+                                        Modifier
+                                            .height(20.dp)
+                                            .fillMaxWidth()
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 8.dp),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        repeat(pagerState.pageCount) { iteration ->
+                                            val color =
+                                                if (pagerState.currentPage == iteration) BuyTeal else Color.LightGray
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(2.dp)
+                                                    .clip(CircleShape)
+                                                    .background(color)
+                                                    .size(6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Portfolio Details
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(TradeCardBg, RoundedCornerShape(12.dp))
+                                .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                "Portfolio Details",
+                                color = TextWhite,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                PortfolioMetric("Total Area", data.totalArea)
+                                PortfolioMetric("Occupancy", data.occupancyRate)
+                                PortfolioMetric("WALE", "6.8 yrs")
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                PortfolioMetric("Market Cap", "₹36,102 Cr")
+                                PortfolioMetric("Asset Value", "₹52,000 Cr")
+                                PortfolioMetric("Yield", "6.5%")
+                            }
+                        }
+                    }
+
+                    // 4. About Section
+                    item {
+                        Column {
+                            Text(
+                                "About",
+                                color = TextWhite,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("CEO: ", color = TextGrey, fontSize = 14.sp)
+                                Text(
+                                    "Aravind Maiya",
+                                    color = TextWhite,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = data.description,
+                                color = TextGrey,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp
+                            )
+                        }
+                    }
+
+                    // 5. Properties Held by Fund
+                    item {
+                        Text(
+                            "Properties Held",
+                            color = TextWhite,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    // Mock list for now as per Phase 3 requirements
+                    val subProperties = listOf(
+                        Triple("Embassy Manyata", "Bangalore, Karnataka", "14.8M sq ft"),
+                        Triple("Embassy TechVillage", "Bangalore, Karnataka", "9.2M sq ft"),
+                        Triple("Express Towers", "Nariman Point, Mumbai", "0.5M sq ft")
+                    )
+
+                    items(subProperties) { prop ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = TradeCardBg),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.DarkGray)
+                                ) {
+                                    AsyncImage(
+                                        model = "https://images.unsplash.com/photo-1497366216548-37526070297c",
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = prop.first,
+                                        color = TextWhite,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(text = prop.second, color = TextGrey, fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "Area: ${prop.third}",
+                                            color = BuyTeal,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "Div: 6.2%",
+                                            color = TextWhite,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            "About the Estate",
-            color = TextPrimary,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(data.description, color = TextSecondary, fontSize = 14.sp, lineHeight = 20.sp)
-        Spacer(modifier = Modifier.height(24.dp))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(CardDark, RoundedCornerShape(12.dp))
-                .padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            EstateDetailRow("Property Type", data.propertyType)
-            HorizontalDivider(color = BgDark)
-            EstateDetailRow("Total Area", data.totalArea)
-            HorizontalDivider(color = BgDark)
-            EstateDetailRow("Occupancy Rate", data.occupancyRate)
-            HorizontalDivider(color = BgDark)
-            EstateDetailRow("Major Tenants", data.majorTenants.joinToString(", "))
-        }
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
 @Composable
-fun EstateDetailRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = TextSecondary, fontSize = 14.sp)
-        Text(value, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun FinanceTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
-    // ⚡ Dynamically assign a star if the data is dummy/fallback
-    val star = if (data.isDummy) "*" else ""
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf("1D", "1W", "1M", "6M", "1Y", "5Y", "All").forEach { tf ->
-                val isSelected = tf == "1D"
-                Box(modifier = Modifier.clip(CircleShape).background(if (isSelected) CardDark else Color.Transparent).padding(horizontal = 12.dp, vertical = 6.dp)) {
-                    Text(tf, color = if (isSelected) TextPrimary else TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        if (data.chartPoints.isNotEmpty()) {
-            val chartColor = if (data.isPositive) BuyTeal else SellOrange
-            val yChartsPoints = data.chartPoints.map { Point(it.first, it.second) }
-
-            val xAxisData = AxisData.Builder()
-                .axisStepSize(100.dp).backgroundColor(BgDark).steps(yChartsPoints.size - 1)
-                .labelData { i -> i.toString() }.labelAndAxisLinePadding(15.dp)
-                .axisLineColor(Color.Transparent).axisLabelColor(Color.Transparent).build()
-
-            val yAxisData = AxisData.Builder()
-                .steps(5).backgroundColor(BgDark).labelAndAxisLinePadding(20.dp)
-                .labelData { i ->
-                    val minY = yChartsPoints.minOf { it.y }
-                    val maxY = yChartsPoints.maxOf { it.y }
-                    val yScale = (maxY - minY) / 5
-                    (minY + (i * yScale)).toInt().toString()
-                }
-                .axisLineColor(Color.Transparent).axisLabelColor(Color.Transparent).build()
-
-            val lineChartData = LineChartData(
-                linePlotData = LinePlotData(
-                    lines = listOf(Line(
-                        dataPoints = yChartsPoints, LineStyle(color = chartColor, lineType = LineType.Straight()), IntersectionPoint(color = Color.Transparent, radius = 0.dp),
-                        SelectionHighlightPoint(color = TextPrimary),
-                        ShadowUnderLine(alpha = 0.2f, brush = androidx.compose.ui.graphics.Brush.verticalGradient(colors = listOf(chartColor.copy(alpha = 0.3f), Color.Transparent))),
-                        SelectionHighlightPopUp(backgroundColor = CardDark, labelColor = TextPrimary, labelTypeface = android.graphics.Typeface.DEFAULT_BOLD)
-                    ))
-                ),
-                backgroundColor = BgDark, xAxisData = xAxisData, yAxisData = yAxisData, gridLines = GridLines(color = Color.Transparent)
-            )
-
-            LineChart(modifier = Modifier.fillMaxWidth().height(250.dp), lineChartData = lineChartData)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("Market Fundamentals", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                FinanceStatItem("Open", "₹${data.openPrice}$star", Modifier.weight(1f))
-                FinanceStatItem("Prev Close", "₹${data.previousClose}$star", Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                FinanceStatItem("Day Low", "₹${data.dayLow}$star", Modifier.weight(1f))
-                FinanceStatItem("Day High", "₹${data.dayHigh}$star", Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                FinanceStatItem("Avg Traded Price", "₹${data.averageTradedPrice}$star", Modifier.weight(1f))
-                FinanceStatItem("Traded Value", "₹${data.tradedValue}$star", Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                FinanceStatItem("Volume (Qty)", "${data.volume}$star", Modifier.weight(1f))
-                FinanceStatItem("Last Trade Qty", "${data.lastTradeQty}$star", Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                FinanceStatItem("Buy Price", "₹${data.buyPrice}$star", Modifier.weight(1f))
-                FinanceStatItem("Buy Qty", "${data.buyQty}$star", Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                FinanceStatItem("Sell Price", "₹${data.sellPrice}$star", Modifier.weight(1f))
-                FinanceStatItem("Sell Qty", "${data.sellQty}$star", Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                FinanceStatItem("Open Interest", "${data.openInterest}$star", Modifier.weight(1f))
-                FinanceStatItem("Quotation Lot", "${data.quotationLot}$star", Modifier.weight(1f))
-            }
-        }
-        // ⚡ NEW: Disclaimer at the bottom
-        if (data.isDummy) {
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                "* Showing simulated data. The live market API is currently offline or outside of active trading hours.",
-                color = SellOrange,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(100.dp))
-    }
-}
-
-@Composable
-fun FinanceStatItem(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        Text(label, color = TextSecondary, fontSize = 12.sp)
+fun PortfolioMetric(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.Start) {
+        Text(text = label, color = TextGrey, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(value, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun NewsTabContent(data: com.example.mahayuga.feature.navyuga.presentation.detail.ReitDetailData) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            "No recent news found for this asset.",
-            color = TextSecondary,
-            modifier = Modifier.padding(16.dp)
-        )
-        Spacer(modifier = Modifier.height(100.dp))
-    }
-}
-
-@Composable
-fun ReitBottomActionBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BgDark)
-            .border(1.dp, CardDark, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .navigationBarsPadding(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Button(
-            onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = SellOrange),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .weight(1f)
-                .height(48.dp)
-        ) {
-            Text("SELL", fontWeight = FontWeight.Bold, color = Color.White)
-        }
-        Button(
-            onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = BuyTeal),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .weight(1f)
-                .height(48.dp)
-        ) {
-            Text("BUY", fontWeight = FontWeight.Bold, color = Color.White)
-        }
-        Button(
-            onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .weight(1f)
-                .height(48.dp)
-        ) {
-            Text("SIP", fontWeight = FontWeight.Bold, color = BgDark)
-        }
+        Text(text = value, color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }

@@ -24,17 +24,21 @@ import com.example.mahayuga.feature.auth.presentation.RegisterScreen
 import com.example.mahayuga.feature.auth.presentation.WelcomeScreen
 import com.example.mahayuga.feature.navyuga.presentation.NavYugaDashboard
 import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
 import com.example.mahayuga.feature.navyuga.presentation.splash.NavyugaSplashScreen
 import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen
 import com.example.mahayuga.feature.profile.presentation.AccountDetailsScreen
 import com.example.mahayuga.feature.profile.presentation.HelpCenterScreen
 import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
-import com.example.mahayuga.feature.profile.presentation.ProfileScreen // ⚡ FIX: Imported ProfileScreen instead of ProfileMenuScreen
+import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.profile.presentation.WalletScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
+
+// ⚡ ADDED PHASE 2 IMPORTS
+import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
+import com.example.mahayuga.feature.navyuga.presentation.notifications.NotificationsScreen
+import com.example.mahayuga.feature.navyuga.presentation.messages.MessagesScreen
 
 @Composable
 fun AppNavigation(
@@ -79,7 +83,6 @@ fun AppNavigation(
         // --- PROFILE MENU (FULL PAGE) ---
         composable("profile_menu") {
             val authViewModel: AuthViewModel = hiltViewModel()
-            // ⚡ FIX: Replaced ProfileMenuScreen with ProfileScreen and removed onBackClick
             ProfileScreen(
                 onNavigateToLiked = { navController.navigate("liked_properties") },
                 onNavigateToAccount = { navController.navigate("account_details") },
@@ -144,20 +147,23 @@ fun AppNavigation(
 
         composable("roi_calculator") { RoiScreen(onBackClick = { navController.popBackStack() }) }
 
-        composable(
-            "search_results/{country}/{city}",
-            arguments = listOf(
-                navArgument("country") { type = NavType.StringType },
-                navArgument("city") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val country = backStackEntry.arguments?.getString("country") ?: "India"
-            val city = backStackEntry.arguments?.getString("city") ?: "All Cities"
-            SearchResultsScreen(
-                country = country,
-                city = city,
+        // ⚡ REPLACED THE OLD FIREBASE SEARCH ROUTE WITH THE 3 NEW PHASE 2 ROUTES
+        composable("search_screen") {
+            SearchScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToDetail = { id -> navController.navigate("property_detail/$id") },
-                onRoiClick = { navController.navigate("roi_calculator") }
+                onNavigateToSmReitDetail = { id -> navController.navigate("property_detail/$id") },
+                onNavigateToReitDetail = { id -> navController.navigate("trade_asset_detail/$id") }
+            )
+        }
+
+        composable("notifications_screen") {
+            NotificationsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("messages_screen") {
+            MessagesScreen(
+                assetManagerName = "BricX Support",
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -184,8 +190,6 @@ fun AppNavigation(
         composable("admin_manage_properties") { ManagePropertiesScreen(navController) }
         composable("admin_approvals") { AdminApprovalsScreen(onBackClick = { navController.popBackStack() }) }
         composable("admin_manage_users") { ManageUsersScreen(navController) }
-
-        // ⚡ CHANGE: Renamed from "admin_add_property" to "add_property"
         composable("add_property") { AddPropertyScreen(navController) }
 
         composable(

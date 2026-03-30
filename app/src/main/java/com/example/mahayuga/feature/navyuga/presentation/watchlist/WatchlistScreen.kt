@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/watchlist/WatchlistScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.watchlist
 
 import android.widget.Toast
@@ -79,17 +80,18 @@ fun WatchlistScreen(
                         )
                         GroupedHeaderIcons(
                             listOf(
-                                Icons.AutoMirrored.Outlined.Send to {
-                                    Toast.makeText(
-                                        context,
-                                        "Messages coming soon",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
+                                // ⚡ FIX: Reordered to match Home Screen (Notifications -> Messages)
                                 Icons.Outlined.Notifications to {
                                     Toast.makeText(
                                         context,
                                         "No new notifications",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                Icons.AutoMirrored.Outlined.Send to {
+                                    Toast.makeText(
+                                        context,
+                                        "Messages coming soon",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -223,6 +225,14 @@ fun WatchlistScreen(
                                 Toast.makeText(
                                     context,
                                     "Removed from Watchlist",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            // ⚡ FIX: Added the missing parameter here
+                            onShareClick = {
+                                Toast.makeText(
+                                    context,
+                                    "Sharing Property...",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
