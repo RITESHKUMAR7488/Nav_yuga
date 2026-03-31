@@ -2,6 +2,9 @@
 package com.example.mahayuga.feature.navyuga.presentation.trade
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,14 +19,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -42,9 +50,9 @@ private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF8B9BB4)
 private val BorderDark = Color(0xFF1A2A40)
 private val BuyTeal = Color(0xFF14B8A6)
-private val SellOrange = Color(0xFFF97316)
+private val SellRed = Color(0xFFE53935) // ⚡ Changed from Orange to deeper Red
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ReitDetailScreen(
     assetId: String,
@@ -55,6 +63,9 @@ fun ReitDetailScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val isWatchlisted by viewModel.isWatchlisted.collectAsState()
+
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Estate", "Finance", "News", "Media")
 
     LaunchedEffect(assetId) {
         viewModel.fetchAssetDetails(assetId)
@@ -77,7 +88,6 @@ fun ReitDetailScreen(
                     }
                 },
                 actions = {
-                    // ⚡ Phase 3: Oval Background for Action Icons
                     Row(
                         modifier = Modifier
                             .padding(end = 16.dp)
@@ -120,6 +130,81 @@ fun ReitDetailScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = TradeBg)
             )
+        },
+        floatingActionButton = {
+            // ⚡ Show Floating Calculator only on Finance Tab
+            if (selectedTab == 1) {
+                FloatingActionButton(
+                    onClick = {
+                        Toast.makeText(
+                            context,
+                            "Opening ROI Calculator...",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    containerColor = TradeCardBg,
+                    contentColor = BuyTeal,
+                    shape = CircleShape,
+                    modifier = Modifier.border(1.dp, BorderDark, CircleShape)
+                ) {
+                    Icon(Icons.Default.Calculate, contentDescription = "Calculate ROI")
+                }
+            }
+        },
+        bottomBar = {
+            // ⚡ Fixed Bottom Bar: SIP, SELL, BUY
+            Surface(
+                color = TradeCardBg,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .navigationBarsPadding(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            Toast.makeText(context, "Start SIP", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .weight(0.6f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite),
+                        border = BorderStroke(1.dp, BorderDark)
+                    ) {
+                        Text("SIP", fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = {
+                            Toast.makeText(context, "Sell Order", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SellRed)
+                    ) {
+                        Text("SELL", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                    Button(
+                        onClick = {
+                            Toast.makeText(context, "Buy Order", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BuyTeal)
+                    ) {
+                        Text("BUY", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
+            }
         }
     ) { paddingValues ->
         when (val state = uiState) {
@@ -141,31 +226,25 @@ fun ReitDetailScreen(
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = state.message, color = SellOrange)
+                    Text(text = state.message, color = SellRed)
                 }
             }
 
             is ReitDetailState.Success -> {
                 val data = state.data
-                val priceColor = if (data.isPositive) BuyTeal else SellOrange
-
-                // Fallback location since it's not in the data class
-                val locationText = if (data.name.contains(
-                        "EMBASSY",
-                        ignoreCase = true
-                    )
-                ) "Bangalore, Pune, Mumbai" else "Multiple Locations, India"
+                val priceColor = if (data.isPositive) BuyTeal else SellRed
 
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    contentPadding = PaddingValues(bottom = 80.dp) // Padding for bottom bar
                 ) {
-                    // 1. Live API Header Details & Price Section (Graph Removed)
+                    // Header Details (Outside Tabs)
                     item {
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)) {
                             Text(
                                 text = data.name,
                                 color = TextWhite,
@@ -173,7 +252,11 @@ fun ReitDetailScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = locationText, color = TextGrey, fontSize = 14.sp)
+                            Text(
+                                text = "Multiple Locations, India",
+                                color = TextGrey,
+                                fontSize = 14.sp
+                            )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -255,199 +338,344 @@ fun ReitDetailScreen(
                         }
                     }
 
-                    // 2. Estate Photos Horizontal Scroll (Mapped to your ViewModel images)
-                    if (data.images.isNotEmpty()) {
-                        item {
-                            Column {
-                                Text(
-                                    "Estate",
-                                    color = TextWhite,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                    // Tabs
+                    stickyHeader {
+                        ScrollableTabRow(
+                            selectedTabIndex = selectedTab,
+                            containerColor = TradeBg,
+                            contentColor = TextWhite,
+                            edgePadding = 16.dp,
+                            indicator = { tabPositions ->
+                                TabRowDefaults.SecondaryIndicator(
+                                    Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                                    color = BuyTeal
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                val pagerState =
-                                    rememberPagerState(pageCount = { data.images.size })
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(220.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                ) {
-                                    HorizontalPager(
-                                        state = pagerState,
-                                        modifier = Modifier.fillMaxSize()
-                                    ) { page ->
-                                        AsyncImage(
-                                            model = data.images[page],
-                                            contentDescription = "Estate Photo",
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
+                            },
+                            divider = { HorizontalDivider(color = BorderDark) }
+                        ) {
+                            tabs.forEachIndexed { index, title ->
+                                Tab(
+                                    selected = selectedTab == index,
+                                    onClick = { selectedTab = index },
+                                    text = {
+                                        Text(
+                                            title,
+                                            fontSize = 15.sp,
+                                            color = if (selectedTab == index) TextWhite else TextGrey,
+                                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium
                                         )
                                     }
-                                    Row(
-                                        Modifier
-                                            .height(20.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Tab Contents
+                    when (selectedTab) {
+                        0 -> { // ESTATE TAB
+                            item {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    if (data.images.isNotEmpty()) {
+                                        val pagerState =
+                                            rememberPagerState(pageCount = { data.images.size })
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(220.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                        ) {
+                                            HorizontalPager(
+                                                state = pagerState,
+                                                modifier = Modifier.fillMaxSize()
+                                            ) { page ->
+                                                AsyncImage(
+                                                    model = data.images[page],
+                                                    contentDescription = "Estate Photo",
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+                                            }
+                                            Row(
+                                                Modifier
+                                                    .height(20.dp)
+                                                    .fillMaxWidth()
+                                                    .align(Alignment.BottomCenter)
+                                                    .padding(bottom = 8.dp),
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                repeat(pagerState.pageCount) { iteration ->
+                                                    val color =
+                                                        if (pagerState.currentPage == iteration) BuyTeal else Color.LightGray
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .padding(2.dp)
+                                                            .clip(CircleShape)
+                                                            .background(color)
+                                                            .size(6.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                    }
+
+                                    Column(
+                                        modifier = Modifier
                                             .fillMaxWidth()
-                                            .align(Alignment.BottomCenter)
-                                            .padding(bottom = 8.dp),
-                                        horizontalArrangement = Arrangement.Center
+                                            .background(TradeCardBg, RoundedCornerShape(12.dp))
+                                            .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
+                                            .padding(16.dp)
                                     ) {
-                                        repeat(pagerState.pageCount) { iteration ->
-                                            val color =
-                                                if (pagerState.currentPage == iteration) BuyTeal else Color.LightGray
-                                            Box(
-                                                modifier = Modifier
-                                                    .padding(2.dp)
-                                                    .clip(CircleShape)
-                                                    .background(color)
-                                                    .size(6.dp)
+                                        Text(
+                                            "Portfolio Details",
+                                            color = TextWhite,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            PortfolioMetric("Total Area", data.totalArea)
+                                            PortfolioMetric("Occupancy", data.occupancyRate)
+                                            PortfolioMetric("WALE", "6.8 yrs")
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        "About",
+                                        color = TextWhite,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = data.description,
+                                        color = TextGrey,
+                                        fontSize = 14.sp,
+                                        lineHeight = 20.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        "Properties Held",
+                                        color = TextWhite,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+
+                            val subProperties = listOf(
+                                Triple("Embassy Manyata", "Bangalore", "14.8M sq ft"),
+                                Triple("Embassy TechVillage", "Bangalore", "9.2M sq ft")
+                            )
+
+                            items(subProperties) { prop ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                                    colors = CardDefaults.cardColors(containerColor = TradeCardBg),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, BorderDark)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(60.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Color.DarkGray)
+                                        ) {
+                                            AsyncImage(
+                                                model = "https://images.unsplash.com/photo-1497366216548-37526070297c",
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = prop.first,
+                                                color = TextWhite,
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = prop.second,
+                                                color = TextGrey,
+                                                fontSize = 12.sp
                                             )
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // 3. Portfolio Details
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(TradeCardBg, RoundedCornerShape(12.dp))
-                                .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                "Portfolio Details",
-                                color = TextWhite,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+                        1 -> { // FINANCE TAB
+                            item {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    // ⚡ Fixed Graph Area
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                            .background(TradeCardBg, RoundedCornerShape(12.dp))
+                                            .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
+                                            .padding(12.dp)
+                                    ) {
+                                        // Fullscreen Icon
+                                        Icon(
+                                            imageVector = Icons.Default.Fullscreen,
+                                            contentDescription = "Expand Graph",
+                                            tint = TextGrey,
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .size(24.dp)
+                                                .clickable {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Full Graph",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                        )
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                PortfolioMetric("Total Area", data.totalArea)
-                                PortfolioMetric("Occupancy", data.occupancyRate)
-                                PortfolioMetric("WALE", "6.8 yrs")
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                PortfolioMetric("Market Cap", "₹36,102 Cr")
-                                PortfolioMetric("Asset Value", "₹52,000 Cr")
-                                PortfolioMetric("Yield", "6.5%")
-                            }
-                        }
-                    }
+                                        // Fake Graph Canvas (Static)
+                                        Canvas(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(end = 40.dp, top = 20.dp, bottom = 20.dp)
+                                        ) {
+                                            val path = Path()
+                                            val stepX = size.width / (data.chartPoints.size - 1)
 
-                    // 4. About Section
-                    item {
-                        Column {
-                            Text(
-                                "About",
-                                color = TextWhite,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
+                                            data.chartPoints.forEachIndexed { index, point ->
+                                                val x = index * stepX
+                                                // Map dummy Y (400-500) to height
+                                                val normalizedY =
+                                                    1f - ((point.second - 400f) / 100f)
+                                                val y = normalizedY * size.height
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("CEO: ", color = TextGrey, fontSize = 14.sp)
-                                Text(
-                                    "Aravind Maiya",
-                                    color = TextWhite,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = data.description,
-                                color = TextGrey,
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp
-                            )
-                        }
-                    }
+                                                if (index == 0) path.moveTo(
+                                                    x,
+                                                    y
+                                                ) else path.lineTo(x, y)
+                                            }
+                                            drawPath(
+                                                path,
+                                                color = priceColor,
+                                                style = Stroke(width = 4f)
+                                            )
+                                        }
 
-                    // 5. Properties Held by Fund
-                    item {
-                        Text(
-                            "Properties Held",
-                            color = TextWhite,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
+                                        // Y-Axis Labels
+                                        Column(
+                                            modifier = Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .fillMaxHeight()
+                                                .padding(top = 20.dp, bottom = 20.dp),
+                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            horizontalAlignment = Alignment.End
+                                        ) {
+                                            Text("₹500", color = TextGrey, fontSize = 10.sp)
+                                            Text("₹450", color = TextGrey, fontSize = 10.sp)
+                                            Text("₹400", color = TextGrey, fontSize = 10.sp)
+                                        }
+                                    }
 
-                    // Mock list for now as per Phase 3 requirements
-                    val subProperties = listOf(
-                        Triple("Embassy Manyata", "Bangalore, Karnataka", "14.8M sq ft"),
-                        Triple("Embassy TechVillage", "Bangalore, Karnataka", "9.2M sq ft"),
-                        Triple("Express Towers", "Nariman Point, Mumbai", "0.5M sq ft")
-                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    // Timeframes
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        listOf("1D", "1W", "1M", "1Y", "5Y").forEach { tf ->
+                                            Text(
+                                                text = tf,
+                                                color = if (tf == "1D") BuyTeal else TextGrey,
+                                                fontWeight = if (tf == "1D") FontWeight.Bold else FontWeight.Normal,
+                                                modifier = Modifier.clickable { }
+                                            )
+                                        }
+                                    }
 
-                    items(subProperties) { prop ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            colors = CardDefaults.cardColors(containerColor = TradeCardBg),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(60.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color.DarkGray)
-                                ) {
-                                    AsyncImage(
-                                        model = "https://images.unsplash.com/photo-1497366216548-37526070297c",
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
+                                    Spacer(modifier = Modifier.height(24.dp))
+
+                                    // Financial Subheaders
+                                    FinanceSubHeader("Performance")
+                                    FinanceSubHeader("Market fundamentals")
+                                    FinanceSubHeader("Financials")
+                                    FinanceSubHeader("Shareholding")
                                 }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
+                            }
+                        }
+
+                        2 -> { // NEWS TAB
+                            item {
+                                Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
-                                        text = prop.first,
+                                        "Latest News",
                                         color = TextWhite,
-                                        fontSize = 16.sp,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Text(text = prop.second, color = TextGrey, fontSize = 12.sp)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Row(
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    repeat(3) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(bottom = 16.dp)
+                                        ) {
+                                            Text(
+                                                "BricX Insights • 2h ago",
+                                                color = BuyTeal,
+                                                fontSize = 12.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                "${data.name} declares quarterly dividend of ₹4.5 per unit.",
+                                                color = TextWhite,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            HorizontalDivider(
+                                                color = BorderDark,
+                                                modifier = Modifier.padding(top = 12.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        3 -> { // MEDIA TAB
+                            item {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        "Media & Reports",
+                                        color = TextWhite,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(150.dp)
+                                            .background(TradeCardBg, RoundedCornerShape(12.dp))
+                                            .border(1.dp, BorderDark, RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = "Area: ${prop.third}",
-                                            color = BuyTeal,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = "Div: 6.2%",
-                                            color = TextWhite,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Text("Q3 FY26 Investor Presentation", color = TextGrey)
                                     }
                                 }
                             }
@@ -456,6 +684,24 @@ fun ReitDetailScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FinanceSubHeader(title: String) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .clickable { }
+        .padding(vertical = 12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(text = title, color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Icon(
+                Icons.Default.SwapVert,
+                contentDescription = "Expand",
+                tint = TextGrey
+            ) // Placeholder for expand icon
+        }
+        HorizontalDivider(color = BorderDark, modifier = Modifier.padding(top = 12.dp))
     }
 }
 
