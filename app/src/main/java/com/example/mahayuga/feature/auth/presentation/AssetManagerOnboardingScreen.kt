@@ -18,15 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.auth.data.model.*
-import com.example.mahayuga.ui.theme.BrandBlue
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 private val NavyBg = Color(0xFF0F172A)
 private val TextWhite = Color(0xFFFFFFFF)
@@ -43,7 +41,6 @@ fun AssetManagerOnboardingScreen(
     var currentStep by remember { mutableIntStateOf(1) }
     val totalSteps = 5
 
-    // State for success dialog
     var showSuccessDialog by remember { mutableStateOf(false) }
 
     // --- A. Credentials ---
@@ -74,11 +71,10 @@ fun AssetManagerOnboardingScreen(
     var regState by remember { mutableStateOf("") }
     var regPin by remember { mutableStateOf("") }
     var isOperatingSame by remember { mutableStateOf(true) }
+
     // Operating Address (if different)
     var opLine1 by remember { mutableStateOf("") }
     var opCity by remember { mutableStateOf("") }
-
-    // Asset Classes (Multi-select simulation)
     var assetClasses by remember { mutableStateOf("") }
     var opCities by remember { mutableStateOf("") }
 
@@ -105,37 +101,30 @@ fun AssetManagerOnboardingScreen(
         if (amState is UiState.Success) {
             viewModel.resetAmRegisterState()
             showSuccessDialog = true
-        } else if (amState is UiState.Failure) {
-            // Error handling
         }
     }
 
     if (showSuccessDialog) {
         AlertDialog(
-            onDismissRequest = { /* Force user to click OK */ },
+            onDismissRequest = { },
             icon = {
                 Icon(
                     Icons.Default.CheckCircle,
                     null,
-                    tint = BrandBlue,
+                    tint = BricxBrandBlue,
                     modifier = Modifier.size(48.dp)
                 )
-            },
+            }, // ⚡ UPDATED
             title = { Text("Application Submitted") },
             text = { Text("Your Partner Application has been sent for review.\n\nYou will be notified once the Admin verifies your entity details. Please check back later.") },
             confirmButton = {
                 Button(
                     onClick = {
                         showSuccessDialog = false
-                        // ⚡ FIX: Navigate back to WELCOME/LOGIN, NOT Dashboard
-                        navController.navigate("welcome") {
-                            popUpTo(0) { inclusive = true }
-                        }
+                        navController.navigate("welcome") { popUpTo(0) { inclusive = true } }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
-                ) {
-                    Text("Back to Home")
-                }
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue) // ⚡ UPDATED
+                ) { Text("Back to Home") }
             },
             containerColor = Color(0xFF1E293B),
             titleContentColor = TextWhite,
@@ -162,10 +151,10 @@ fun AssetManagerOnboardingScreen(
                 actions = {
                     Text(
                         "Step $currentStep/$totalSteps",
-                        color = BrandBlue,
+                        color = BricxBrandBlue,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(end = 16.dp)
-                    )
+                    ) // ⚡ UPDATED
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyBg)
             )
@@ -175,7 +164,7 @@ fun AssetManagerOnboardingScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .imePadding() // ⚡ FIX: Ensures keyboard pushes content up
+                .imePadding()
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -187,7 +176,7 @@ fun AssetManagerOnboardingScreen(
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-                color = BrandBlue,
+                color = BricxBrandBlue, // ⚡ UPDATED
                 trackColor = Color.White.copy(0.1f),
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -195,45 +184,95 @@ fun AssetManagerOnboardingScreen(
             AnimatedContent(targetState = currentStep, label = "Wizard") { step ->
                 when (step) {
                     1 -> Step1AccountAndContact(
-                        workEmail, { workEmail = it }, mobile, { mobile = it },
-                        password, { password = it }, confirmPassword, { confirmPassword = it },
-                        fullName, { fullName = it }, designation, { designation = it },
-                        department, { department = it }, whatsapp, { whatsapp = it },
-                        commMethod, { commMethod = it }
-                    )
+                        workEmail,
+                        { workEmail = it },
+                        mobile,
+                        { mobile = it },
+                        password,
+                        { password = it },
+                        confirmPassword,
+                        { confirmPassword = it },
+                        fullName,
+                        { fullName = it },
+                        designation,
+                        { designation = it },
+                        department,
+                        { department = it },
+                        whatsapp,
+                        { whatsapp = it },
+                        commMethod,
+                        { commMethod = it })
 
                     2 -> Step2EntityProfile(
-                        entityName, { entityName = it }, brandName, { brandName = it },
-                        entityType, { entityType = it }, country, { country = it },
-                        website, { website = it }, yearsOp, { yearsOp = it },
-                        aumRange, { aumRange = it },
-                        regLine1, { regLine1 = it }, regCity, { regCity = it },
-                        regState, { regState = it }, regPin, { regPin = it },
-                        isOperatingSame, { isOperatingSame = it },
-                        opLine1, { opLine1 = it }, opCity, { opCity = it },
-                        assetClasses, { assetClasses = it }, opCities, { opCities = it }
-                    )
+                        entityName,
+                        { entityName = it },
+                        brandName,
+                        { brandName = it },
+                        entityType,
+                        { entityType = it },
+                        country,
+                        { country = it },
+                        website,
+                        { website = it },
+                        yearsOp,
+                        { yearsOp = it },
+                        aumRange,
+                        { aumRange = it },
+                        regLine1,
+                        { regLine1 = it },
+                        regCity,
+                        { regCity = it },
+                        regState,
+                        { regState = it },
+                        regPin,
+                        { regPin = it },
+                        isOperatingSame,
+                        { isOperatingSame = it },
+                        opLine1,
+                        { opLine1 = it },
+                        opCity,
+                        { opCity = it },
+                        assetClasses,
+                        { assetClasses = it },
+                        opCities,
+                        { opCities = it })
 
                     3 -> Step3Identifiers(
-                        pan, { pan = it }, gstin, { gstin = it },
-                        cin, { cin = it }, sebi, { sebi = it }
-                    )
+                        pan,
+                        { pan = it },
+                        gstin,
+                        { gstin = it },
+                        cin,
+                        { cin = it },
+                        sebi,
+                        { sebi = it })
 
                     4 -> Step4Bank(
-                        accName, { accName = it }, accNumber, { accNumber = it },
-                        ifsc, { ifsc = it }, bankName, { bankName = it }, branch, { branch = it }
-                    )
+                        accName,
+                        { accName = it },
+                        accNumber,
+                        { accNumber = it },
+                        ifsc,
+                        { ifsc = it },
+                        bankName,
+                        { bankName = it },
+                        branch,
+                        { branch = it })
 
                     5 -> Step5Consent(
-                        authRep, { authRep = it }, terms, { terms = it },
-                        digitalKyc, { digitalKyc = it }, noSanctions, { noSanctions = it }
-                    )
+                        authRep,
+                        { authRep = it },
+                        terms,
+                        { terms = it },
+                        digitalKyc,
+                        { digitalKyc = it },
+                        noSanctions,
+                        { noSanctions = it })
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Error Message Display
             if (amState is UiState.Failure) {
                 Text(
                     text = (amState as UiState.Failure).message,
@@ -247,18 +286,21 @@ fun AssetManagerOnboardingScreen(
                     if (currentStep < totalSteps) {
                         currentStep++
                     } else {
-                        if (password != confirmPassword) {
-                            // Local toast via context if needed, or state error
-                            return@Button
-                        }
+                        if (password != confirmPassword) return@Button
                         val amData = AssetManagerModel(
-                            email = workEmail, mobile = mobile,
-                            contactName = fullName, designation = designation,
-                            department = department, whatsappNumber = whatsapp,
+                            email = workEmail,
+                            mobile = mobile,
+                            contactName = fullName,
+                            designation = designation,
+                            department = department,
+                            whatsappNumber = whatsapp,
                             preferredCommunication = commMethod,
-                            entityLegalName = entityName, brandName = brandName,
-                            entityType = entityType, country = country,
-                            website = website, yearsInOperation = yearsOp,
+                            entityLegalName = entityName,
+                            brandName = brandName,
+                            entityType = entityType,
+                            country = country,
+                            website = website,
+                            yearsInOperation = yearsOp,
                             aumRange = aumRange,
                             registeredAddress = AddressModel(
                                 regLine1,
@@ -277,7 +319,10 @@ fun AssetManagerOnboardingScreen(
                             ),
                             primaryAssetClasses = assetClasses.split(",").map { it.trim() },
                             operatingCities = opCities.split(",").map { it.trim() },
-                            pan = pan, gstin = gstin, cinOrLlpin = cin, sebiRegistrationNo = sebi,
+                            pan = pan,
+                            gstin = gstin,
+                            cinOrLlpin = cin,
+                            sebiRegistrationNo = sebi,
                             bankAccount = BankDetailsModel(
                                 accName,
                                 accNumber,
@@ -296,7 +341,7 @@ fun AssetManagerOnboardingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue), // ⚡ UPDATED
                 enabled = amState !is UiState.Loading
             ) {
                 if (amState is UiState.Loading) {
@@ -306,14 +351,10 @@ fun AssetManagerOnboardingScreen(
                 }
             }
 
-            // ⚡ Added Spacer at bottom for easier scrolling on small screens
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
-
-// --- KEEP THE REST OF THE HELPER FUNCTIONS (Step1...Step5) AS IS ---
-// (Re-pasting them here for file completeness)
 
 @Composable
 fun Step1AccountAndContact(
@@ -351,9 +392,9 @@ fun Step1AccountAndContact(
                     onClick = { onComm(method) },
                     label = { Text(method) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = BrandBlue,
+                        selectedContainerColor = BricxBrandBlue,
                         selectedLabelColor = TextWhite
-                    )
+                    ) // ⚡ UPDATED
                 )
             }
         }
@@ -365,10 +406,9 @@ fun Step2EntityProfile(
     name: String, onName: (String) -> Unit, brand: String, onBrand: (String) -> Unit,
     type: String, onType: (String) -> Unit, country: String, onCountry: (String) -> Unit,
     web: String, onWeb: (String) -> Unit, years: String, onYears: (String) -> Unit,
-    aum: String, onAum: (String) -> Unit,
-    rLine1: String, onRLine1: (String) -> Unit, rCity: String, onRCity: (String) -> Unit,
-    rState: String, onRState: (String) -> Unit, rPin: String, onRPin: (String) -> Unit,
-    isSame: Boolean, onIsSame: (Boolean) -> Unit,
+    aum: String, onAum: (String) -> Unit, rLine1: String, onRLine1: (String) -> Unit,
+    rCity: String, onRCity: (String) -> Unit, rState: String, onRState: (String) -> Unit,
+    rPin: String, onRPin: (String) -> Unit, isSame: Boolean, onIsSame: (Boolean) -> Unit,
     oLine1: String, onOLine1: (String) -> Unit, oCity: String, onOCity: (String) -> Unit,
     assets: String, onAssets: (String) -> Unit, cities: String, onCities: (String) -> Unit
 ) {
@@ -452,7 +492,7 @@ fun Step4Bank(
         AmTextField(bank, onBank, "Bank Name")
         AmTextField(branch, onBranch, "Branch")
 
-        OutlinedButton(onClick = { /* File Picker */ }, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Upload, null)
             Spacer(Modifier.width(8.dp))
             Text("Upload Cancelled Cheque")
@@ -462,10 +502,8 @@ fun Step4Bank(
 
 @Composable
 fun Step5Consent(
-    auth: Boolean, onAuth: (Boolean) -> Unit,
-    terms: Boolean, onTerms: (Boolean) -> Unit,
-    kyc: Boolean, onKyc: (Boolean) -> Unit,
-    sanc: Boolean, onSanc: (Boolean) -> Unit
+    auth: Boolean, onAuth: (Boolean) -> Unit, terms: Boolean, onTerms: (Boolean) -> Unit,
+    kyc: Boolean, onKyc: (Boolean) -> Unit, sanc: Boolean, onSanc: (Boolean) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionTitle("F. Consent & Declarations")

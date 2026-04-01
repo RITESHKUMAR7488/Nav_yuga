@@ -24,38 +24,35 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mahayuga.ui.theme.BrandBlue
-
-private val ScreenBg = Color(0xFF0F172A)
-private val CardBg = Color(0xFF101920)
-private val BorderColor = Color(0xFF1F2B36)
-private val TextGrey = Color(0xFF888888)
+import com.example.mahayuga.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SecurityPrivacyScreen(
-    onBackClick: () -> Unit
-) {
+fun SecurityPrivacyScreen(onBackClick: () -> Unit) {
     Scaffold(
-        containerColor = ScreenBg,
+        containerColor = BricxBackground,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         "Security & privacy",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = BricxTextPrimary,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            "Back",
+                            tint = BricxTextPrimary
+                        )
                     }
                 },
                 actions = { Spacer(modifier = Modifier.width(48.dp)) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = ScreenBg)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BricxBackground)
             )
         }
     ) { padding ->
@@ -65,15 +62,15 @@ fun SecurityPrivacyScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // 1. BANNER (Blue Gradient)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color(0xFF0A1E3F), ScreenBg),
-                            startY = 0f,
-                            endY = 300f
+                            colors = listOf(
+                                Color(0xFF0A1E3F),
+                                BricxBackground
+                            ), startY = 0f, endY = 300f
                         )
                     )
                     .padding(24.dp)
@@ -84,13 +81,13 @@ fun SecurityPrivacyScreen(
                             "Your security is our priority",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = BricxTextPrimary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             "We employ stringent measures, ensuring your money remains secure at all times.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextGrey,
+                            color = BricxTextSecondary,
                             lineHeight = 20.sp
                         )
                     }
@@ -99,13 +96,13 @@ fun SecurityPrivacyScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(BrandBlue.copy(alpha = 0.2f)),
+                            .background(BricxBrandBlue.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Lock,
                             contentDescription = null,
-                            tint = BrandBlue,
+                            tint = BricxBrandBlue,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -116,21 +113,19 @@ fun SecurityPrivacyScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // 2. SECURITY SECTION
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
                         "Security",
                         style = MaterialTheme.typography.titleSmall,
-                        color = Color.White,
+                        color = BricxTextPrimary,
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Biometric Toggle (Fixed)
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = CardBg),
-                        border = BorderStroke(1.dp, BorderColor)
+                        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
+                        border = BorderStroke(1.dp, BricxBorder)
                     ) {
                         Row(
                             modifier = Modifier.padding(16.dp),
@@ -139,30 +134,30 @@ fun SecurityPrivacyScreen(
                             Icon(
                                 Icons.Outlined.Fingerprint,
                                 null,
-                                tint = BrandBlue,
+                                tint = BricxBrandBlue,
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     "Biometric authentication",
-                                    color = Color.White,
+                                    color = BricxTextPrimary,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Enable for added security and streamline your login process",
-                                    color = TextGrey,
+                                    color = BricxTextSecondary,
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             }
                             Switch(
-                                checked = true, // ⚡ Fixed to True
-                                onCheckedChange = { }, // ⚡ No Action (Fixed)
+                                checked = true,
+                                onCheckedChange = { },
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = BrandBlue,
+                                    checkedThumbColor = BricxTextPrimary,
+                                    checkedTrackColor = BricxBrandBlue,
                                     uncheckedThumbColor = Color.Gray,
                                     uncheckedTrackColor = Color.DarkGray
                                 )
@@ -170,51 +165,41 @@ fun SecurityPrivacyScreen(
                         }
                     }
 
-                    // MFA (Coming Soon, No Arrow)
                     SecurityOptionItem(
                         icon = Icons.Outlined.Security,
                         title = "Multi-factor authentication",
                         subtitle = "Coming Soon",
-                        showArrow = false, // ⚡ Removed Arrow
-                        onClick = {}
-                    )
-
-                    // Social Logins (Coming Soon, No Arrow)
+                        showArrow = false,
+                        onClick = {})
                     SecurityOptionItem(
                         icon = Icons.Outlined.Link,
                         title = "Social logins",
                         subtitle = "Coming Soon",
-                        showArrow = false, // ⚡ Removed Arrow
-                        onClick = {}
-                    )
+                        showArrow = false,
+                        onClick = {})
                 }
 
-                // 3. PRIVACY SECTION
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
                         "Privacy",
                         style = MaterialTheme.typography.titleSmall,
-                        color = Color.White,
+                        color = BricxTextPrimary,
                         fontWeight = FontWeight.Bold
                     )
-
-                    // Privacy Policy (Updating, No Arrow)
                     SecurityOptionItem(
                         icon = Icons.Outlined.Description,
                         title = "Privacy policy",
-                        subtitle = "Updating", // ⚡ Changed Text
-                        showArrow = false, // ⚡ Removed Arrow
-                        onClick = {}
-                    )
+                        subtitle = "Updating",
+                        showArrow = false,
+                        onClick = {})
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 4. FOOTER (Regulation Update)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E))
+                    colors = CardDefaults.cardColors(containerColor = BricxSurfaceCardLight)
                 ) {
                     Row(
                         modifier = Modifier
@@ -226,20 +211,18 @@ fun SecurityPrivacyScreen(
                         Icon(
                             Icons.Filled.CheckCircle,
                             null,
-                            tint = BrandBlue,
+                            tint = BricxBrandBlue,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        // ⚡ Updated Footer Text
                         Text(
                             text = "Navyuga will comply with SEBI if necessary in near future",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextGrey,
+                            color = BricxTextSecondary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
@@ -251,7 +234,7 @@ fun SecurityOptionItem(
     icon: ImageVector,
     title: String,
     subtitle: String?,
-    showArrow: Boolean = true, // ⚡ Added Param
+    showArrow: Boolean = true,
     onClick: () -> Unit
 ) {
     Card(
@@ -259,19 +242,16 @@ fun SecurityOptionItem(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBg),
-        border = BorderStroke(1.dp, BorderColor)
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
+        border = BorderStroke(1.dp, BricxBorder)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, null, tint = BrandBlue, modifier = Modifier.size(24.dp))
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = BricxBrandBlue, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     title,
-                    color = Color.White,
+                    color = BricxTextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -279,18 +259,14 @@ fun SecurityOptionItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         subtitle,
-                        color = TextGrey,
+                        color = BricxTextSecondary,
                         style = MaterialTheme.typography.labelSmall,
                         lineHeight = 16.sp
                     )
                 }
             }
-            if (showArrow) { // ⚡ Conditionally show arrow
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    null,
-                    tint = TextGrey
-                )
+            if (showArrow) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = BricxTextSecondary)
             }
         }
     }

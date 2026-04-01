@@ -29,7 +29,7 @@ import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.auth.presentation.components.NavyugaGradientButton
 import com.example.mahayuga.feature.auth.presentation.components.NavyugaTextField
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.ui.theme.ErrorRed
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +52,6 @@ fun EditPropertyScreen(
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
-    // ⚡ REQUEST 1: Country
     var country by remember { mutableStateOf("India") }
 
     var age by remember { mutableStateOf("") }
@@ -72,12 +71,9 @@ fun EditPropertyScreen(
     var tenantName by remember { mutableStateOf("") }
     var occupationPeriod by remember { mutableStateOf("") }
 
-    // ⚡ REQUEST 3: Need total units to auto-calc min invest in edit too
     var totalUnits by remember { mutableStateOf("") }
-
     var exitPrice by remember { mutableStateOf("") }
     var totalProfit by remember { mutableStateOf("") }
-
     var escalationPercent by remember { mutableStateOf("") }
     var escalationYears by remember { mutableStateOf("") }
 
@@ -96,11 +92,10 @@ fun EditPropertyScreen(
                 status = it.status
                 isTrendingSelection = if (it.isTrending) "Yes" else "No"
                 assetManager = it.assetManager
-
                 address = it.address
                 city = it.city
                 state = it.state
-                country = it.country // Load Country
+                country = it.country
                 age = it.age
                 area = it.area
                 floor = it.floor
@@ -116,28 +111,21 @@ fun EditPropertyScreen(
                 occupationPeriod = it.occupationPeriod
                 exitPrice = it.exitPrice
                 totalProfit = it.totalProfit
-                totalUnits = it.totalUnits // Load Units
+                totalUnits = it.totalUnits
 
-                // ⚡ REQUEST 2 FIX: Robust Regex Parsing for Escalation
-                // Supports "5% (Every 3 Years)" or just "5 (Every 3 Years)"
-                if(it.escalation.isNotEmpty()) {
+                if (it.escalation.isNotEmpty()) {
                     val regex = """(\d+)%? \(Every (\d+) Years\)""".toRegex()
                     val match = regex.find(it.escalation)
                     if (match != null) {
                         escalationPercent = match.groupValues[1]
                         escalationYears = match.groupValues[2]
-                    } else {
-                        // Fallback: Try to just parse numbers if format is weird
-                        // (Optional, but good for safety)
                     }
                 }
-
                 keptImages = it.imageUrls
             }
         }
     }
 
-    // ⚡ REQUEST 3: Auto-calculate Min Investment based on Units in Edit Mode
     LaunchedEffect(totalValuation, totalUnits) {
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
         val units = totalUnits.replace(",", "").toIntOrNull() ?: 0
@@ -147,7 +135,6 @@ fun EditPropertyScreen(
         }
     }
 
-    // Auto-calculate logic (Financials)
     LaunchedEffect(monthlyRent, totalValuation, annualPropertyTax) {
         val rent = monthlyRent.replace(",", "").toDoubleOrNull() ?: 0.0
         val price = totalValuation.replace(",", "").toDoubleOrNull() ?: 0.0
@@ -176,7 +163,8 @@ fun EditPropertyScreen(
             viewModel.resetUploadState()
             navController.popBackStack()
         } else if (uploadState is UiState.Failure) {
-            Toast.makeText(context, (uploadState as UiState.Failure).message, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, (uploadState as UiState.Failure).message, Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -201,7 +189,6 @@ fun EditPropertyScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // ... Images Section (Same as before) ...
             Text("Property Images", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -210,14 +197,27 @@ fun EditPropertyScreen(
                         Image(
                             painter = rememberAsyncImagePainter(url),
                             contentDescription = null,
-                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )
                         IconButton(
                             onClick = { keptImages = keptImages - url },
-                            modifier = Modifier.align(Alignment.TopEnd).background(ErrorRed.copy(alpha = 0.7f), androidx.compose.foundation.shape.CircleShape).size(24.dp)
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .background(
+                                    BricxDangerRed.copy(alpha = 0.7f),
+                                    androidx.compose.foundation.shape.CircleShape
+                                )
+                                .size(24.dp) // ⚡ UPDATED
                         ) {
-                            Icon(Icons.Default.Close, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Default.Close,
+                                null,
+                                tint = androidx.compose.ui.graphics.Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
@@ -226,14 +226,27 @@ fun EditPropertyScreen(
                         Image(
                             painter = rememberAsyncImagePainter(uri),
                             contentDescription = null,
-                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )
                         IconButton(
                             onClick = { newImageUris = newImageUris - uri },
-                            modifier = Modifier.align(Alignment.TopEnd).background(ErrorRed.copy(alpha = 0.7f), androidx.compose.foundation.shape.CircleShape).size(24.dp)
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .background(
+                                    BricxDangerRed.copy(alpha = 0.7f),
+                                    androidx.compose.foundation.shape.CircleShape
+                                )
+                                .size(24.dp) // ⚡ UPDATED
                         ) {
-                            Icon(Icons.Default.Close, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Default.Close,
+                                null,
+                                tint = androidx.compose.ui.graphics.Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
@@ -244,13 +257,16 @@ fun EditPropertyScreen(
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        Icon(Icons.Default.AddAPhoto, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.AddAPhoto,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
             SectionHeader("Basic Info")
             NavyugaTextField(
                 value = title,
@@ -259,14 +275,12 @@ fun EditPropertyScreen(
                 icon = Icons.Default.Title
             )
             Spacer(modifier = Modifier.height(8.dp))
-
             NavyugaTextField(
                 value = assetManager,
                 onValueChange = { assetManager = it },
                 label = "Asset Manager Name",
                 icon = Icons.Default.PersonOutline
             )
-
             Spacer(modifier = Modifier.height(8.dp))
             NavyugaTextField(
                 value = address,
@@ -294,23 +308,18 @@ fun EditPropertyScreen(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-
-            // ⚡ REQUEST 1: Country Field in Edit
             NavyugaDropdown(
                 label = "Country",
                 options = listOf("India", "UAE", "USA", "UK"),
                 selected = country,
-                onSelectionChange = { country = it }
-            )
+                onSelectionChange = { country = it })
             Spacer(modifier = Modifier.height(8.dp))
-
             NavyugaDropdown(
                 label = "Asset Type",
                 options = listOf("Office", "Retail", "Warehouse", "Industrial"),
                 selected = type,
                 onSelectionChange = { type = it })
             Spacer(modifier = Modifier.height(8.dp))
-
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) {
                     NavyugaDropdown(
@@ -329,8 +338,6 @@ fun EditPropertyScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Hidden Total Units field needed for calculation
             NavyugaTextField(
                 value = totalUnits,
                 onValueChange = { totalUnits = it },
@@ -339,9 +346,7 @@ fun EditPropertyScreen(
                 isNumber = true
             )
             Spacer(modifier = Modifier.height(16.dp))
-
             SectionHeader("Specifications")
-            // ... (Specs rows unchanged) ...
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) {
                     NavyugaTextField(
@@ -383,7 +388,6 @@ fun EditPropertyScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
             SectionHeader("Lease Information")
             NavyugaTextField(
                 value = tenantName,
@@ -399,9 +403,7 @@ fun EditPropertyScreen(
                 icon = Icons.Default.Timer,
                 isNumber = true
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) {
                     NavyugaTextField(
@@ -424,7 +426,6 @@ fun EditPropertyScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
             SectionHeader("Financial Analysis")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) {
@@ -496,7 +497,6 @@ fun EditPropertyScreen(
                 isNumber = true
             )
 
-            // ⚡ REQUEST 7: Exited details shifted BELOW Financial Analysis
             if (status == "Exited") {
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionHeader("Exit Details")
@@ -523,7 +523,6 @@ fun EditPropertyScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
@@ -543,7 +542,6 @@ fun EditPropertyScreen(
                     originalProperty?.let { orig ->
                         val finalEscalation =
                             if (escalationPercent.isNotEmpty()) "$escalationPercent (Every $escalationYears Years)" else ""
-
                         val updatedFields = orig.copy(
                             title = title,
                             description = description,
@@ -552,7 +550,7 @@ fun EditPropertyScreen(
                             address = address,
                             city = city,
                             state = state,
-                            country = country, // ⚡ Save Country
+                            country = country,
                             location = "$city, $state",
                             age = age,
                             area = area,
@@ -570,17 +568,11 @@ fun EditPropertyScreen(
                             escalation = finalEscalation,
                             exitPrice = exitPrice,
                             totalProfit = totalProfit,
-                            totalUnits = totalUnits, // Save Units
+                            totalUnits = totalUnits,
                             isTrending = isTrendingSelection == "Yes",
                             assetManager = assetManager
                         )
-
-                        viewModel.updateProperty(
-                            originalProperty = orig,
-                            updatedFields = updatedFields,
-                            keptImages = keptImages,
-                            newImageUris = newImageUris
-                        )
+                        viewModel.updateProperty(orig, updatedFields, keptImages, newImageUris)
                     }
                 }
             )

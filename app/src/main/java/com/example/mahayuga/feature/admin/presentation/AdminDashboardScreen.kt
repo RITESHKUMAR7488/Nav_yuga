@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.ui.theme.*
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @Composable
 fun AdminDashboardScreen(
@@ -95,9 +95,24 @@ fun AdminDashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AdminStatCard("Active Props", activePropertiesCount, SuccessGreen, Modifier.weight(1f))
-                AdminStatCard("Total Users", totalUsersCount, BrandBlue, Modifier.weight(1f))
-                AdminStatCard("Asset Vol", totalVolume, CyanAccent, Modifier.weight(1f))
+                AdminStatCard(
+                    "Active Props",
+                    activePropertiesCount,
+                    BricxSuccessGreen,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
+                AdminStatCard(
+                    "Total Users",
+                    totalUsersCount,
+                    BricxBrandBlue,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
+                AdminStatCard(
+                    "Asset Vol",
+                    totalVolume,
+                    BricxBrandTeal,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -106,14 +121,23 @@ fun AdminDashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AdminStatCard("Nationalities", userNationalities, Color(0xFFFF9800), Modifier.weight(1f))
+                AdminStatCard(
+                    "Nationalities",
+                    userNationalities,
+                    Color(0xFFFF9800),
+                    Modifier.weight(1f)
+                )
                 AdminStatCard("Rent Paid", rentalIncomePaid, Color(0xFF9C27B0), Modifier.weight(1f))
-                AdminStatCard("Avg Return", avgReturn, Color(0xFF00E676), Modifier.weight(1f))
+                AdminStatCard(
+                    "Avg Return",
+                    avgReturn,
+                    BricxSuccessGreen,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ⚡ NEW: Approval Button
             AdminActionCard(
                 title = "Review Pending Assets",
                 subtitle = "Approve or Reject AM submissions",
@@ -174,10 +198,15 @@ fun AdminDashboardScreen(
 
             OutlinedButton(
                 onClick = onLogout,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    BricxDangerRed
+                ), // ⚡ UPDATED
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = BricxDangerRed) // ⚡ UPDATED
             ) {
                 Icon(Icons.Default.Logout, null)
                 Spacer(modifier = Modifier.width(8.dp))

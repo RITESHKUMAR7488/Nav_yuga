@@ -17,7 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mahayuga.ui.theme.BrandBlue
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 // Shared Colors
 private val CardBg = Color(0xFF1E293B)
@@ -40,16 +40,16 @@ fun AmTextField(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = BrandBlue,
+            focusedBorderColor = BricxBrandBlue, // ⚡ UPDATED
             unfocusedBorderColor = Color.White.copy(0.2f),
             focusedTextColor = TextWhite,
             unfocusedTextColor = TextWhite,
             focusedContainerColor = CardBg,
             unfocusedContainerColor = CardBg,
-            focusedLabelColor = BrandBlue,
+            focusedLabelColor = BricxBrandBlue, // ⚡ UPDATED
             unfocusedLabelColor = TextGrey
         ),
-        visualTransformation = if(isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Next),
         singleLine = true
     )
@@ -75,16 +75,18 @@ fun AmDropdown(
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BrandBlue,
+                focusedBorderColor = BricxBrandBlue, // ⚡ UPDATED
                 unfocusedBorderColor = Color.White.copy(0.2f),
                 focusedTextColor = TextWhite,
                 unfocusedTextColor = TextWhite,
                 focusedContainerColor = CardBg,
                 unfocusedContainerColor = CardBg,
-                focusedLabelColor = BrandBlue,
+                focusedLabelColor = BricxBrandBlue, // ⚡ UPDATED
                 unfocusedLabelColor = TextGrey
             )
         )
@@ -111,12 +113,17 @@ fun AmCheckbox(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
     ) {
         Checkbox(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(checkedColor = BrandBlue, uncheckedColor = TextGrey)
+            colors = CheckboxDefaults.colors(
+                checkedColor = BricxBrandBlue,
+                uncheckedColor = TextGrey
+            ) // ⚡ UPDATED
         )
         Text(text, color = TextWhite, style = MaterialTheme.typography.bodyMedium)
     }
@@ -126,7 +133,7 @@ fun AmCheckbox(
 fun SectionTitle(text: String) {
     Text(
         text,
-        color = BrandBlue,
+        color = BricxBrandBlue, // ⚡ UPDATED
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
         modifier = Modifier.padding(top = 8.dp)

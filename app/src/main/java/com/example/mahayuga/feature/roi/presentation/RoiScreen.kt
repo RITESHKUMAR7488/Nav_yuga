@@ -33,17 +33,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.mahayuga.ui.theme.BrandBlue
+import com.example.mahayuga.ui.theme.* // IMPORTING NEW COLORS
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.min
 
-private val NavyBlue = Color(0xFF0F172A)
-
-
-// ... [Helper functions formatIndian, VisualTransformation remain unchanged] ...
-// ⚡ HELPER: Smart Indian Formatting
 fun formatIndian(amount: Double): String {
     return try {
         val formatter = NumberFormat.getInstance(Locale("en", "IN"))
@@ -62,14 +57,11 @@ class IndianNumberVisualTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val original = text.text
         if (original.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
-
         val parts = original.split(".")
         val integerPart = parts[0]
         val decimalPart = if (parts.size > 1) "." + parts[1] else ""
-
         val formattedInteger = formatIndianInteger(integerPart)
         val formatted = formattedInteger + decimalPart
-
         val offsetMapping = object : OffsetMapping {
             override fun originalToTransformed(offset: Int): Int {
                 if (offset <= 0) return 0
@@ -100,8 +92,7 @@ class IndianNumberVisualTransformation : VisualTransformation {
         if (len <= 3) return sb.toString()
         var i = len - 3
         while (i > 0) {
-            sb.insert(i, ",")
-            i -= 2
+            sb.insert(i, ","); i -= 2
         }
         return sb.toString()
     }
@@ -115,10 +106,7 @@ class IndianNumberVisualTransformation : VisualTransformation {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RoiScreen(
-    onBackClick: () -> Unit,
-    viewModel: RoiViewModel = hiltViewModel()
-) {
+fun RoiScreen(onBackClick: () -> Unit, viewModel: RoiViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
@@ -127,19 +115,14 @@ fun RoiScreen(
     var showCounterResultPage by remember { mutableStateOf(false) }
 
     Scaffold(
-        // ⚡ CHANGE: Set the main container background to NavyBlue
-        containerColor = NavyBlue,
+        containerColor = BricxBackground,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         when {
-                            showCounterResultPage -> "Counter Offer Analysis"
-                            state.currentStep == 5 -> "ROI Calculation"
-                            else -> "ROI Calculator"
-                        },
-                        // Optional: Ensure title text is white if not handled by theme
-                        color = Color.White
+                            showCounterResultPage -> "Counter Offer Analysis"; state.currentStep == 5 -> "ROI Calculation"; else -> "ROI Calculator"
+                        }, color = BricxTextPrimary
                     )
                 },
                 navigationIcon = {
@@ -152,13 +135,17 @@ fun RoiScreen(
                             onBackClick()
                         }
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = BricxTextPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = NavyBlue,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = BricxBackground,
+                    titleContentColor = BricxTextPrimary,
+                    navigationIconContentColor = BricxTextPrimary
                 )
             )
         }
@@ -182,18 +169,16 @@ fun RoiScreen(
                             )
                         }
                     },
-                    onBack = { showCounterResultPage = false }
-                )
+                    onBack = { showCounterResultPage = false })
             } else {
                 if (state.currentStep in 1..4) {
-                    RoiProgressBar(currentStep = state.currentStep, totalSteps = 4)
-                    Spacer(modifier = Modifier.height(24.dp))
+                    RoiProgressBar(
+                        currentStep = state.currentStep,
+                        totalSteps = 4
+                    ); Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                AnimatedContent(
-                    targetState = state.currentStep,
-                    label = "roi_steps"
-                ) { step ->
+                AnimatedContent(targetState = state.currentStep, label = "roi_steps") { step ->
                     when (step) {
                         0 -> ModeSelectionScreen(viewModel)
                         1 -> Step1Property(state, viewModel)
@@ -211,10 +196,7 @@ fun RoiScreen(
                                     )
                                 }
                             },
-                            onShowCounterDetails = {
-                                showCounterResultPage = true
-                            }
-                        )
+                            onShowCounterDetails = { showCounterResultPage = true })
                     }
                 }
 
@@ -227,7 +209,7 @@ fun RoiScreen(
                             .fillMaxWidth()
                             .height(50.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                        colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue)
                     ) {
                         Text(if (state.currentStep == 4) "Calculate" else "Next Step")
                         Spacer(modifier = Modifier.width(8.dp))
@@ -240,7 +222,6 @@ fun RoiScreen(
     }
 }
 
-// ... [Keep ModeSelectionScreen, ModeCard, Step1, Step2, Step3, Step4] ...
 @Composable
 fun ModeSelectionScreen(vm: RoiViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -248,7 +229,7 @@ fun ModeSelectionScreen(vm: RoiViewModel) {
             "Select your role",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = BrandBlue
+            color = BricxBrandBlue
         )
         ModeCard(
             "I am a Buyer",
@@ -285,11 +266,9 @@ fun ModeCard(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(BrandBlue.copy(alpha = 0.1f), CircleShape),
+                    .background(BricxBrandBlue.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = BrandBlue)
-            }
+            ) { Icon(icon, contentDescription = null, tint = BricxBrandBlue) }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
@@ -312,7 +291,6 @@ fun ModeCard(
 fun Step1Property(state: RoiState, vm: RoiViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val options = listOf("Retail", "Office", "Warehouse")
-
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader("Property Information")
         RoiInput(
@@ -478,8 +456,6 @@ fun Step4Financials(state: RoiState, vm: RoiViewModel) {
                 )
             }
         }
-
-        // Mandatory Registry Input
         SectionHeader("Registry")
         RoiInput("Registry Cost (%)*", state.registryInput, isNumber = true) {
             vm.updateFinancials(
@@ -498,7 +474,7 @@ fun Step4Financials(state: RoiState, vm: RoiViewModel) {
                 Text(
                     "Additional Charges (Optional)",
                     style = MaterialTheme.typography.titleSmall,
-                    color = BrandBlue
+                    color = BricxBrandBlue
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 RoiInput(
@@ -561,9 +537,9 @@ fun Step5Result(
         }
 
         Card(
-            colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.1f)),
+            colors = CardDefaults.cardColors(containerColor = BricxBrandBlue.copy(alpha = 0.1f)),
             modifier = Modifier.fillMaxWidth(),
-            border = androidx.compose.foundation.BorderStroke(1.dp, BrandBlue)
+            border = androidx.compose.foundation.BorderStroke(1.dp, BricxBrandBlue)
         ) {
             Row(
                 modifier = Modifier
@@ -576,13 +552,13 @@ fun Step5Result(
                     "NET ANNUAL INCOME",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = BrandBlue
+                    color = BricxBrandBlue
                 )
                 Text(
                     "₹${formatIndian(state.netAnnualIncome)}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = BrandBlue
+                    color = BricxBrandBlue
                 )
             }
         }
@@ -607,7 +583,7 @@ fun Step5Result(
         }
 
         Card(
-            colors = CardDefaults.cardColors(containerColor = BrandBlue),
+            colors = CardDefaults.cardColors(containerColor = BricxBrandBlue),
             elevation = CardDefaults.cardElevation(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -639,21 +615,22 @@ fun Step5Result(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Icon(Icons.Default.Calculate, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Counter ROI")
+                    Icon(Icons.Default.Calculate, null, modifier = Modifier.size(18.dp)); Spacer(
+                    modifier = Modifier.width(8.dp)
+                ); Text("Counter ROI")
                 }
             }
-
             Button(
                 onClick = { vm.generateCashFlow(); showCashFlowSheet = true },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Icon(Icons.Default.Timeline, null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Cash Flow")
+                Icon(
+                    Icons.Default.Timeline,
+                    null,
+                    modifier = Modifier.size(18.dp)
+                ); Spacer(modifier = Modifier.width(8.dp)); Text("Cash Flow")
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -662,12 +639,17 @@ fun Step5Result(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+            colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.Share, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Share Full Report PDF", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Icon(
+                Icons.Default.Share,
+                null
+            ); Spacer(modifier = Modifier.width(8.dp)); Text(
+            "Share Full Report PDF",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
         }
     }
 
@@ -677,26 +659,21 @@ fun Step5Result(
             onDismiss = { showCounterDialog = false },
             onCalculate = { targetRoi -> vm.calculateCounterOffer(targetRoi) },
             resultPrice = state.counterOfferPrice,
-            onViewDetails = { showCounterDialog = false; onShowCounterDetails() }
-        )
+            onViewDetails = { showCounterDialog = false; onShowCounterDetails() })
     }
 
     if (showCashFlowSheet) {
-        ModalBottomSheet(onDismissRequest = { showCashFlowSheet = false }) {
-            CashFlowContent(state.cashFlows)
-        }
+        ModalBottomSheet(onDismissRequest = {
+            showCashFlowSheet = false
+        }) { CashFlowContent(state.cashFlows) }
     }
 }
 
-// ⚡ RECALCULATED REGISTRY LOGIC HERE
 @Composable
 fun CounterOfferResultScreen(state: RoiState, onSharePdf: () -> Unit, onBack: () -> Unit) {
     val counterPrice = state.counterOfferPrice ?: 0.0
-
-    // ⚡ FIX: Recalculate registry based on the NEW counter offer price
     val registryPercent = state.registryInput.toDoubleOrNull() ?: 0.0
     val registry = counterPrice * (registryPercent / 100)
-
     val totalInvest = counterPrice + registry + state.totalOtherCharges
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -706,8 +683,8 @@ fun CounterOfferResultScreen(state: RoiState, onSharePdf: () -> Unit, onBack: ()
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Card(
-            colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.1f)),
-            border = androidx.compose.foundation.BorderStroke(1.dp, BrandBlue),
+            colors = CardDefaults.cardColors(containerColor = BricxBrandBlue.copy(alpha = 0.1f)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BricxBrandBlue),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -740,7 +717,7 @@ fun CounterOfferResultScreen(state: RoiState, onSharePdf: () -> Unit, onBack: ()
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 ResultRow("Offer Price (Base)", counterPrice)
-                ResultRow("Registry ($registryPercent%)", registry) // ⚡ Show new value
+                ResultRow("Registry ($registryPercent%)", registry)
                 ResultRow("Legal & Others", state.totalOtherCharges)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 ResultRow("TOTAL INVESTMENT", totalInvest, isBold = true)
@@ -752,17 +729,21 @@ fun CounterOfferResultScreen(state: RoiState, onSharePdf: () -> Unit, onBack: ()
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+            colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.Share, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Share Counter Proposal", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Icon(
+                Icons.Default.Share,
+                null
+            ); Spacer(modifier = Modifier.width(8.dp)); Text(
+            "Share Counter Proposal",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
         }
     }
 }
 
-// ... [Keep CounterRoiDialog, CashFlowContent, RoiInput, SectionHeader, ResultRow, RoiProgressBar] ...
 @Composable
 fun CounterRoiDialog(
     currentRoi: Double,
@@ -776,8 +757,7 @@ fun CounterRoiDialog(
 
     LaunchedEffect(resultPrice, hasCalculated) {
         if (hasCalculated && resultPrice != null && resultPrice > 0) {
-            hasCalculated = false
-            onViewDetails()
+            hasCalculated = false; onViewDetails()
         }
     }
 
@@ -801,13 +781,13 @@ fun CounterRoiDialog(
                 Box(
                     modifier = Modifier
                         .size(56.dp)
-                        .background(BrandBlue.copy(alpha = 0.1f), CircleShape),
+                        .background(BricxBrandBlue.copy(alpha = 0.1f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Default.Calculate,
                         null,
-                        tint = BrandBlue,
+                        tint = BricxBrandBlue,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -815,7 +795,7 @@ fun CounterRoiDialog(
                 Text(
                     "Counter Offer Calculator",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = BrandBlue,
+                    color = BricxBrandBlue,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(24.dp))
@@ -848,8 +828,8 @@ fun CounterRoiDialog(
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BrandBlue,
-                                focusedLabelColor = BrandBlue
+                                focusedBorderColor = BricxBrandBlue,
+                                focusedLabelColor = BricxBrandBlue
                             )
                         )
                     }
@@ -894,7 +874,7 @@ fun CounterRoiDialog(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
+                        colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue),
                         shape = RoundedCornerShape(12.dp)
                     ) { Text("Calculate") }
                 }
@@ -914,7 +894,7 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
             "Projected Cash Flow",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = BrandBlue
+            color = BricxBrandBlue
         )
         Spacer(modifier = Modifier.height(16.dp))
         Row(
@@ -968,7 +948,7 @@ fun CashFlowContent(cashFlows: List<CashFlowRow>) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         Card(
-            colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.15f)),
+            colors = CardDefaults.cardColors(containerColor = BricxBrandBlue.copy(alpha = 0.15f)),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -1009,8 +989,10 @@ fun RoiInput(
         value = value,
         onValueChange = { input ->
             if (isNumber) {
-                val filtered = input.filter { it.isDigit() || it == '.' }
-                if (filtered.count { it == '.' } <= 1) onValueChange(filtered)
+                val filtered =
+                    input.filter { it.isDigit() || it == '.' }; if (filtered.count { it == '.' } <= 1) onValueChange(
+                    filtered
+                )
             } else {
                 onValueChange(input)
             }
@@ -1032,7 +1014,7 @@ fun SectionHeader(title: String) {
     Text(
         title,
         style = MaterialTheme.typography.titleMedium,
-        color = BrandBlue,
+        color = BricxBrandBlue,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(top = 8.dp)
     )
@@ -1065,7 +1047,7 @@ fun RoiProgressBar(currentStep: Int, totalSteps: Int) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         for (i in 1..totalSteps) {
             val isActive = i <= currentStep
-            val color = if (isActive) BrandBlue else MaterialTheme.colorScheme.surfaceVariant
+            val color = if (isActive) BricxBrandBlue else MaterialTheme.colorScheme.surfaceVariant
             if (i > 1) HorizontalDivider(
                 modifier = Modifier.weight(1f),
                 thickness = 2.dp,

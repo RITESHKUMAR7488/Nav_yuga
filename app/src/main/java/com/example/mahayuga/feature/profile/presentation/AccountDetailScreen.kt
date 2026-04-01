@@ -25,13 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.ui.theme.BrandBlue
-import com.example.mahayuga.ui.theme.ErrorRed
-
-private val AccountBg = Color(0xFF0F172A)
-
-private val CardBg = Color(0xFF101920)
-private val TextGrey = Color(0xFF888888)
+import com.example.mahayuga.ui.theme.* // IMPORTING NEW COLORS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,12 +51,10 @@ fun AccountDetailsScreen(
                     onAccountDeleted()
                 }
             }
-
             is UiState.Failure -> {
                 Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
                 viewModel.resetActionState()
             }
-
             else -> {}
         }
     }
@@ -72,22 +64,16 @@ fun AccountDetailsScreen(
         val initials = if (user.name.isNotEmpty()) user.name.take(2).uppercase() else "YA"
 
         Scaffold(
-            containerColor = AccountBg,
+            containerColor = BricxBackground,
             topBar = {
                 TopAppBar(
-                    title = {
-                        Text(
-                            "My Account",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    },
+                    title = { Text("My Account", fontWeight = FontWeight.Bold, color = BricxTextPrimary) },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = BricxTextPrimary)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = AccountBg)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = BricxBackground)
                 )
             }
         ) { padding ->
@@ -103,51 +89,26 @@ fun AccountDetailsScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    border = BorderStroke(1.dp, Color(0xFF1F2B36))
+                    colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
+                    border = BorderStroke(1.dp, BricxBorder)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color(0xFF1F2B36), CircleShape),
+                            modifier = Modifier.size(48.dp).background(BricxBorder, CircleShape),
                             contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Person, null, tint = Color.White)
-                        }
+                        ) { Icon(Icons.Default.Person, null, tint = BricxTextPrimary) }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text(
-                                "Individual Account",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
+                            Text("Individual Account", style = MaterialTheme.typography.bodyLarge, color = BricxTextPrimary, fontWeight = FontWeight.Medium)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Surface(
-                                color = BrandBlue.copy(alpha = 0.2f),
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.CheckCircle,
-                                        null,
-                                        tint = BrandBlue,
-                                        modifier = Modifier.size(12.dp)
-                                    )
+                            Surface(color = BricxBrandBlue.copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp)) {
+                                Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.CheckCircle, null, tint = BricxBrandBlue, modifier = Modifier.size(12.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        "Verified",
-                                        color = BrandBlue,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Text("Verified", color = BricxBrandBlue, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -159,36 +120,16 @@ fun AccountDetailsScreen(
                     title = "Profile",
                     content = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF2A3441)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(initials, color = Color.White, fontWeight = FontWeight.Bold)
+                            Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(BricxSurfaceCardLight), contentAlignment = Alignment.Center) {
+                                Text(initials, color = BricxTextPrimary, fontWeight = FontWeight.Bold)
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    user.name,
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                Text(user.name, color = BricxTextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.CheckCircle,
-                                        null,
-                                        tint = BrandBlue,
-                                        modifier = Modifier.size(12.dp)
-                                    )
+                                    Icon(Icons.Default.CheckCircle, null, tint = BricxBrandBlue, modifier = Modifier.size(12.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        user.email,
-                                        color = TextGrey,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    Text(user.email, color = BricxTextSecondary, style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                         }
@@ -199,90 +140,34 @@ fun AccountDetailsScreen(
                 // 3. Phone
                 AccountInfoCard(
                     title = "Phone",
-                    content = {
-                        Text(
-                            text = user.phone.ifEmpty { "+91 -" },
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    },
+                    content = { Text(text = user.phone.ifEmpty { "+91 -" }, color = BricxTextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold) },
                     onUpdate = { showEditPhoneDialog = true }
                 )
-
-                // ⚡ REMOVED: Investment Limit Card
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 // 5. Close Account
-                TextButton(
-                    onClick = { showDeleteConfirmDialog = true },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        "Close account",
-                        color = ErrorRed,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                TextButton(onClick = { showDeleteConfirmDialog = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    Text("Close account", color = BricxDangerRed, style = MaterialTheme.typography.bodyLarge)
                 }
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
 
         // --- DIALOGS ---
-
         if (showEditProfileDialog) {
-            EditInfoDialog(
-                title = "Update Profile",
-                initialValue1 = user.name,
-                label1 = "Full Name",
-                initialValue2 = user.email,
-                label2 = "Email Address",
-                onDismiss = { showEditProfileDialog = false },
-                onSave = { newName, newEmail ->
-                    viewModel.updateUserProfile(newName, newEmail, user.phone)
-                    showEditProfileDialog = false
-                }
-            )
+            EditInfoDialog(title = "Update Profile", initialValue1 = user.name, label1 = "Full Name", initialValue2 = user.email, label2 = "Email Address", onDismiss = { showEditProfileDialog = false }, onSave = { newName, newEmail -> viewModel.updateUserProfile(newName, newEmail, user.phone); showEditProfileDialog = false })
         }
-
         if (showEditPhoneDialog) {
-            EditInfoDialog(
-                title = "Update Phone",
-                initialValue1 = user.phone,
-                label1 = "Phone Number",
-                isSingleField = true,
-                onDismiss = { showEditPhoneDialog = false },
-                onSave = { newPhone, _ ->
-                    viewModel.updateUserProfile(user.name, user.email, newPhone)
-                    showEditPhoneDialog = false
-                }
-            )
+            EditInfoDialog(title = "Update Phone", initialValue1 = user.phone, label1 = "Phone Number", isSingleField = true, onDismiss = { showEditPhoneDialog = false }, onSave = { newPhone, _ -> viewModel.updateUserProfile(user.name, user.email, newPhone); showEditPhoneDialog = false })
         }
-
         if (showDeleteConfirmDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirmDialog = false },
-                title = { Text("Close Account?", color = ErrorRed) },
-                text = {
-                    Text(
-                        "Are you sure you want to close your account? This action is permanent and cannot be undone.",
-                        color = Color.Black
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { viewModel.deleteAccount(); showDeleteConfirmDialog = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
-                    ) {
-                        Text("Yes, Close")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        showDeleteConfirmDialog = false
-                    }) { Text("Cancel") }
-                },
+                title = { Text("Close Account?", color = BricxDangerRed) },
+                text = { Text("Are you sure you want to close your account? This action is permanent and cannot be undone.", color = Color.Black) },
+                confirmButton = { Button(onClick = { viewModel.deleteAccount(); showDeleteConfirmDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = BricxDangerRed)) { Text("Yes, Close") } },
+                dismissButton = { TextButton(onClick = { showDeleteConfirmDialog = false }) { Text("Cancel") } },
                 containerColor = Color.White
             )
         }
@@ -291,104 +176,49 @@ fun AccountDetailsScreen(
 
 @Composable
 fun AccountInfoCard(title: String, content: @Composable () -> Unit, onUpdate: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBg),
-        border = BorderStroke(1.dp, Color(0xFF1F2B36))
-    ) {
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), border = BorderStroke(1.dp, BricxBorder)) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(title, color = TextGrey, style = MaterialTheme.typography.bodyMedium)
+            Text(title, color = BricxTextSecondary, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f)) { content() }
-                Button(
-                    onClick = onUpdate,
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp)
-                ) { Text("Update", fontSize = 12.sp) }
+                Button(onClick = onUpdate, colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), modifier = Modifier.height(36.dp)) { Text("Update", fontSize = 12.sp) }
             }
         }
     }
 }
 
 @Composable
-fun EditInfoDialog(
-    title: String,
-    initialValue1: String,
-    label1: String,
-    initialValue2: String = "",
-    label2: String = "",
-    isSingleField: Boolean = false,
-    onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit
-) {
+fun EditInfoDialog(title: String, initialValue1: String, label1: String, initialValue2: String = "", label2: String = "", isSingleField: Boolean = false, onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
     var val1 by remember { mutableStateOf(initialValue1) }
     var val2 by remember { mutableStateOf(initialValue2) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBg), // ⚡ Dark Background
-            border = BorderStroke(1.dp, Color(0xFF1F2B36))
-        ) {
+        Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), border = BorderStroke(1.dp, BricxBorder)) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = BricxTextPrimary)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Shared Text Field Colors
                 val textFieldColors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = BrandBlue,
-                    unfocusedBorderColor = Color(0xFF1F2B36),
-                    focusedLabelColor = BrandBlue,
-                    unfocusedLabelColor = TextGrey,
-                    cursorColor = BrandBlue
+                    focusedTextColor = BricxTextPrimary, unfocusedTextColor = BricxTextPrimary,
+                    focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                    focusedBorderColor = BricxBrandBlue, unfocusedBorderColor = BricxBorder,
+                    focusedLabelColor = BricxBrandBlue, unfocusedLabelColor = BricxTextSecondary,
+                    cursorColor = BricxBrandBlue
                 )
 
-                OutlinedTextField(
-                    value = val1,
-                    onValueChange = { val1 = it },
-                    label = { Text(label1) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors
-                )
+                OutlinedTextField(value = val1, onValueChange = { val1 = it }, label = { Text(label1) }, modifier = Modifier.fillMaxWidth(), colors = textFieldColors)
 
                 if (!isSingleField) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = val2,
-                        onValueChange = { val2 = it },
-                        label = { Text(label2) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = textFieldColors
-                    )
+                    OutlinedTextField(value = val2, onValueChange = { val2 = it }, label = { Text(label2) }, modifier = Modifier.fillMaxWidth(), colors = textFieldColors)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onDismiss) { Text("Cancel", color = TextGrey) }
+                    TextButton(onClick = onDismiss) { Text("Cancel", color = BricxTextSecondary) }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { onSave(val1, val2) },
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
-                    ) {
-                        Text("Save", color = Color.White)
-                    }
+                    Button(onClick = { onSave(val1, val2) }, colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue)) { Text("Save", color = BricxTextPrimary) }
                 }
             }
         }

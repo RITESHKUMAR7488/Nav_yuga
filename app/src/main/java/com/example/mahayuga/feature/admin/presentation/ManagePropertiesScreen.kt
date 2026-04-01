@@ -26,8 +26,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.ui.theme.BrandBlue
-import com.example.mahayuga.ui.theme.ErrorRed
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +55,7 @@ fun ManagePropertiesScreen(
         if (propertyToDelete != null) {
             AlertDialog(
                 onDismissRequest = { propertyToDelete = null },
-                icon = { Icon(Icons.Default.Warning, null, tint = ErrorRed) },
+                icon = { Icon(Icons.Default.Warning, null, tint = BricxDangerRed) }, // ⚡ UPDATED
                 title = { Text("Delete Property?") },
                 text = { Text("Are you sure you want to delete '${propertyToDelete?.title}'? This action cannot be undone.") },
                 confirmButton = {
@@ -65,7 +64,7 @@ fun ManagePropertiesScreen(
                             propertyToDelete?.let { viewModel.deleteProperty(it.id) }
                             propertyToDelete = null
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+                        colors = ButtonDefaults.buttonColors(containerColor = BricxDangerRed) // ⚡ UPDATED
                     ) {
                         Text("Yes, Delete")
                     }
@@ -122,7 +121,6 @@ fun ManagePropertyItem(
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // ASSET ID & TRENDING HEADER
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -133,24 +131,24 @@ fun ManagePropertyItem(
                     Icon(
                         Icons.Default.TrendingUp,
                         "Trending",
-                        tint = BrandBlue,
+                        tint = BricxBrandBlue,
                         modifier = Modifier.size(20.dp)
-                    )
+                    ) // ⚡ UPDATED
                 } else {
                     Spacer(Modifier.width(1.dp))
                 }
 
                 if (property.assetId.isNotEmpty()) {
                     Surface(
-                        color = BrandBlue.copy(alpha = 0.1f),
+                        color = BricxBrandBlue.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(4.dp)
-                    ) {
+                    ) { // ⚡ UPDATED
                         Text(
                             text = "ID: ${property.assetId}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = BrandBlue,
+                            color = BricxBrandBlue,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
+                        ) // ⚡ UPDATED
                     }
                 }
             }
@@ -177,10 +175,8 @@ fun ManagePropertyItem(
                     Text(
                         "₹${property.totalValuation}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = BrandBlue
-                    )
-
-                    // ⚡ NEW: Show Asset Manager
+                        color = BricxBrandBlue
+                    ) // ⚡ UPDATED
                     if (property.assetManager.isNotEmpty()) {
                         Text(
                             "Manager: ${property.assetManager}",
@@ -198,11 +194,19 @@ fun ManagePropertyItem(
 
                 Column {
                     IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, "Edit", tint = BrandBlue)
-                    }
+                        Icon(
+                            Icons.Default.Edit,
+                            "Edit",
+                            tint = BricxBrandBlue
+                        )
+                    } // ⚡ UPDATED
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, "Delete", tint = ErrorRed)
-                    }
+                        Icon(
+                            Icons.Default.Delete,
+                            "Delete",
+                            tint = BricxDangerRed
+                        )
+                    } // ⚡ UPDATED
                 }
             }
         }

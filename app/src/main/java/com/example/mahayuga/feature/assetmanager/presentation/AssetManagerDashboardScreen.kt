@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,7 +39,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.mahayuga.core.common.PlaceholderScreen
 import com.example.mahayuga.feature.assetmanager.presentation.benchmark.BenchmarkingScreen
 import com.example.mahayuga.feature.assetmanager.presentation.compliance.ComplianceScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
@@ -68,14 +68,12 @@ fun AssetManagerDashboardScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val amNavController = rememberNavController()
-    // Hoisted ViewModel so data persists when switching bottom nav tabs
     val amPostsViewModel: AmPostsViewModel = hiltViewModel()
 
     val navItems = listOf(
         AmNavItem("Dashboard", "am_grid", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
         AmNavItem("Assets", "am_ops", Icons.Filled.Apartment, Icons.Outlined.Apartment),
         AmNavItem("Post", "am_post", Icons.Filled.PostAdd, Icons.Outlined.PostAdd),
-        // Safe Core Icons
         AmNavItem("Compliance", "am_compliance", Icons.Default.Lock, Icons.Default.Lock),
         AmNavItem("Profile", "am_menu", Icons.Filled.Person, Icons.Outlined.Person)
     )
@@ -138,17 +136,13 @@ fun AssetManagerDashboardScreen(
             composable("am_investors") { InvestorScreen() }
             composable("am_finance") { FinanceScreen() }
 
-            // COMPLIANCE SCREEN
             composable("am_compliance") {
                 ComplianceScreen(
                     onNavigateBack = { amNavController.popBackStack() },
-                    onComplianceClick = { complianceId ->
-                        // Handle specific compliance item click if needed
-                    }
+                    onComplianceClick = { complianceId -> }
                 )
             }
 
-            // --- POSTS SECTION ---
             composable("am_post") {
                 AmPostsScreen(
                     viewModel = amPostsViewModel,
@@ -173,7 +167,6 @@ fun AssetManagerDashboardScreen(
                 )
             }
 
-            // ⚡ FIX: Calling the new AmProfileScreen with all required parameters
             composable("am_menu") {
                 com.example.mahayuga.feature.assetmanager.presentation.profile.AmProfileScreen(
                     onNavigateBack = { amNavController.popBackStack() },
@@ -191,7 +184,17 @@ fun AssetManagerDashboardScreen(
             composable("am_risk") { RiskScreen() }
             composable("am_fundraising") { FundraisingScreen() }
             composable("am_benchmark") { BenchmarkingScreen() }
-            composable("am_ai") { PlaceholderScreen("Panel 8: AI Insights\n(Coming Tier 3)") }
+
+            // ⚡ FIXED: Removed missing PlaceholderScreen reference
+            composable("am_ai") {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        "Panel 8: AI Insights\n(Coming Tier 3)",
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }
@@ -226,9 +229,7 @@ fun AssetManagerGridHub(onNavigateToModule: (String) -> Unit) {
         DashboardGridItem("AI Insights & Decision Engine", Icons.Rounded.AutoAwesome, "am_ai")
     )
 
-    val metallicBrush = Brush.linearGradient(
-        colors = listOf(MetallicStart, MetallicEnd)
-    )
+    val metallicBrush = Brush.linearGradient(colors = listOf(MetallicStart, MetallicEnd))
 
     Column(
         modifier = Modifier
@@ -260,9 +261,7 @@ fun AssetManagerGridHub(onNavigateToModule: (String) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(Icons.Rounded.Search, contentDescription = "Search", tint = Color.White)
 
-                BadgedBox(
-                    badge = { Badge(containerColor = Color.Red) { Text("3") } }
-                ) {
+                BadgedBox(badge = { Badge(containerColor = Color.Red) { Text("3") } }) {
                     Icon(
                         Icons.Rounded.Notifications,
                         contentDescription = "Notifications",
@@ -270,9 +269,7 @@ fun AssetManagerGridHub(onNavigateToModule: (String) -> Unit) {
                     )
                 }
 
-                BadgedBox(
-                    badge = { Badge(containerColor = AmAccent) { Text("1") } }
-                ) {
+                BadgedBox(badge = { Badge(containerColor = AmAccent) { Text("1") } }) {
                     Icon(
                         Icons.Rounded.MailOutline,
                         contentDescription = "Messages",
@@ -364,12 +361,7 @@ fun AssetManagerGridHub(onNavigateToModule: (String) -> Unit) {
     }
 }
 
-data class DashboardGridItem(
-    val title: String,
-    val icon: ImageVector,
-    val route: String
-)
-
+data class DashboardGridItem(val title: String, val icon: ImageVector, val route: String)
 data class AmNavItem(
     val label: String,
     val route: String,

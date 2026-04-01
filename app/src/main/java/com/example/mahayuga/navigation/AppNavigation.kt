@@ -1,10 +1,16 @@
 // main/java/com/example/mahayuga/navigation/AppNavigation.kt
 package com.example.mahayuga.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -12,7 +18,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.mahayuga.core.common.PlaceholderScreen
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.admin.presentation.*
 import com.example.mahayuga.feature.assetmanager.presentation.AssetManagerDashboardScreen
@@ -34,8 +39,6 @@ import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.profile.presentation.WalletScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
-
-// ⚡ ADDED PHASE 2 IMPORTS
 import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.navyuga.presentation.notifications.NotificationsScreen
 import com.example.mahayuga.feature.navyuga.presentation.messages.MessagesScreen
@@ -150,7 +153,7 @@ fun AppNavigation(
 
         composable("roi_calculator") { RoiScreen(onBackClick = { navController.popBackStack() }) }
 
-        // ⚡ REPLACED THE OLD FIREBASE SEARCH ROUTE WITH THE 3 NEW PHASE 2 ROUTES
+        // SEARCH ROUTE WITH THE 3 NEW PHASE 2 ROUTES
         composable("search_screen") {
             SearchScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -249,5 +252,13 @@ fun AppNavigation(
         composable(AssetManagerDestinations.DASHBOARD) {
             AssetManagerDashboardScreen(rootNavController = navController)
         }
+    }
+}
+
+// ⚡ ADDED MISSING PLACEHOLDER COMPOSABLE
+@Composable
+fun PlaceholderScreen(message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = message, color = Color.White)
     }
 }

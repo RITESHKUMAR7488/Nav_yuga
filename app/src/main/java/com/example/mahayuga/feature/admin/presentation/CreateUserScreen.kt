@@ -22,7 +22,7 @@ import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.auth.data.model.AssetManagerModel
 import com.example.mahayuga.feature.auth.data.model.UserModel
-import com.example.mahayuga.ui.theme.*
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +33,6 @@ fun CreateUserScreen(
     val investorRequests by viewModel.requestsState.collectAsState()
     val partnerRequests by viewModel.amRequestsState.collectAsState()
 
-    // Tab State: 0 = Investors, 1 = Partners
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
@@ -54,15 +53,16 @@ fun CreateUserScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
 
-        Column(modifier = Modifier
-            .padding(innerPadding)
-            .fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
 
-            // --- TABS ---
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = MaterialTheme.colorScheme.background,
-                contentColor = BrandBlue
+                contentColor = BricxBrandBlue // ⚡ UPDATED
             ) {
                 Tab(
                     selected = selectedTab == 0,
@@ -76,10 +76,11 @@ fun CreateUserScreen(
                 )
             }
 
-            // --- CONTENT ---
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
                 if (selectedTab == 0) {
                     InvestorList(investorRequests, viewModel)
                 } else {
@@ -94,7 +95,7 @@ fun CreateUserScreen(
 fun InvestorList(state: UiState<List<UserModel>>, viewModel: AdminViewModel) {
     when (state) {
         is UiState.Loading -> CircularProgressIndicator()
-        is UiState.Failure -> Text("Error: ${state.message}", color = ErrorRed)
+        is UiState.Failure -> Text("Error: ${state.message}", color = BricxDangerRed) // ⚡ UPDATED
         is UiState.Success -> {
             val requests = state.data
             if (requests.isEmpty()) {
@@ -122,7 +123,7 @@ fun InvestorList(state: UiState<List<UserModel>>, viewModel: AdminViewModel) {
 fun PartnerList(state: UiState<List<AssetManagerModel>>, viewModel: AdminViewModel) {
     when (state) {
         is UiState.Loading -> CircularProgressIndicator()
-        is UiState.Failure -> Text("Error: ${state.message}", color = ErrorRed)
+        is UiState.Failure -> Text("Error: ${state.message}", color = BricxDangerRed) // ⚡ UPDATED
         is UiState.Success -> {
             val requests = state.data
             if (requests.isEmpty()) {
@@ -168,7 +169,7 @@ fun RequestItem(
                 Icon(
                     imageVector = if (isInvestor) Icons.Default.Person else Icons.Default.Business,
                     contentDescription = null,
-                    tint = BrandBlue
+                    tint = BricxBrandBlue // ⚡ UPDATED
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -193,7 +194,7 @@ fun RequestItem(
                         if (isInvestor) showDialog = true else onApprove("asset_manager")
                     },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxSuccessGreen) // ⚡ UPDATED
                 ) {
                     Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -203,7 +204,7 @@ fun RequestItem(
                 OutlinedButton(
                     onClick = onReject,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = BricxDangerRed) // ⚡ UPDATED
                 ) {
                     Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))

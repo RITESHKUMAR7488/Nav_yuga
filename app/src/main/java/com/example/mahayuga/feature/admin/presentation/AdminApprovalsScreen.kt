@@ -19,8 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.ui.theme.SuccessGreen
-import com.example.mahayuga.ui.theme.ErrorRed
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,7 +29,6 @@ fun AdminApprovalsScreen(
 ) {
     val pendingState by viewModel.pendingPropertiesState.collectAsState()
 
-    // ⚡ Trigger fetch on entry
     LaunchedEffect(Unit) {
         viewModel.fetchPendingProperties()
     }
@@ -57,7 +55,7 @@ fun AdminApprovalsScreen(
                 }
                 is UiState.Failure -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: ${(pendingState as UiState.Failure).message}", color = Color.Red)
+                        Text("Error: ${(pendingState as UiState.Failure).message}", color = BricxDangerRed)
                     }
                 }
                 is UiState.Success -> {
@@ -107,7 +105,7 @@ fun PendingAssetCard(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = onReject,
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed),
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxDangerRed), // ⚡ UPDATED
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp))
@@ -117,7 +115,7 @@ fun PendingAssetCard(
 
                 Button(
                     onClick = onApprove,
-                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxSuccessGreen), // ⚡ UPDATED
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
