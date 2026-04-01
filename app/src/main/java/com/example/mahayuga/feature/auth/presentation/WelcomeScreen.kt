@@ -4,37 +4,30 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.mahayuga.R
 import kotlinx.coroutines.delay
 
-// Theme Colors
 private val NavyBackground = Color(0xFF0F172A)
 private val NavyLightSurface = Color(0xFF1E293B)
 private val TextWhite = Color(0xFFFFFFFF)
-private val BrandBlue = Color(0xFF2979FF)
 
 @Composable
 fun WelcomeScreen(navController: NavController) {
     var showContent by remember { mutableStateOf(false) }
 
-    // Typing effect
     val textToType = "Welcome To"
     var displayedText by remember { mutableStateOf("") }
 
@@ -56,7 +49,6 @@ fun WelcomeScreen(navController: NavController) {
     ) {
         Spacer(modifier = Modifier.weight(1f))
 
-        // 1. Text: "Welcome To" (Animated)
         Text(
             text = displayedText,
             style = MaterialTheme.typography.headlineMedium.copy(
@@ -68,85 +60,63 @@ fun WelcomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. Logo: Navyuga
         AnimatedVisibility(
             visible = showContent,
             enter = fadeIn(tween(1000)) + slideInVertically()
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(id = R.drawable.navyuga),
-                    contentDescription = "Navyuga Logo",
-                    modifier = Modifier.size(180.dp)
+            // ⚡ BRICX BRANDING REPLACING IMAGE LOGO
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "BRICX",
+                    color = Color.White,
+                    fontSize = 56.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = FontFamily.SansSerif,
+                    letterSpacing = 0.15.em,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "SMART REAL ESTATE INVESTING",
+                    color = Color(0xFF14B8A6),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.1.em,
+                    textAlign = TextAlign.Center
                 )
             }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 4. Buttons
         AnimatedVisibility(
             visible = showContent,
-            enter = fadeIn(
-                tween(
-                    1000,
-                    delayMillis = 500
-                )
-            ) + slideInVertically(initialOffsetY = { 50 })
+            enter = fadeIn(tween(1000, delayMillis = 500)) + slideInVertically(initialOffsetY = { 50 })
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Login Button
                 Button(
-                    onClick = {
-                        navController.navigate("login")
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = TextWhite,
-                        contentColor = NavyBackground
-                    ),
+                    onClick = { navController.navigate("login") },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TextWhite, contentColor = NavyBackground),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Log in", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
 
-                // Sign Up Button (Investors Only)
                 Button(
-                    onClick = {
-                        // Go to Investor Register
-                        navController.navigate("register")
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = NavyLightSurface,
-                        contentColor = TextWhite
-                    ),
+                    onClick = { navController.navigate("register") },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = NavyLightSurface, contentColor = TextWhite),
                     shape = MaterialTheme.shapes.medium,
                     elevation = ButtonDefaults.buttonElevation(0.dp)
                 ) {
-                    Text(
-                        text = "Sign up",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Text("Sign up", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
         Spacer(modifier = Modifier.height(40.dp))
-    }
-}
-
-@Preview
-@Composable
-fun WelcomePreview() {
-    MaterialTheme {
-        WelcomeScreen(rememberNavController())
     }
 }

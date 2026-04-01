@@ -67,7 +67,6 @@ private val TradeCardBg = Color(0xFF0F1722)
 private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF8B9BB4)
 private val BorderDark = Color(0xFF1A2A40)
-
 private val BuyTeal = Color(0xFF14B8A6)
 private val SellOrange = Color(0xFFF97316)
 
@@ -105,8 +104,8 @@ fun HomeScreen(
     onNavigateToSmReitDetail: (String) -> Unit,
     onNavigateToReitDetail: (String) -> Unit,
     onNavigateToSearch: () -> Unit,
-    onNavigateToNotifications: () -> Unit = {}, // ⚡ Added Parameter
-    onNavigateToMessages: () -> Unit = {}, // ⚡ Added Parameter
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {},
     scrollToTopTrigger: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -116,11 +115,8 @@ fun HomeScreen(
 
     val tabs = listOf("SM REITS", "REITS")
     val pagerState = rememberPagerState(pageCount = { tabs.size })
-
     var isTickerOpen by remember { mutableStateOf(false) }
-
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -131,18 +127,18 @@ fun HomeScreen(
             Column(modifier = Modifier.background(TradeBg)) {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
                             Icon(
-                                imageVector = Icons.Outlined.Home,
+                                Icons.Outlined.Home,
                                 contentDescription = "Home Icon",
                                 tint = BuyTeal,
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(32.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "Home",
+                                "Home",
                                 color = TextWhite,
-                                fontSize = 24.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -152,12 +148,9 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.padding(end = 16.dp)
                         ) {
-                            GroupedHeaderIcons(
-                                listOf(Icons.Outlined.Search to { onNavigateToSearch() })
-                            )
+                            GroupedHeaderIcons(listOf(Icons.Outlined.Search to { onNavigateToSearch() }))
                             GroupedHeaderIcons(
                                 listOf(
-                                    // ⚡ FIX: Now actually triggering the lambdas instead of Toast
                                     Icons.Outlined.Notifications to { onNavigateToNotifications() },
                                     Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
                                 )
@@ -170,17 +163,16 @@ fun HomeScreen(
                     ),
                     scrollBehavior = scrollBehavior
                 )
-
                 HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
-
                 TabRow(
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = TradeBg,
                     contentColor = TextWhite,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                            color = BuyTeal
+                            Modifier.tabIndicatorOffset(
+                                tabPositions[pagerState.currentPage]
+                            ), color = BuyTeal
                         )
                     },
                     divider = { HorizontalDivider(color = BorderDark.copy(alpha = 0.5f)) }
@@ -203,39 +195,31 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
                     color = BuyTeal,
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
                         onRefresh = {
                             coroutineScope.launch {
-                                isRefreshing = true
-                                delay(1000)
-                                isRefreshing = false
+                                isRefreshing = true; delay(1000); isRefreshing = false
                             }
                         },
                         state = pullToRefreshState
                     ) {
                         val listState = rememberLazyListState()
-
                         LaunchedEffect(scrollToTopTrigger) {
-                            if (scrollToTopTrigger) listState.animateScrollToItem(0)
+                            if (scrollToTopTrigger) listState.animateScrollToItem(
+                                0
+                            )
                         }
-
                         LazyColumn(
                             state = listState,
                             modifier = Modifier
@@ -252,12 +236,10 @@ fun HomeScreen(
                             val allAssets =
                                 uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
                             val smReitsList = listOf("PSTITANIA", "PSPLATINA")
-
-                            val filteredAssets = if (page == 0) {
-                                allAssets.filter { smReitsList.contains(it.symbol) }
-                            } else {
-                                allAssets.filterNot { smReitsList.contains(it.symbol) }
-                            }
+                            val filteredAssets =
+                                if (page == 0) allAssets.filter { smReitsList.contains(it.symbol) } else allAssets.filterNot {
+                                    smReitsList.contains(it.symbol)
+                                }
 
                             if (filteredAssets.isEmpty()) {
                                 item {
@@ -271,20 +253,19 @@ fun HomeScreen(
                             } else {
                                 items(filteredAssets, key = { it.symbol }) { quote ->
                                     val isSaved = uiState.watchlistedSymbols.contains(quote.symbol)
-
                                     LiveAssetTradingCard(
-                                        quote = quote,
-                                        isSmReit = page == 0,
-                                        isSaved = isSaved,
+                                        quote = quote, isSmReit = page == 0, isSaved = isSaved,
                                         onCardClick = {
-                                            if (page == 0) onNavigateToSmReitDetail(quote.symbol)
-                                            else onNavigateToReitDetail(quote.symbol)
+                                            if (page == 0) onNavigateToSmReitDetail(
+                                                quote.symbol
+                                            ) else onNavigateToReitDetail(quote.symbol)
                                         },
                                         onSaveClick = {
-                                            viewModel.toggleWatchlist(quote.symbol)
-                                            val msg =
-                                                if (isSaved) "Removed from Watchlist" else "Added to Watchlist"
-                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                            viewModel.toggleWatchlist(quote.symbol); Toast.makeText(
+                                            context,
+                                            if (isSaved) "Removed from Watchlist" else "Added to Watchlist",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                         },
                                         onShareClick = {
                                             Toast.makeText(
@@ -301,11 +282,7 @@ fun HomeScreen(
                 }
             }
 
-            AnimatedVisibility(
-                visible = isTickerOpen,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
+            AnimatedVisibility(visible = isTickerOpen, enter = fadeIn(), exit = fadeOut()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -313,14 +290,10 @@ fun HomeScreen(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { isTickerOpen = false }
-                )
+                        ) { isTickerOpen = false })
             }
 
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.CenterEnd
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
                 if (!isTickerOpen) {
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
@@ -391,9 +364,7 @@ fun HomeScreen(
                                 )
                             }
                             HorizontalDivider(color = BorderDark.copy(alpha = 0.8f))
-
                             val tickerListState = rememberLazyListState()
-
                             LaunchedEffect(isTickerOpen) {
                                 if (isTickerOpen) {
                                     while (isActive) {
@@ -407,10 +378,8 @@ fun HomeScreen(
                                     }
                                 }
                             }
-
                             val tickerQuotes =
                                 uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
-
                             LazyColumn(
                                 state = tickerListState,
                                 modifier = Modifier.fillMaxSize(),
@@ -420,9 +389,6 @@ fun HomeScreen(
                                 if (tickerQuotes.isNotEmpty()) {
                                     items(10000) { index ->
                                         val quote = tickerQuotes[index % tickerQuotes.size]
-                                        val displayName =
-                                            quote.name.split(",")[0].take(10).uppercase(Locale.ROOT)
-
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -430,7 +396,8 @@ fun HomeScreen(
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Text(
-                                                displayName,
+                                                quote.name.split(",")[0].take(10)
+                                                    .uppercase(Locale.ROOT),
                                                 color = TextWhite,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
@@ -438,7 +405,6 @@ fun HomeScreen(
                                                 overflow = TextOverflow.Ellipsis
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
-
                                             RealtimeFlickerText(
                                                 text = "₹${
                                                     String.format(
@@ -451,7 +417,6 @@ fun HomeScreen(
                                                 defaultColor = TextWhite,
                                                 textStyle = TextStyle(fontSize = 12.sp)
                                             )
-
                                             Text(
                                                 "${if (quote.isPositive) "+" else ""}${
                                                     String.format(
@@ -481,14 +446,12 @@ fun HomeScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LiveAssetTradingCard(
-    quote: MarketQuote,
-    isSmReit: Boolean,
-    isSaved: Boolean,
-    onCardClick: () -> Unit,
-    onSaveClick: () -> Unit,
-    onShareClick: () -> Unit
+    quote: MarketQuote, isSmReit: Boolean, isSaved: Boolean,
+    onCardClick: () -> Unit, onSaveClick: () -> Unit, onShareClick: () -> Unit
 ) {
     val priceColor = if (quote.isPositive) BuyTeal else SellOrange
+    // ⚡ FIX 2: Added State for NSE/BSE Toggle
+    var isNse by remember { mutableStateOf(true) }
 
     val assetData = when (quote.symbol) {
         "PSTITANIA" -> Triple(
@@ -533,24 +496,8 @@ fun LiveAssetTradingCard(
             listOf("https://images.unsplash.com/photo-1552566626-52f8b828add9")
         )
     }
-
     val (displayName, managerName, images) = assetData
     val pagerState = rememberPagerState(pageCount = { images.size })
-
-    val locationText = if (isSmReit) {
-        when (quote.symbol) {
-            "PSTITANIA" -> "Bandra Kurla Complex, Mumbai"
-            "PSPLATINA" -> "Whitefield, Bangalore"
-            else -> "Mumbai, Maharashtra"
-        }
-    } else {
-        when (quote.symbol) {
-            "EMBASSY" -> "Bangalore, Pune, Mumbai"
-            "MINDSPACE" -> "Mumbai, Hyderabad, Chennai"
-            "NEXUS" -> "Delhi, Mumbai, Chandigarh"
-            else -> "Multiple Cities"
-        }
-    }
 
     Card(
         modifier = Modifier
@@ -561,7 +508,6 @@ fun LiveAssetTradingCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -578,14 +524,13 @@ fun LiveAssetTradingCard(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = locationText,
+                        text = if (isSmReit) "Mumbai, Maharashtra" else "Multiple Cities",
                         color = TextGrey,
                         fontSize = 12.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = onShareClick,
@@ -595,7 +540,7 @@ fun LiveAssetTradingCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "Share Property",
+                            contentDescription = "Share",
                             tint = TextGrey,
                             modifier = Modifier.size(18.dp)
                         )
@@ -609,15 +554,13 @@ fun LiveAssetTradingCard(
                     ) {
                         Icon(
                             imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Default.BookmarkBorder,
-                            contentDescription = "Save to Watchlist",
+                            contentDescription = "Save",
                             tint = if (isSaved) BuyTeal else TextGrey
                         )
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -625,13 +568,16 @@ fun LiveAssetTradingCard(
             ) {
                 Column {
                     RealtimeFlickerText(
-                        text = "₹${String.format(Locale.US, "%,.2f", quote.currentPrice)}",
+                        text = "₹${
+                            String.format(
+                                Locale.US,
+                                "%,.2f",
+                                quote.currentPrice
+                            )
+                        }",
                         currentValue = quote.currentPrice,
                         defaultColor = TextWhite,
-                        textStyle = TextStyle(
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        textStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -641,10 +587,7 @@ fun LiveAssetTradingCard(
                                     "%.2f",
                                     Math.abs(quote.priceChange)
                                 )
-                            }",
-                            color = priceColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
+                            }", color = priceColor, fontSize = 14.sp, fontWeight = FontWeight.Medium
                         )
                         Text(" | ", color = TextGrey, fontSize = 12.sp)
                         Text(
@@ -654,22 +597,21 @@ fun LiveAssetTradingCard(
                                     "%.2f",
                                     quote.percentageChange
                                 )
-                            }%",
-                            color = priceColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            }%", color = priceColor, fontSize = 14.sp, fontWeight = FontWeight.Bold
                         )
                     }
                 }
-
+                // ⚡ FIX 2: Interactive NSE/BSE Toggle
                 Row(
                     modifier = Modifier
                         .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { isNse = !isNse }
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "NSE",
+                        text = if (isNse) "NSE" else "BSE",
                         color = TextWhite,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -683,9 +625,7 @@ fun LiveAssetTradingCard(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -699,36 +639,13 @@ fun LiveAssetTradingCard(
                 ) { page ->
                     AsyncImage(
                         model = images.getOrElse(page) { images.first() },
-                        contentDescription = "Property Image",
+                        contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-
-                Row(
-                    Modifier
-                        .height(20.dp)
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    repeat(pagerState.pageCount) { iteration ->
-                        val color =
-                            if (pagerState.currentPage == iteration) BuyTeal else Color.LightGray
-                        Box(
-                            modifier = Modifier
-                                .padding(2.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                                .size(6.dp)
-                        )
-                    }
-                }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -740,14 +657,8 @@ fun LiveAssetTradingCard(
                         color = TextWhite,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Asset Manager",
-                        color = TextGrey,
-                        fontSize = 12.sp
-                    )
+                    ); Text(text = "Asset Manager", color = TextGrey, fontSize = 12.sp)
                 }
-
                 Column(
                     modifier = Modifier
                         .border(1.dp, BorderDark, RoundedCornerShape(4.dp))

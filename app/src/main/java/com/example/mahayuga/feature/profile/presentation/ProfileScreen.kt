@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -45,6 +46,8 @@ private val AccentTeal = Color(0xFF00BFA5)
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {},
     onNavigateToLiked: () -> Unit,
     onNavigateToAccount: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -112,20 +115,8 @@ fun ProfileScreen(
                     )
                     GroupedHeaderIcons(
                         listOf(
-                            Icons.AutoMirrored.Filled.Send to {
-                                Toast.makeText(
-                                    context,
-                                    "Messages coming soon",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            },
-                            Icons.Outlined.Notifications to {
-                                Toast.makeText(
-                                    context,
-                                    "No new notifications",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            Icons.Outlined.Notifications to { onNavigateToNotifications() },
+                            Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
                         )
                     )
                 }
@@ -244,7 +235,7 @@ fun ProfileScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(100.dp)) // Bottom padding for navigation bar
+        Spacer(modifier = Modifier.height(180.dp)) // Bottom padding for navigation bar
     }
 }
 

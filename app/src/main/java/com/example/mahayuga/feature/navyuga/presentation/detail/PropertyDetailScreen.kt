@@ -2,7 +2,9 @@
 package com.example.mahayuga.feature.navyuga.presentation.detail
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +20,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Warning
@@ -28,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -49,12 +56,14 @@ private val SellRed = Color(0xFFE53935)
 fun PropertyDetailScreen(
     propertyId: String,
     onNavigateBack: () -> Unit,
+    onRoiClick: () -> Unit = {},
     viewModel: PropertyDetailViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.state.collectAsState()
 
     var isSaved by remember { mutableStateOf(false) }
+    var isNse by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Estate", "Finance", "News", "Media")
 
@@ -117,15 +126,9 @@ fun PropertyDetailScreen(
             )
         },
         floatingActionButton = {
-            if (selectedTab == 1) { // ⚡ Finance Tab
+            if (selectedTab == 1) {
                 FloatingActionButton(
-                    onClick = {
-                        Toast.makeText(
-                            context,
-                            "Calculating Net Dividend...",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
+                    onClick = onRoiClick,
                     containerColor = TradeCardBg,
                     contentColor = BuyTeal,
                     shape = CircleShape,
@@ -136,7 +139,6 @@ fun PropertyDetailScreen(
             }
         },
         bottomBar = {
-            // ⚡ Fixed Bottom Bar for SM REIT
             Surface(
                 color = TradeCardBg,
                 shadowElevation = 8.dp,
@@ -235,7 +237,7 @@ fun PropertyDetailScreen(
                         .padding(paddingValues),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    // Header Details (Persistent)
+                    // Header Details
                     item {
                         Column(modifier = Modifier
                             .fillMaxWidth()
@@ -290,11 +292,13 @@ fun PropertyDetailScreen(
                                 Row(
                                     modifier = Modifier
                                         .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { isNse = !isNse }
                                         .padding(horizontal = 8.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "NSE",
+                                        text = if (isNse) "NSE" else "BSE",
                                         color = TextWhite,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
@@ -343,9 +347,9 @@ fun PropertyDetailScreen(
                         }
                     }
 
-                    // Tab Content Switching
+                    // Tab Content
                     when (selectedTab) {
-                        0 -> { // ⚡ ESTATE TAB for SM REIT
+                        0 -> { // ESTATE TAB
                             item {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     if (property.imageUrls.isNotEmpty()) {
@@ -392,7 +396,6 @@ fun PropertyDetailScreen(
                                         Spacer(modifier = Modifier.height(24.dp))
                                     }
 
-                                    // Property Details Section
                                     SectionHeader("Property Details")
                                     DetailGrid(
                                         listOf(
@@ -408,7 +411,6 @@ fun PropertyDetailScreen(
 
                                     Spacer(modifier = Modifier.height(24.dp))
 
-                                    // Asset Manager Details
                                     SectionHeader("Asset Manager Details")
                                     DetailGrid(
                                         listOf(
@@ -420,12 +422,11 @@ fun PropertyDetailScreen(
 
                                     Spacer(modifier = Modifier.height(24.dp))
 
-                                    // Lease Details
                                     SectionHeader("Lease Details")
                                     DetailGrid(
                                         listOf(
                                             "Tenants" to property.tenantName.ifEmpty { "Multiple" },
-                                            "Occupancy" to "${property.fundedPercent}%", // Mocking funded as occupancy for UI
+                                            "Occupancy" to "${property.fundedPercent}%",
                                             "Escalations" to property.escalation,
                                             "Annual Rent" to "₹${property.grossAnnualRent}",
                                             "Property Taxes" to "₹${property.annualPropertyTax}",
@@ -436,7 +437,6 @@ fun PropertyDetailScreen(
 
                                     Spacer(modifier = Modifier.height(24.dp))
 
-                                    // Financial Breakdown
                                     SectionHeader("Financial Breakdown")
                                     Text(
                                         "Net Dividend Yield: ${property.roi}%",
@@ -445,14 +445,13 @@ fun PropertyDetailScreen(
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        "Calculated based on current trading price.",
+                                        "Calculated based on current stock price.",
                                         color = TextGrey,
                                         fontSize = 12.sp
                                     )
 
                                     Spacer(modifier = Modifier.height(24.dp))
 
-                                    // Description
                                     SectionHeader("Description")
                                     Text(
                                         text = property.description,
@@ -464,51 +463,128 @@ fun PropertyDetailScreen(
                             }
                         }
 
-                        1 -> { // ⚡ FINANCE TAB
+                        1 -> { // FINANCE TAB
                             item {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        "Financial Updates",
-                                        color = TextWhite,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = CardDefaults.cardColors(containerColor = TradeCardBg),
-                                        border = BorderStroke(1.dp, BorderDark)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                            .background(TradeCardBg, RoundedCornerShape(12.dp))
+                                            .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
+                                            .padding(12.dp)
                                     ) {
-                                        Column(modifier = Modifier.padding(16.dp)) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text(
-                                                    "Q3 Dividend Declared",
-                                                    color = TextWhite,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Text(
-                                                    "₹4.50/unit",
-                                                    color = BuyTeal,
-                                                    fontWeight = FontWeight.Bold
-                                                )
+                                        Icon(
+                                            imageVector = Icons.Default.Fullscreen,
+                                            contentDescription = "Expand Graph",
+                                            tint = TextGrey,
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .size(24.dp)
+                                                .clickable {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Full Graph",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                        )
+
+                                        // Mock Graph for SM REIT Finance
+                                        Canvas(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(end = 40.dp, top = 20.dp, bottom = 20.dp)
+                                        ) {
+                                            val path = Path()
+                                            val points = listOf(
+                                                420f,
+                                                415f,
+                                                425f,
+                                                430f,
+                                                428f,
+                                                435f,
+                                                440f,
+                                                438f,
+                                                445f,
+                                                450f
+                                            )
+                                            val stepX = size.width / (points.size - 1)
+
+                                            points.forEachIndexed { index, yValue ->
+                                                val x = index * stepX
+                                                val normalizedY =
+                                                    1f - ((yValue - 400f) / 100f).coerceIn(0f, 1f)
+                                                val y = normalizedY * size.height
+                                                if (index == 0) path.moveTo(
+                                                    x,
+                                                    y
+                                                ) else path.lineTo(x, y)
                                             }
-                                            Spacer(modifier = Modifier.height(8.dp))
+                                            drawPath(
+                                                path,
+                                                color = priceColor,
+                                                style = Stroke(width = 4f)
+                                            )
+                                        }
+
+                                        Column(
+                                            modifier = Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .fillMaxHeight()
+                                                .padding(top = 20.dp, bottom = 20.dp),
+                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            horizontalAlignment = Alignment.End
+                                        ) {
+                                            Text("₹500", color = TextGrey, fontSize = 10.sp)
+                                            Text("₹450", color = TextGrey, fontSize = 10.sp)
+                                            Text("₹400", color = TextGrey, fontSize = 10.sp)
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        listOf("1D", "1W", "1M", "1Y", "5Y").forEach { tf ->
                                             Text(
-                                                "Record Date: 15 Nov 2025",
-                                                color = TextGrey,
-                                                fontSize = 12.sp
+                                                text = tf,
+                                                color = if (tf == "1D") BuyTeal else TextGrey,
+                                                fontWeight = if (tf == "1D") FontWeight.Bold else FontWeight.Normal,
+                                                modifier = Modifier.clickable { }
                                             )
                                         }
                                     }
+
+                                    Spacer(modifier = Modifier.height(24.dp))
+
+                                    ExpandableFinanceSection(
+                                        title = "Performance",
+                                        data = listOf(
+                                            "Today's Low" to "₹995.00",
+                                            "Today's High" to "₹1,015.00",
+                                            "Open" to "₹1,000.00",
+                                            "Prev. Close" to "₹998.50",
+                                            "Volume" to "450K",
+                                            "Avg. Traded Price" to "₹1,005.20"
+                                        )
+                                    )
+
+                                    ExpandableFinanceSection(
+                                        title = "Market Fundamentals",
+                                        data = listOf(
+                                            "Market Cap" to "₹1,200 Cr",
+                                            "P/E Ratio" to "18.5",
+                                            "P/B Ratio" to "1.1",
+                                            "Dividend Yield" to "${property.roi}%"
+                                        )
+                                    )
                                 }
                             }
                         }
 
-                        2 -> { // ⚡ NEWS TAB
+                        2 -> { // NEWS TAB
                             item {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
@@ -546,7 +622,7 @@ fun PropertyDetailScreen(
                             }
                         }
 
-                        3 -> { // ⚡ MEDIA TAB
+                        3 -> { // MEDIA TAB
                             item {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
@@ -592,7 +668,6 @@ fun DetailGrid(items: List<Pair<String, String>>) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Iterate through items, putting two in each row
         for (i in items.indices step 2) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -619,10 +694,60 @@ fun DetailGrid(items: List<Pair<String, String>>) {
                             fontWeight = FontWeight.Bold
                         )
                     }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                } else Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpandableFinanceSection(title: String, data: List<Pair<String, String>>) {
+    var isExpanded by remember { mutableStateOf(false) }
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { isExpanded = !isExpanded }
+                .padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = title, color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = "Expand",
+                tint = TextGrey
+            )
+        }
+        AnimatedVisibility(visible = isExpanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 12.dp, start = 4.dp, end = 4.dp)
+            ) {
+                data.chunked(2).forEach { rowItems ->
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)) {
+                        rowItems.forEach { item ->
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.first, color = TextGrey, fontSize = 12.sp)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    item.second,
+                                    color = TextWhite,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
+        HorizontalDivider(color = BorderDark, modifier = Modifier.padding(top = 4.dp))
     }
 }

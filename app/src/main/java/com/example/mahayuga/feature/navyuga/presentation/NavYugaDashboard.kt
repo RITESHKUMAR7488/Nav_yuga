@@ -1,4 +1,3 @@
-// main/java/com/example/mahayuga/feature/navyuga/presentation/NavYugaDashboard.kt
 package com.example.mahayuga.feature.navyuga.presentation
 
 import androidx.compose.foundation.background
@@ -37,7 +36,9 @@ import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScre
 private val NavyBlue = Color(0xFF080F18)
 private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
 private val SelectedIconColor = Color(0xFF14B8A6)
-private val FloatingNavBg = Color(0xFF0F1722).copy(alpha = 0.65f)
+
+// ⚡ FIX 1: Opaque background with 0.95f
+private val FloatingNavBg = Color(0xFF0F1722).copy(alpha = 0.95f)
 private val SelectedOvalBg = Color(0xFF000000).copy(alpha = 0.4f)
 
 @Composable
@@ -68,11 +69,9 @@ fun NavYugaDashboard(
 
     var homeScrollTrigger by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(NavyBlue)
-    ) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(NavyBlue)) {
         NavHost(
             navController = navController,
             startDestination = "ay_home",
@@ -82,24 +81,20 @@ fun NavYugaDashboard(
                 HomeScreen(
                     onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") },
-                    // ⚡ FIX: Directly triggering the exact Phase 2 routes in AppNavigation
                     onNavigateToSearch = { rootNavController.navigate("search_screen") },
                     onNavigateToNotifications = { rootNavController.navigate("notifications_screen") },
                     onNavigateToMessages = { rootNavController.navigate("messages_screen") },
                     scrollToTopTrigger = homeScrollTrigger
                 )
             }
-
             composable("ay_watchlist") {
                 WatchlistScreen(
                     onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
                     onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") }
                 )
             }
-
             composable("ay_portfolio") { PortfolioScreen() }
             composable("ay_discover") { DiscoverScreen() }
-
             composable("ay_profile") {
                 ProfileScreen(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },
@@ -148,9 +143,8 @@ fun NavYugaDashboard(
                                 indication = null,
                                 onClick = {
                                     if (isSelected) {
-                                        if (item.route == "ay_home") {
-                                            homeScrollTrigger = !homeScrollTrigger
-                                        }
+                                        if (item.route == "ay_home") homeScrollTrigger =
+                                            !homeScrollTrigger
                                     } else {
                                         navController.navigate(item.route) {
                                             popUpTo(navController.graph.findStartDestination().id) {

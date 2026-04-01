@@ -2,6 +2,7 @@
 package com.example.mahayuga.feature.navyuga.presentation.trade
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
@@ -50,13 +53,14 @@ private val TextWhite = Color(0xFFFFFFFF)
 private val TextGrey = Color(0xFF8B9BB4)
 private val BorderDark = Color(0xFF1A2A40)
 private val BuyTeal = Color(0xFF14B8A6)
-private val SellRed = Color(0xFFE53935) // ⚡ Changed from Orange to deeper Red
+private val SellRed = Color(0xFFE53935)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ReitDetailScreen(
     assetId: String,
     onNavigateBack: () -> Unit = {},
+    onRoiClick: () -> Unit = {},
     navController: NavController? = null,
     viewModel: ReitDetailViewModel = hiltViewModel()
 ) {
@@ -64,6 +68,7 @@ fun ReitDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isWatchlisted by viewModel.isWatchlisted.collectAsState()
 
+    var isNse by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Estate", "Finance", "News", "Media")
 
@@ -132,16 +137,9 @@ fun ReitDetailScreen(
             )
         },
         floatingActionButton = {
-            // ⚡ Show Floating Calculator only on Finance Tab
             if (selectedTab == 1) {
                 FloatingActionButton(
-                    onClick = {
-                        Toast.makeText(
-                            context,
-                            "Opening ROI Calculator...",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
+                    onClick = onRoiClick,
                     containerColor = TradeCardBg,
                     contentColor = BuyTeal,
                     shape = CircleShape,
@@ -152,7 +150,6 @@ fun ReitDetailScreen(
             }
         },
         bottomBar = {
-            // ⚡ Fixed Bottom Bar: SIP, SELL, BUY
             Surface(
                 color = TradeCardBg,
                 shadowElevation = 8.dp,
@@ -238,9 +235,9 @@ fun ReitDetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(bottom = 80.dp) // Padding for bottom bar
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    // Header Details (Outside Tabs)
+                    // Header Details
                     item {
                         Column(modifier = Modifier
                             .fillMaxWidth()
@@ -317,11 +314,13 @@ fun ReitDetailScreen(
                                 Row(
                                     modifier = Modifier
                                         .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { isNse = !isNse }
                                         .padding(horizontal = 8.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "NSE",
+                                        text = if (isNse) "NSE" else "BSE",
                                         color = TextWhite,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
@@ -523,7 +522,6 @@ fun ReitDetailScreen(
                         1 -> { // FINANCE TAB
                             item {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    // ⚡ Fixed Graph Area
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -532,7 +530,6 @@ fun ReitDetailScreen(
                                             .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
                                             .padding(12.dp)
                                     ) {
-                                        // Fullscreen Icon
                                         Icon(
                                             imageVector = Icons.Default.Fullscreen,
                                             contentDescription = "Expand Graph",
@@ -549,35 +546,37 @@ fun ReitDetailScreen(
                                                 }
                                         )
 
-                                        // Fake Graph Canvas (Static)
                                         Canvas(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(end = 40.dp, top = 20.dp, bottom = 20.dp)
                                         ) {
-                                            val path = Path()
-                                            val stepX = size.width / (data.chartPoints.size - 1)
+                                            if (data.chartPoints.isNotEmpty()) {
+                                                val path = Path()
+                                                val stepX = size.width / (data.chartPoints.size - 1)
 
-                                            data.chartPoints.forEachIndexed { index, point ->
-                                                val x = index * stepX
-                                                // Map dummy Y (400-500) to height
-                                                val normalizedY =
-                                                    1f - ((point.second - 400f) / 100f)
-                                                val y = normalizedY * size.height
+                                                data.chartPoints.forEachIndexed { index, point ->
+                                                    val x = index * stepX
+                                                    val normalizedY =
+                                                        1f - ((point.second - 400f) / 100f).coerceIn(
+                                                            0f,
+                                                            1f
+                                                        )
+                                                    val y = normalizedY * size.height
 
-                                                if (index == 0) path.moveTo(
-                                                    x,
-                                                    y
-                                                ) else path.lineTo(x, y)
+                                                    if (index == 0) path.moveTo(
+                                                        x,
+                                                        y
+                                                    ) else path.lineTo(x, y)
+                                                }
+                                                drawPath(
+                                                    path,
+                                                    color = priceColor,
+                                                    style = Stroke(width = 4f)
+                                                )
                                             }
-                                            drawPath(
-                                                path,
-                                                color = priceColor,
-                                                style = Stroke(width = 4f)
-                                            )
                                         }
 
-                                        // Y-Axis Labels
                                         Column(
                                             modifier = Modifier
                                                 .align(Alignment.CenterEnd)
@@ -593,7 +592,6 @@ fun ReitDetailScreen(
                                     }
 
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    // Timeframes
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -610,11 +608,47 @@ fun ReitDetailScreen(
 
                                     Spacer(modifier = Modifier.height(24.dp))
 
-                                    // Financial Subheaders
-                                    FinanceSubHeader("Performance")
-                                    FinanceSubHeader("Market fundamentals")
-                                    FinanceSubHeader("Financials")
-                                    FinanceSubHeader("Shareholding")
+                                    ExpandableFinanceSection(
+                                        title = "Performance",
+                                        data = listOf(
+                                            "Today's Low" to "₹${data.dayLow}",
+                                            "Today's High" to "₹${data.dayHigh}",
+                                            "Open" to "₹${data.openPrice}",
+                                            "Prev. Close" to "₹${data.previousClose}",
+                                            "Volume" to data.volume,
+                                            "Avg. Traded Price" to "₹${data.averageTradedPrice}"
+                                        )
+                                    )
+
+                                    ExpandableFinanceSection(
+                                        title = "Market Fundamentals",
+                                        data = listOf(
+                                            "Market Cap" to "₹36,102 Cr",
+                                            "P/E Ratio" to "24.5",
+                                            "P/B Ratio" to "1.2",
+                                            "Dividend Yield" to "6.5%"
+                                        )
+                                    )
+
+                                    ExpandableFinanceSection(
+                                        title = "Financials (Q3)",
+                                        data = listOf(
+                                            "Revenue" to "₹850 Cr",
+                                            "Net Profit" to "₹210 Cr",
+                                            "EBITDA Margin" to "82%",
+                                            "Debt to Equity" to "0.35"
+                                        )
+                                    )
+
+                                    ExpandableFinanceSection(
+                                        title = "Shareholding Pattern",
+                                        data = listOf(
+                                            "Promoters" to "15.2%",
+                                            "FIIs" to "32.4%",
+                                            "DIIs" to "45.1%",
+                                            "Public" to "7.3%"
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -688,20 +722,54 @@ fun ReitDetailScreen(
 }
 
 @Composable
-fun FinanceSubHeader(title: String) {
+fun ExpandableFinanceSection(title: String, data: List<Pair<String, String>>) {
+    var isExpanded by remember { mutableStateOf(false) }
     Column(modifier = Modifier
         .fillMaxWidth()
-        .clickable { }
-        .padding(vertical = 12.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        .padding(vertical = 4.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { isExpanded = !isExpanded }
+                .padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(text = title, color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Medium)
             Icon(
-                Icons.Default.SwapVert,
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = "Expand",
                 tint = TextGrey
-            ) // Placeholder for expand icon
+            )
         }
-        HorizontalDivider(color = BorderDark, modifier = Modifier.padding(top = 12.dp))
+        AnimatedVisibility(visible = isExpanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 12.dp, start = 4.dp, end = 4.dp)
+            ) {
+                data.chunked(2).forEach { rowItems ->
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)) {
+                        rowItems.forEach { item ->
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.first, color = TextGrey, fontSize = 12.sp)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    item.second,
+                                    color = TextWhite,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        HorizontalDivider(color = BorderDark, modifier = Modifier.padding(top = 4.dp))
     }
 }
 

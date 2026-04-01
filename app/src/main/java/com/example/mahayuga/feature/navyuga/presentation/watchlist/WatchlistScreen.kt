@@ -34,6 +34,8 @@ private val BorderDark = Color(0xFF1A2A40)
 fun WatchlistScreen(
     onNavigateToSmReitDetail: (String) -> Unit,
     onNavigateToReitDetail: (String) -> Unit,
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {},
     viewModel: WatchlistViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -80,21 +82,8 @@ fun WatchlistScreen(
                         )
                         GroupedHeaderIcons(
                             listOf(
-                                // ⚡ FIX: Reordered to match Home Screen (Notifications -> Messages)
-                                Icons.Outlined.Notifications to {
-                                    Toast.makeText(
-                                        context,
-                                        "No new notifications",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                Icons.AutoMirrored.Outlined.Send to {
-                                    Toast.makeText(
-                                        context,
-                                        "Messages coming soon",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                                Icons.Outlined.Notifications to { onNavigateToNotifications() },
+                                Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
                             )
                         )
                     }

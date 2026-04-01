@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
@@ -49,7 +50,9 @@ private val BricxStoryColor = Color(0xFF2979FF)
 
 @Composable
 fun DiscoverScreen(
-    viewModel: DiscoverViewModel = hiltViewModel()
+    viewModel: DiscoverViewModel = hiltViewModel(),
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -103,20 +106,8 @@ fun DiscoverScreen(
                         )
                         GroupedHeaderIcons(
                             listOf(
-                                Icons.Default.Send to {
-                                    Toast.makeText(
-                                        context,
-                                        "Messages coming soon",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                Icons.Outlined.Notifications to {
-                                    Toast.makeText(
-                                        context,
-                                        "No new notifications",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                                Icons.Outlined.Notifications to { onNavigateToNotifications() },
+                                Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
                             )
                         )
                     }

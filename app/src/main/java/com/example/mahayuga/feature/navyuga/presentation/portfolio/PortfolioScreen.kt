@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.Search
@@ -53,7 +54,9 @@ private val PortPieTeal = Color(0xFF00BFA5) // Replaced white with Teal
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PortfolioScreen(
-    viewModel: PortfolioViewModel = hiltViewModel()
+    viewModel: PortfolioViewModel = hiltViewModel(),
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -110,20 +113,8 @@ fun PortfolioScreen(
                         )
                         GroupedHeaderIcons(
                             listOf(
-                                Icons.Outlined.Send to {
-                                    Toast.makeText(
-                                        context,
-                                        "Messages coming soon",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                Icons.Outlined.Notifications to {
-                                    Toast.makeText(
-                                        context,
-                                        "No new notifications",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                                Icons.Outlined.Notifications to { onNavigateToNotifications() },
+                                Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
                             )
                         )
                     }
