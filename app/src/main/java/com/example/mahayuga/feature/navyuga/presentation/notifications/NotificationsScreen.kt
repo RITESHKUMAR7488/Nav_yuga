@@ -2,14 +2,12 @@
 package com.example.mahayuga.feature.navyuga.presentation.notifications
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Update
@@ -18,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,17 +23,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.example.mahayuga.core.common.BricxTopAppBar // ⚡ IMPORTED COMMON COMPONENT
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-private val TradeBg = Color(0xFF080F18)
-private val TradeCardBg = Color(0xFF0F1722)
-private val TextWhite = Color(0xFFFFFFFF)
-private val TextGrey = Color(0xFF8B9BB4)
-private val BuyTeal = Color(0xFF14B8A6)
 
 data class AppNotification(
     val id: String,
@@ -56,9 +49,8 @@ class NotificationsViewModel : ViewModel() {
     }
 
     private fun fetchNotifications() {
-        // COROUTINE USAGE: Launching coroutine to safely update the notifications list state asynchronously.
         viewModelScope.launch {
-            delay(500) // Simulating fetch delay
+            delay(500)
             _notifications.value = listOf(
                 AppNotification(
                     "1",
@@ -89,7 +81,6 @@ class NotificationsViewModel : ViewModel() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
     onNavigateBack: () -> Unit,
@@ -98,20 +89,12 @@ fun NotificationsScreen(
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = TradeBg,
+        containerColor = BricxBackground, // ⚡ UPDATED
         topBar = {
-            TopAppBar(
-                title = { Text("Notifications", color = TextWhite, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextWhite
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TradeBg)
+            // ⚡ REPLACED RAW TOPAPPBAR WITH BRICXTOPAPPBAR
+            BricxTopAppBar(
+                title = "Notifications",
+                onNavigateBack = onNavigateBack
             )
         }
     ) { paddingValues ->
@@ -128,7 +111,7 @@ fun NotificationsScreen(
                         modifier = Modifier.fillParentMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = BuyTeal)
+                        CircularProgressIndicator(color = BricxBrandTeal) // ⚡ UPDATED
                     }
                 }
             } else {
@@ -144,9 +127,9 @@ fun NotificationsScreen(
 fun NotificationCard(notification: AppNotification) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = TradeCardBg),
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, BricxBorder) // ⚡ UPDATED
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -156,13 +139,13 @@ fun NotificationCard(notification: AppNotification) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(BuyTeal.copy(alpha = 0.2f)),
+                    .background(BricxBrandTeal.copy(alpha = 0.2f)), // ⚡ UPDATED
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = notification.icon,
                     contentDescription = null,
-                    tint = BuyTeal,
+                    tint = BricxBrandTeal, // ⚡ UPDATED
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -174,21 +157,29 @@ fun NotificationCard(notification: AppNotification) {
                 ) {
                     Text(
                         text = notification.source,
-                        color = BuyTeal,
+                        color = BricxBrandTeal, // ⚡ UPDATED
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(text = notification.time, color = TextGrey, fontSize = 10.sp)
+                    Text(
+                        text = notification.time,
+                        color = BricxTextSecondary,
+                        fontSize = 10.sp
+                    ) // ⚡ UPDATED
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = notification.title,
-                    color = TextWhite,
+                    color = BricxTextPrimary, // ⚡ UPDATED
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = notification.message, color = TextGrey, fontSize = 14.sp)
+                Text(
+                    text = notification.message,
+                    color = BricxTextSecondary,
+                    fontSize = 14.sp
+                ) // ⚡ UPDATED
             }
         }
     }

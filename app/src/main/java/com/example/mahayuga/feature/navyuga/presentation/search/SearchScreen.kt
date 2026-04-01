@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,15 +27,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
 import com.example.mahayuga.feature.navyuga.presentation.home.LiveAssetTradingCard
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED NEW THEME
 
-private val TradeBg = Color(0xFF080F18)
-private val TradeCardBg = Color(0xFF0F1722)
-private val TextWhite = Color(0xFFFFFFFF)
-private val TextGrey = Color(0xFF8B9BB4)
-private val BuyTeal = Color(0xFF14B8A6)
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     onNavigateBack: () -> Unit,
@@ -52,20 +46,13 @@ fun SearchScreen(
     val smReitSymbols = listOf("PSTITANIA", "PSPLATINA")
 
     Scaffold(
-        containerColor = TradeBg,
+        containerColor = BricxBackground, // ⚡ UPDATED
         topBar = {
-            TopAppBar(
-                title = { Text("Search", color = TextWhite, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextWhite
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TradeBg)
+            // ⚡ REPLACED CUSTOM HEADER WITH BRICXTOPAPPBAR
+            BricxTopAppBar(
+                title = "Search",
+                onNavigateBack = onNavigateBack,
+                showTrailingIcons = false
             )
         }
     ) { paddingValues ->
@@ -74,41 +61,25 @@ fun SearchScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = {
-                    Text(
-                        "Search by Property, Asset Manager etc.",
-                        color = TextGrey,
-                        fontSize = 14.sp
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Search,
-                        contentDescription = "Search",
-                        tint = BuyTeal
-                    )
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BuyTeal,
-                    unfocusedBorderColor = Color(0xFF1A2A40),
-                    focusedTextColor = TextWhite,
-                    unfocusedTextColor = TextWhite,
-                    cursorColor = BuyTeal
-                ),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
+            // ⚡ REPLACED RAW OUTLINEDTEXTFIELD WITH BRICTEXTFIELD
+            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                BricxTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.updateSearchQuery(it) },
+                    label = "Search by Property, Asset Manager etc.",
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Search,
+                            contentDescription = "Search",
+                            tint = BricxBrandTeal
+                        )
+                    }
+                )
+            }
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = BuyTeal)
+                    CircularProgressIndicator(color = BricxBrandTeal) // ⚡ UPDATED
                 }
             } else {
                 LazyColumn(
@@ -143,7 +114,7 @@ fun SearchScreen(
                             )
                         }
 
-                        // 2. REITs (Changed to Square)
+                        // 2. REITs
                         item {
                             SearchCategorySection(
                                 title = "REITs",
@@ -159,12 +130,12 @@ fun SearchScreen(
                                         "MINDSPACE"
                                     )
                                 ),
-                                isSquareLayout = true,
+                                isSquareLayout = false,
                                 onItemClick = onNavigateToReitDetail
                             )
                         }
 
-                        // 3. SM REITs (Changed to Square)
+                        // 3. SM REITs
                         item {
                             SearchCategorySection(
                                 title = "SM REITs",
@@ -180,7 +151,7 @@ fun SearchScreen(
                                         "PSPLATINA"
                                     )
                                 ),
-                                isSquareLayout = true,
+                                isSquareLayout = false,
                                 onItemClick = onNavigateToSmReitDetail
                             )
                         }
@@ -193,7 +164,12 @@ fun SearchScreen(
                                         .fillMaxWidth()
                                         .padding(40.dp),
                                     contentAlignment = Alignment.Center
-                                ) { Text("No assets match your search.", color = TextGrey) }
+                                ) {
+                                    Text(
+                                        "No assets match your search.",
+                                        color = BricxTextSecondary
+                                    )
+                                } // ⚡ UPDATED
                             }
                         } else {
                             items(searchResults, key = { it.symbol }) { quote ->
@@ -243,7 +219,7 @@ fun SearchCategorySection(
         .padding(bottom = 8.dp)) {
         Text(
             text = title,
-            color = TextWhite,
+            color = BricxTextPrimary, // ⚡ UPDATED
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 12.dp)
@@ -263,7 +239,7 @@ fun SearchCategorySection(
                             .fillMaxWidth()
                             .height(if (isSquareLayout) 100.dp else 140.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(TradeCardBg)
+                            .background(BricxSurfaceCard) // ⚡ UPDATED
                             .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
                     ) {
                         AsyncImage(
@@ -276,7 +252,7 @@ fun SearchCategorySection(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = item.first,
-                        color = TextWhite,
+                        color = BricxTextPrimary, // ⚡ UPDATED
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,

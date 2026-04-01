@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/auth/presentation/RegisterScreen.kt
 package com.example.mahayuga.feature.auth.presentation
 
 import android.widget.Toast
@@ -8,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,23 +20,18 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.auth.presentation.components.GptTextField
+import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
-private val NavyBackground = Color(0xFF080F18)
-private val GptTextWhite = Color(0xFFFFFFFF)
-private val GptTextGrey = Color(0xFFC5C5D2)
-private val GptBrandGreen = Color(0xFF10A37F)
-private val GptInputBackground = Color(0xFF1E1E1E)
-private val GptInputBorder = Color(0xFF3E3E3E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,24 +68,11 @@ fun RegisterScreen(
     val errorMessage = (registerState as? UiState.Failure)?.message
 
     Scaffold(
-        containerColor = NavyBackground,
+        containerColor = BricxBackground,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "BRICX",
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 2.sp
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyBackground)
+            BricxTopAppBar(
+                title = "BRICX",
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     ) { padding ->
@@ -104,16 +86,40 @@ fun RegisterScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text("Create your account", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = GptTextWhite))
+            Text(
+                "Create your account",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = BricxTextPrimary
+                )
+            )
             Spacer(modifier = Modifier.height(32.dp))
 
-            GptTextField(value = name, onValueChange = { name = it }, label = "Full Name", keyboardType = KeyboardType.Text, imeAction = ImeAction.Next)
+            BricxTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = "Full Name",
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
-            GptTextField(value = email, onValueChange = { email = it }, label = "Email address", keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
+            BricxTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = "Email address",
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
-            GptTextField(value = phone, onValueChange = { if (it.all { char -> char.isDigit() }) phone = it }, label = "Phone Number", keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next)
+            BricxTextField(
+                value = phone,
+                onValueChange = { if (it.all { char -> char.isDigit() }) phone = it },
+                label = "Phone Number",
+                keyboardType = KeyboardType.Phone,
+                imeAction = ImeAction.Next
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
@@ -123,25 +129,55 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GptBrandGreen, unfocusedBorderColor = GptInputBorder,
-                    focusedLabelColor = GptBrandGreen, unfocusedLabelColor = GptTextGrey,
-                    cursorColor = GptBrandGreen, focusedContainerColor = GptInputBackground,
-                    unfocusedContainerColor = GptInputBackground, focusedTextColor = GptTextWhite, unfocusedTextColor = GptTextWhite
+                    focusedBorderColor = BricxBrandTeal,
+                    unfocusedBorderColor = BricxBorderLight,
+                    focusedLabelColor = BricxBrandTeal,
+                    unfocusedLabelColor = BricxTextSecondary,
+                    cursorColor = BricxBrandTeal,
+                    focusedContainerColor = BricxSurfaceCardLight,
+                    unfocusedContainerColor = BricxSurfaceCardLight,
+                    focusedTextColor = BricxTextPrimary,
+                    unfocusedTextColor = BricxTextPrimary
                 ),
                 trailingIcon = {
                     IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.CalendarToday, contentDescription = "Select Date", tint = GptTextGrey)
+                        Icon(
+                            Icons.Default.CalendarToday,
+                            contentDescription = "Select Date",
+                            tint = BricxTextSecondary
+                        )
                     }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
                 singleLine = true
             )
 
             if (showDatePicker) {
                 DatePickerDialog(
                     onDismissRequest = { showDatePicker = false },
-                    confirmButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = GptBrandGreen) } },
-                    colors = DatePickerDefaults.colors(containerColor = GptInputBackground, titleContentColor = GptTextWhite, headlineContentColor = GptTextWhite, weekdayContentColor = GptTextGrey, dayContentColor = GptTextWhite, selectedDayContainerColor = GptBrandGreen, selectedDayContentColor = GptTextWhite, todayContentColor = GptBrandGreen, todayDateBorderColor = GptBrandGreen, yearContentColor = GptTextWhite, currentYearContentColor = GptBrandGreen, selectedYearContainerColor = GptBrandGreen, selectedYearContentColor = GptTextWhite)
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDatePicker = false
+                        }) { Text("Cancel", color = BricxBrandTeal) }
+                    },
+                    colors = DatePickerDefaults.colors(
+                        containerColor = BricxSurfaceCardLight,
+                        titleContentColor = BricxTextPrimary,
+                        headlineContentColor = BricxTextPrimary,
+                        weekdayContentColor = BricxTextSecondary,
+                        dayContentColor = BricxTextPrimary,
+                        selectedDayContainerColor = BricxBrandTeal,
+                        selectedDayContentColor = BricxTextPrimary,
+                        todayContentColor = BricxBrandTeal,
+                        todayDateBorderColor = BricxBrandTeal,
+                        yearContentColor = BricxTextPrimary,
+                        currentYearContentColor = BricxBrandTeal,
+                        selectedYearContainerColor = BricxBrandTeal,
+                        selectedYearContentColor = BricxTextPrimary
+                    )
                 ) {
                     DatePicker(state = datePickerState)
                     LaunchedEffect(datePickerState.selectedDateMillis) {
@@ -163,51 +199,98 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
-                    value = selectedPlanet, onValueChange = {}, readOnly = true, label = { Text("Select Planet") },
+                    value = selectedPlanet,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Select Planet") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPlanetExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
                     shape = RoundedCornerShape(8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GptBrandGreen, unfocusedBorderColor = GptInputBorder, focusedLabelColor = GptBrandGreen, unfocusedLabelColor = GptTextGrey, focusedContainerColor = GptInputBackground, unfocusedContainerColor = GptInputBackground, focusedTextColor = GptTextWhite, unfocusedTextColor = GptTextWhite)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BricxBrandTeal,
+                        unfocusedBorderColor = BricxBorderLight,
+                        focusedLabelColor = BricxBrandTeal,
+                        unfocusedLabelColor = BricxTextSecondary,
+                        focusedContainerColor = BricxSurfaceCardLight,
+                        unfocusedContainerColor = BricxSurfaceCardLight,
+                        focusedTextColor = BricxTextPrimary,
+                        unfocusedTextColor = BricxTextPrimary
+                    )
                 )
-                ExposedDropdownMenu(expanded = isPlanetExpanded, onDismissRequest = { isPlanetExpanded = false }, modifier = Modifier.background(GptInputBackground)) {
+                ExposedDropdownMenu(
+                    expanded = isPlanetExpanded,
+                    onDismissRequest = { isPlanetExpanded = false },
+                    modifier = Modifier.background(BricxSurfaceCardLight)
+                ) {
                     planets.forEach { planet ->
                         DropdownMenuItem(
-                            text = { Text(text = planet, color = if (planet == "Earth") GptTextWhite else Color.Gray) },
+                            text = {
+                                Text(
+                                    text = planet,
+                                    color = if (planet == "Earth") BricxTextPrimary else Color.Gray
+                                )
+                            },
                             onClick = {
                                 isPlanetExpanded = false
-                                if (planet == "Earth") { selectedPlanet = planet; planetError = null } else { planetError = "Sorry, services are not yet available on $planet."; selectedPlanet = "Earth" }
+                                if (planet == "Earth") {
+                                    selectedPlanet = planet; planetError = null
+                                } else {
+                                    planetError =
+                                        "Sorry, services are not yet available on $planet."; selectedPlanet =
+                                        "Earth"
+                                }
                             }
                         )
                     }
                 }
             }
 
-            if (planetError != null) Text(text = planetError!!, color = Color(0xFFFF4444), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp, start = 8.dp))
+            if (planetError != null) Text(
+                text = planetError!!,
+                color = BricxDangerRed,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp, start = 8.dp)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            GptTextField(value = password, onValueChange = { password = it }, label = "Password", keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, isPassword = true)
+            BricxTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = "Password",
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+                isPassword = true,
+                onImeAction = { viewModel.register(name, email, password, dob, phone) })
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (errorMessage != null) Text(text = errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 16.dp))
+            if (errorMessage != null) Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-            Button(
-                onClick = { viewModel.register(name, email, password, dob, phone) },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = GptTextWhite, contentColor = NavyBackground),
-                shape = MaterialTheme.shapes.medium,
-                enabled = !isLoading
-            ) {
-                if (isLoading) CircularProgressIndicator(color = NavyBackground, modifier = Modifier.size(24.dp))
-                else Text("Sign up", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            if (isLoading) {
+                CircularProgressIndicator(color = BricxBrandTeal)
+            } else {
+                BricxPrimaryButton(
+                    text = "Sign up",
+                    onClick = { viewModel.register(name, email, password, dob, phone) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Already have an account?", color = GptTextGrey)
+                Text("Already have an account?", color = BricxTextSecondary)
                 TextButton(onClick = { navController.navigate("login") }) {
-                    Text("Log in", color = GptBrandGreen, fontWeight = FontWeight.Bold)
+                    Text("Log in", color = BricxBrandTeal, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(40.dp))

@@ -3,8 +3,6 @@ package com.example.mahayuga.feature.profile.presentation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -14,12 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mahayuga.core.common.BricxTopAppBar // ⚡ IMPORTED COMMON COMPONENT
 import com.example.mahayuga.feature.navyuga.presentation.home.InstagramStylePropertyCard
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 
-private val NavyBlue = Color(0xFF0F172A)
-
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LikedPropertiesScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
@@ -29,16 +25,12 @@ fun LikedPropertiesScreen(
     val likedProperties by viewModel.likedProperties.collectAsState()
 
     Scaffold(
-        containerColor = NavyBlue,
+        containerColor = BricxBackground, // ⚡ UPDATED
         topBar = {
-            TopAppBar(
-                title = { Text("Liked Properties", color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyBlue)
+            // ⚡ REPLACED RAW TOPAPPBAR WITH BRICXTOPAPPBAR
+            BricxTopAppBar(
+                title = "Liked Properties",
+                onNavigateBack = onNavigateBack
             )
         }
     ) { innerPadding ->
@@ -52,7 +44,7 @@ fun LikedPropertiesScreen(
                 Text(
                     text = "No liked properties found.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = BricxTextSecondary // ⚡ UPDATED
                 )
             }
         } else {
@@ -69,7 +61,6 @@ fun LikedPropertiesScreen(
                         onItemClick = { onNavigateToDetail(property.id) },
                         onLikeClick = { viewModel.toggleLike(property.id, property.isLiked) },
                         onShareClick = { /* Handle share */ },
-                        // ⚡ FIX: Added missing parameter
                         onInvestClick = { onNavigateToDetail(property.id) },
                         modifier = Modifier
                             .fillMaxWidth()

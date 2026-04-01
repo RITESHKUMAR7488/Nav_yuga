@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/assetmanager/presentation/investors/InvestorScreen.kt
 package com.example.mahayuga.feature.assetmanager.presentation.investors
 
 import androidx.compose.foundation.Canvas
@@ -8,16 +9,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -25,129 +27,146 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import java.util.Locale
-
-// --- THEME ---
-private val InvBg = Color(0xFF061123)
-private val InvCard = Color(0xFF111c30)
-private val InvTeal = Color(0xFF38a882)
-private val InvRed = Color(0xFFFF3B30)
-private val InvBlue = Color(0xFF3B82F6)
-private val TextWhite = Color.White
-private val TextGrey = Color(0xFF8B9BB4)
+import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 
 @Composable
 fun InvestorScreen(
     viewModel: InvestorViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    var searchQuery by remember { mutableStateOf("") } // ⚡ ADDED SEARCH STATE
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(InvBg)
+            .background(BricxBackground) // ⚡ UPDATED
             .padding(16.dp)
     ) {
-        // Header
         Text(
             "Investor Intelligence",
             style = MaterialTheme.typography.headlineMedium,
-            color = TextWhite,
+            color = BricxTextPrimary,
             fontWeight = FontWeight.Bold
         )
         Text(
             "Capital CRM & Concentration Risk",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextGrey
+            color = BricxTextSecondary
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ⚡ ADDED SEARCH BAR AS REQUESTED
+        BricxTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = "Search Investors",
+            leadingIcon = { Icon(Icons.Default.Search, null, tint = BricxBrandTeal) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 1. RISK & VELOCITY ROW
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Whale Risk Card
             Card(
-                colors = CardDefaults.cardColors(containerColor = InvCard),
+                colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f).height(160.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .height(160.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Whale Risk", color = TextGrey, fontSize = 12.sp)
+                        Text("Whale Risk", color = BricxTextSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.weight(1f))
                         if (state.isWhaleRiskHigh) {
-                            Icon(Icons.Default.Warning, null, tint = InvRed, modifier = Modifier.size(14.dp))
+                            Icon(
+                                Icons.Default.Warning,
+                                null,
+                                tint = BricxDangerRed,
+                                modifier = Modifier.size(14.dp)
+                            ) // ⚡ UPDATED
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    // Circular Progress
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
-                        CircularRiskMeter(percentage = state.whaleConcentrationPercent.toFloat(), isHighRisk = state.isWhaleRiskHigh)
+                        CircularRiskMeter(
+                            percentage = state.whaleConcentrationPercent.toFloat(),
+                            isHighRisk = state.isWhaleRiskHigh
+                        )
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "${state.whaleConcentrationPercent.toInt()}%",
-                                color = TextWhite,
+                                color = BricxTextPrimary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp
                             )
-                            Text(
-                                "Top 5 Conc.",
-                                color = TextGrey,
-                                fontSize = 10.sp
-                            )
+                            Text("Top 5 Conc.", color = BricxTextSecondary, fontSize = 10.sp)
                         }
                     }
                 }
             }
 
-            // Avg Ticket Card
             Card(
-                colors = CardDefaults.cardColors(containerColor = InvCard),
+                colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f).height(160.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .height(160.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Avg Ticket Size", color = TextGrey, fontSize = 12.sp)
+                    Text("Avg Ticket Size", color = BricxTextSecondary, fontSize = 12.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         formatInvK(state.averageTicketSize),
-                        color = TextWhite,
+                        color = BricxTextPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "${state.totalInvestors} Active Investors",
-                        color = InvTeal,
+                        color = BricxBrandTeal,
                         fontSize = 11.sp
-                    )
+                    ) // ⚡ UPDATED
                     Spacer(modifier = Modifier.weight(1f))
-                    // Tiny Trend Graph
-                    VelocityGraph(data = state.fundraisingVelocity, color = InvBlue)
+                    // ⚡ REPLACED LOCAL GRAPH WITH COMMON SPARKLINE
+                    SparklineGraph(
+                        data = state.fundraisingVelocity,
+                        color = BricxBrandBlue,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(30.dp)
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        // 2. INVESTOR DIRECTORY
         Text(
             "Capital Directory",
             style = MaterialTheme.typography.titleMedium,
-            color = TextWhite,
+            color = BricxTextPrimary,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
+
+        val filteredList =
+            if (searchQuery.isBlank()) state.investorList else state.investorList.filter {
+                it.name.contains(
+                    searchQuery,
+                    ignoreCase = true
+                )
+            }
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            items(state.investorList) { investor ->
+            items(filteredList) { investor ->
                 InvestorItem(investor)
             }
         }
@@ -157,7 +176,7 @@ fun InvestorScreen(
 @Composable
 fun InvestorItem(investor: InvestorModel) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = InvCard),
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
         shape = RoundedCornerShape(8.dp)
     ) {
         Row(
@@ -166,60 +185,55 @@ fun InvestorItem(investor: InvestorModel) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar Placeholder
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(Color(0xFF1E293B), CircleShape),
+                    .background(BricxSurfaceCardLight, CircleShape), // ⚡ UPDATED
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     investor.name.take(1),
-                    color = InvTeal,
+                    color = BricxBrandTeal,
                     fontWeight = FontWeight.Bold
-                )
+                ) // ⚡ UPDATED
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     investor.name,
-                    color = TextWhite,
+                    color = BricxTextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         investor.type,
-                        color = TextGrey,
+                        color = BricxTextSecondary,
                         style = MaterialTheme.typography.labelSmall
                     )
                     if (investor.reinvestCount > 0) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             "•  ${investor.reinvestCount}x Reinvestor",
-                            color = InvTeal,
+                            color = BricxBrandTeal,
                             style = MaterialTheme.typography.labelSmall
-                        )
+                        ) // ⚡ UPDATED
                     }
                 }
             }
 
-            // Amount & Tags
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     formatInvK(investor.totalInvested),
-                    color = TextWhite,
+                    color = BricxTextPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    investor.tags.take(2).forEach { tag ->
-                        TagBadge(tag)
-                    }
+                    investor.tags.take(2).forEach { tag -> TagBadge(tag) }
                 }
             }
         }
@@ -228,11 +242,11 @@ fun InvestorItem(investor: InvestorModel) {
 
 @Composable
 fun TagBadge(text: String) {
-    val color = when(text) {
-        "WHALE" -> InvBlue
-        "LOYAL" -> InvTeal
-        "RISK" -> InvRed
-        else -> TextGrey
+    val color = when (text) {
+        "WHALE" -> BricxBrandBlue // ⚡ UPDATED
+        "LOYAL" -> BricxBrandTeal // ⚡ UPDATED
+        "RISK" -> BricxDangerRed // ⚡ UPDATED
+        else -> BricxTextSecondary
     }
 
     Box(
@@ -246,10 +260,9 @@ fun TagBadge(text: String) {
 
 @Composable
 fun CircularRiskMeter(percentage: Float, isHighRisk: Boolean) {
-    val color = if (isHighRisk) InvRed else InvTeal
+    val color = if (isHighRisk) BricxDangerRed else BricxBrandTeal // ⚡ UPDATED
 
     Canvas(modifier = Modifier.size(80.dp)) {
-        // Background Circle
         drawArc(
             color = Color.White.copy(0.1f),
             startAngle = 0f,
@@ -257,7 +270,6 @@ fun CircularRiskMeter(percentage: Float, isHighRisk: Boolean) {
             useCenter = false,
             style = Stroke(width = 8.dp.toPx())
         )
-        // Progress Arc
         drawArc(
             color = color,
             startAngle = -90f,
@@ -265,34 +277,6 @@ fun CircularRiskMeter(percentage: Float, isHighRisk: Boolean) {
             useCenter = false,
             style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
         )
-    }
-}
-
-@Composable
-fun VelocityGraph(data: List<Float>, color: Color) {
-    if (data.isEmpty()) return
-
-    Canvas(modifier = Modifier.fillMaxWidth().height(30.dp)) {
-        val width = size.width
-        val height = size.height
-        val max = data.maxOrNull() ?: 1f
-        val points = data.mapIndexed { i, v ->
-            Offset(
-                x = (i.toFloat() / (data.size - 1)) * width,
-                y = height - ((v / max) * height)
-            )
-        }
-
-        // Draw Line
-        for (i in 0 until points.size - 1) {
-            drawLine(
-                color = color,
-                start = points[i],
-                end = points[i + 1],
-                strokeWidth = 2.dp.toPx(),
-                cap = StrokeCap.Round
-            )
-        }
     }
 }
 

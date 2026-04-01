@@ -15,33 +15,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private val NavyBlue = Color(0xFF0F172A)
-
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 
 @Composable
 fun ReelsScreen() {
-    // State to track the selected tab: 0 -> Reel, 1 -> Education, 2 -> Movies
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
-        containerColor = NavyBlue, // Instagram-like dark background
+        containerColor = BricxBackground, // ⚡ UPDATED
         topBar = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(NavyBlue)
+                    .background(BricxBackground) // ⚡ UPDATED
                     .padding(vertical = 16.dp, horizontal = 16.dp)
             ) {
                 Text(
                     text = "Discover",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = BricxTextPrimary, // ⚡ UPDATED
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-
-                // ⚡ Buttons Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -68,16 +63,12 @@ fun ReelsScreen() {
             }
         }
     ) { innerPadding ->
-        // ⚡ Empty Content Area (Blank)
         Box(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .background(NavyBlue)
-        ) {
-            // Content is intentionally left blank as requested.
-            // You can add content switching here later (e.g., when selectedTab == 0).
-        }
+                .background(BricxBackground) // ⚡ UPDATED
+        ) {}
     }
 }
 
@@ -88,18 +79,17 @@ fun ReelTypeButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // ⚡ Custom Shape: Rectangular with small Corner Radius (8.dp)
     val buttonShape = RoundedCornerShape(8.dp)
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) Color(0xFF2979FF) else Color.Transparent, // Brand Blue or Transparent
+        targetValue = if (isSelected) BricxBrandBlue else Color.Transparent, // ⚡ UPDATED
         label = "bgColor"
     )
     val contentColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White else Color.Gray,
+        targetValue = if (isSelected) BricxTextPrimary else BricxTextSecondary, // ⚡ UPDATED
         label = "textColor"
     )
-    val borderColor = if (isSelected) Color.Transparent else Color.Gray.copy(alpha = 0.5f)
+    val borderColor = if (isSelected) Color.Transparent else BricxBorder // ⚡ UPDATED
 
     Box(
         modifier = modifier

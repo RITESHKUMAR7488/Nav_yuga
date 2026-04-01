@@ -23,20 +23,19 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-private val TradeBg = Color(0xFF080F18)
-private val TradeCardBg = Color(0xFF0F1722)
-private val TextWhite = Color(0xFFFFFFFF)
-private val TextGrey = Color(0xFF8B9BB4)
-private val BuyTeal = Color(0xFF14B8A6)
-private val BubbleReceived = Color(0xFF1A2A40)
-
-data class ChatMessage(val id: String, val text: String, val isFromUser: Boolean, val timestamp: String)
+data class ChatMessage(
+    val id: String,
+    val text: String,
+    val isFromUser: Boolean,
+    val timestamp: String
+)
 
 class MessagesViewModel : ViewModel() {
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -48,17 +47,20 @@ class MessagesViewModel : ViewModel() {
 
     private fun loadChatHistory() {
         _messages.value = listOf(
-            ChatMessage("1", "Hello! I am the automated assistant for Embassy REIT. How can I help you regarding our properties today?", false, "10:00 AM")
+            ChatMessage(
+                "1",
+                "Hello! I am the automated assistant. How can I help you regarding our properties today?",
+                false,
+                "10:00 AM"
+            )
         )
     }
 
     fun sendMessage(text: String) {
         if (text.isBlank()) return
-
         val userMsg = ChatMessage(System.currentTimeMillis().toString(), text, true, "Now")
         _messages.value = _messages.value + userMsg
 
-        // COROUTINE USAGE: Using viewModelScope to simulate a network delay for the chatbot's reply, keeping the UI responsive so the user's message appears instantly.
         viewModelScope.launch {
             delay(1500)
             val botReply = ChatMessage(
@@ -83,7 +85,6 @@ fun MessagesScreen(
     var currentInput by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
@@ -91,28 +92,41 @@ fun MessagesScreen(
     }
 
     Scaffold(
-        containerColor = TradeBg,
+        containerColor = BricxBackground, // ⚡ UPDATED
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Message", color = TextWhite, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text(assetManagerName, color = BuyTeal, fontSize = 12.sp)
+                        Text(
+                            "Message",
+                            color = BricxTextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        ) // ⚡ UPDATED
+                        Text(
+                            assetManagerName,
+                            color = BricxBrandTeal,
+                            fontSize = 12.sp
+                        ) // ⚡ UPDATED
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextWhite)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = BricxTextPrimary
+                        ) // ⚡ UPDATED
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TradeBg)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BricxBackground) // ⚡ UPDATED
             )
         },
         bottomBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(TradeCardBg)
+                    .background(BricxSurfaceCard) // ⚡ UPDATED
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .navigationBarsPadding(),
                 verticalAlignment = Alignment.CenterVertically
@@ -121,14 +135,19 @@ fun MessagesScreen(
                     value = currentInput,
                     onValueChange = { currentInput = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Type a message...", color = TextGrey) },
+                    placeholder = {
+                        Text(
+                            "Type a message...",
+                            color = BricxTextSecondary
+                        )
+                    }, // ⚡ UPDATED
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color.Transparent,
                         unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite,
-                        focusedContainerColor = TradeBg,
-                        unfocusedContainerColor = TradeBg
+                        focusedTextColor = BricxTextPrimary, // ⚡ UPDATED
+                        unfocusedTextColor = BricxTextPrimary, // ⚡ UPDATED
+                        focusedContainerColor = BricxBackground, // ⚡ UPDATED
+                        unfocusedContainerColor = BricxBackground // ⚡ UPDATED
                     ),
                     shape = RoundedCornerShape(24.dp)
                 )
@@ -141,29 +160,30 @@ fun MessagesScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(BuyTeal)
+                        .background(BricxBrandTeal) // ⚡ UPDATED
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send",
+                        tint = Color.White
+                    )
                 }
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Airbnb-style safety warning banner
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFFFF3CD).copy(alpha = 0.1f))
-                    .padding(12.dp),
+                    .background(BricxWarningOrange.copy(alpha = 0.1f))
+                    .padding(12.dp), // ⚡ UPDATED
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "For your safety, communication is restricted to this app. Exchanging phone numbers is not permitted.",
-                    color = Color(0xFFFFC107),
+                    color = BricxWarningOrange, // ⚡ UPDATED
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -187,17 +207,14 @@ fun MessagesScreen(
 @Composable
 fun ChatBubble(message: ChatMessage) {
     val alignment = if (message.isFromUser) Alignment.CenterEnd else Alignment.CenterStart
-    val bubbleColor = if (message.isFromUser) BuyTeal else BubbleReceived
+    val bubbleColor = if (message.isFromUser) BricxBrandTeal else BricxSurfaceCardLight // ⚡ UPDATED
     val shape = if (message.isFromUser) {
         RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp)
     } else {
         RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp)
     }
 
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
-    ) {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = alignment) {
         Column(
             modifier = Modifier
                 .widthIn(max = 280.dp)
@@ -205,11 +222,11 @@ fun ChatBubble(message: ChatMessage) {
                 .background(bubbleColor)
                 .padding(12.dp)
         ) {
-            Text(text = message.text, color = TextWhite, fontSize = 15.sp)
+            Text(text = message.text, color = BricxTextPrimary, fontSize = 15.sp) // ⚡ UPDATED
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = message.timestamp,
-                color = TextWhite.copy(alpha = 0.5f),
+                color = BricxTextPrimary.copy(alpha = 0.5f), // ⚡ UPDATED
                 fontSize = 10.sp,
                 modifier = Modifier.align(Alignment.End)
             )

@@ -27,13 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-
-// Consistent Bricx Theme Colors
-private val AmBackground = Color(0xFF061123)
-private val AmAccent = Color(0xFF38a882)
-private val MetallicStart = Color(0xFF232D3F)
-private val MetallicBorder = Color(0xFF37475A)
-private val PendingWarning = Color(0xFFF59E0B)
+import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,9 +43,8 @@ fun AssetOperationsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AmBackground)
+            .background(BricxBackground) // ⚡ UPDATED
     ) {
-        // --- HEADER LOGIC (Exactly matching the dashboard) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -58,24 +52,22 @@ fun AssetOperationsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Side: Assets + Icon
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Rounded.Apartment,
+                    Icons.Rounded.Apartment,
                     contentDescription = "Assets",
-                    tint = AmAccent,
+                    tint = BricxBrandTeal,
                     modifier = Modifier.size(28.dp)
-                )
+                ) // ⚡ UPDATED
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Assets",
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
-                    color = Color.White
+                    color = BricxTextPrimary
                 )
             }
 
-            // Right Side: 3 Icons
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -84,79 +76,64 @@ fun AssetOperationsScreen(
                     onClick = { isSearchActive = !isSearchActive },
                     modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Rounded.Search, contentDescription = "Search", tint = Color.White)
+                    Icon(
+                        Icons.Rounded.Search,
+                        contentDescription = "Search",
+                        tint = BricxTextPrimary
+                    )
                 }
-
-                BadgedBox(badge = { Badge(containerColor = Color.Red) { Text("3") } }) {
+                BadgedBox(badge = { Badge(containerColor = BricxDangerRed) { Text("3") } }) {
                     Icon(
                         Icons.Rounded.Notifications,
                         contentDescription = "Notifications",
-                        tint = Color.White
+                        tint = BricxTextPrimary
                     )
                 }
-
-                BadgedBox(badge = { Badge(containerColor = AmAccent) { Text("1") } }) {
+                BadgedBox(badge = { Badge(containerColor = BricxBrandTeal) { Text("1") } }) {
                     Icon(
                         Icons.Outlined.MailOutline,
                         contentDescription = "Messages",
-                        tint = Color.White
+                        tint = BricxTextPrimary
                     )
                 }
             }
         }
 
-        // --- SEARCH BAR (Animated Visibility) ---
         AnimatedVisibility(visible = isSearchActive) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
+            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                // ⚡ REPLACED RAW OUTLINEDTEXTFIELD WITH BRICTEXTFIELD
+                BricxTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.updateSearchQuery(it) },
+                    label = "Search specific trust or property..."
+                )
+            }
+        }
+
+        // ⚡ REPLACED RAW BUTTON WITH BRICXPRIMARYBUTTON
+        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            BricxPrimaryButton(
+                text = "List New Property / Trust",
+                onClick = { /* TODO: Route to AddPropertyScreen */ },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search specific trust or property...", color = Color.Gray) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AmAccent,
-                    unfocusedBorderColor = MetallicBorder,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                    .height(56.dp)
             )
         }
 
-        // --- LIST NEW PROPERTY BUTTON ---
-        Button(
-            onClick = { /* TODO: Route to AddPropertyScreen */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AmAccent),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "List New Property / Trust",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.White
-            )
-        }
-
-        // --- DYNAMIC CONTENT AREA ---
         when (uiState) {
             is AssetsUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AmAccent)
-                }
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = BricxBrandTeal) }
             }
 
             is AssetsUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Error loading assets", color = Color.Red)
-                }
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { Text("Error loading assets", color = BricxDangerRed) }
             }
 
             is AssetsUiState.Success -> {
@@ -166,9 +143,7 @@ fun AssetOperationsScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(assets) { asset ->
-                        TrustAssetCard(asset = asset)
-                    }
+                    items(assets) { asset -> TrustAssetCard(asset = asset) }
                 }
             }
         }
@@ -187,12 +162,11 @@ fun TrustAssetCard(asset: TrustAsset) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, MetallicBorder, RoundedCornerShape(16.dp))
-            .clickable { expanded = !expanded },
-        colors = CardDefaults.cardColors(containerColor = MetallicStart)
+            .border(1.dp, BricxBorder, RoundedCornerShape(16.dp))
+            .clickable { expanded = !expanded }, // ⚡ UPDATED
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCardLight) // ⚡ UPDATED
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header Row: Trust Name & Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -203,27 +177,26 @@ fun TrustAssetCard(asset: TrustAsset) {
                         text = asset.trustName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = Color.White
+                        color = BricxTextPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (asset is TrustAsset.Reit) "REIT (Multi-Property)" else "SM REIT (Single Property)",
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = BricxTextSecondary
                     )
                 }
 
-                // Status Chip
                 Surface(
-                    color = if (asset.status == AssetStatus.LISTED) AmAccent.copy(alpha = 0.2f) else PendingWarning.copy(
+                    color = if (asset.status == AssetStatus.LISTED) BricxBrandTeal.copy(alpha = 0.2f) else BricxWarningOrange.copy(
                         alpha = 0.2f
-                    ),
+                    ), // ⚡ UPDATED
                     shape = RoundedCornerShape(8.dp),
                     border = borderStrokeFromStatus(asset.status)
                 ) {
                     Text(
                         text = asset.status.name,
-                        color = if (asset.status == AssetStatus.LISTED) AmAccent else PendingWarning,
+                        color = if (asset.status == AssetStatus.LISTED) BricxBrandTeal else BricxWarningOrange, // ⚡ UPDATED
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -233,17 +206,16 @@ fun TrustAssetCard(asset: TrustAsset) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Stats Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Stock Price", color = Color.Gray, fontSize = 12.sp)
+                    Text("Stock Price", color = BricxTextSecondary, fontSize = 12.sp)
                     Text(
                         "₹${asset.stockPrice}",
-                        color = Color.White,
+                        color = BricxTextPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -252,12 +224,11 @@ fun TrustAssetCard(asset: TrustAsset) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Expand",
-                    tint = Color.White,
+                    tint = BricxTextPrimary,
                     modifier = Modifier.rotate(rotationState)
                 )
             }
 
-            // Expandable Content (The Flowchart mapping)
             AnimatedVisibility(visible = expanded) {
                 Column(
                     modifier = Modifier
@@ -270,13 +241,17 @@ fun TrustAssetCard(asset: TrustAsset) {
                         is TrustAsset.SmReit -> {
                             Text(
                                 "📍 ${asset.propertyName}",
-                                color = Color.White,
+                                color = BricxTextPrimary,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             asset.spvTenants.forEach { tenant ->
-                                Text("  ↳ $tenant", color = Color.Gray, fontSize = 13.sp)
+                                Text(
+                                    "  ↳ $tenant",
+                                    color = BricxTextSecondary,
+                                    fontSize = 13.sp
+                                )
                             }
                         }
 
@@ -284,13 +259,17 @@ fun TrustAssetCard(asset: TrustAsset) {
                             asset.spvBuildings.forEach { building ->
                                 Text(
                                     "🏢 ${building.buildingName}",
-                                    color = Color.White,
+                                    color = BricxTextPrimary,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 building.tenants.forEach { tenant ->
-                                    Text("  ↳ $tenant", color = Color.Gray, fontSize = 13.sp)
+                                    Text(
+                                        "  ↳ $tenant",
+                                        color = BricxTextSecondary,
+                                        fontSize = 13.sp
+                                    )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
@@ -304,9 +283,12 @@ fun TrustAssetCard(asset: TrustAsset) {
                             .fillMaxWidth()
                             .height(40.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, AmAccent)
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            BricxBrandTeal
+                        ) // ⚡ UPDATED
                     ) {
-                        Text("Manage Trust Properties", color = AmAccent, fontSize = 12.sp)
+                        Text("Manage Trust Properties", color = BricxBrandTeal, fontSize = 12.sp)
                     }
                 }
             }
@@ -317,8 +299,8 @@ fun TrustAssetCard(asset: TrustAsset) {
 @Composable
 fun borderStrokeFromStatus(status: AssetStatus): androidx.compose.foundation.BorderStroke {
     return if (status == AssetStatus.LISTED) {
-        androidx.compose.foundation.BorderStroke(1.dp, AmAccent.copy(alpha = 0.5f))
+        androidx.compose.foundation.BorderStroke(1.dp, BricxBrandTeal.copy(alpha = 0.5f))
     } else {
-        androidx.compose.foundation.BorderStroke(1.dp, PendingWarning.copy(alpha = 0.5f))
+        androidx.compose.foundation.BorderStroke(1.dp, BricxWarningOrange.copy(alpha = 0.5f))
     }
 }

@@ -23,6 +23,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
 import com.example.mahayuga.feature.navyuga.domain.repository.MarketRepository
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +32,6 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
 
-// --- VIEWMODEL ---
 @HiltViewModel
 class TradeViewModel @Inject constructor(
     private val marketRepository: MarketRepository
@@ -41,8 +41,6 @@ class TradeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // FIXED: Using getLiveQuotesFlow to hook into the new WebSocket stream.
-            // FIXED: Removed `.NS` to match clean data.
             marketRepository.getLiveQuotesFlow(listOf("EMBASSY", "MINDSPACE", "BIRET"))
                 .collect { quotes ->
                     _uiState.value = quotes
@@ -50,12 +48,6 @@ class TradeViewModel @Inject constructor(
         }
     }
 }
-
-// --- UI ---
-private val NavyBlue = Color(0xFF0F172A)
-private val CardDark = Color(0xFF1E293B)
-private val BrandBlue = Color(0xFF2979FF)
-private val GreenPositive = Color(0xFF00E676)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,12 +59,12 @@ fun TradeScreen(
     val liveQuotes by viewModel.uiState.collectAsState()
 
     Scaffold(
-        containerColor = NavyBlue,
+        containerColor = BricxBackground, // ⚡ UPDATED
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(NavyBlue)
+                    .background(BricxBackground) // ⚡ UPDATED
                     .padding(vertical = 16.dp, horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -81,9 +73,9 @@ fun TradeScreen(
                     text = "Trade",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = BricxTextPrimary // ⚡ UPDATED
                 )
-                Icon(Icons.Default.Notifications, "Notif", tint = Color.White)
+                Icon(Icons.Default.Notifications, "Notif", tint = BricxTextPrimary) // ⚡ UPDATED
             }
         }
     ) { padding ->
@@ -93,7 +85,6 @@ fun TradeScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            // Buy / Sell Toggle
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.weight(1f)) {
                     FilterChip(
@@ -107,8 +98,8 @@ fun TradeScreen(
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = BrandBlue,
-                            selectedLabelColor = Color.White
+                            selectedContainerColor = BricxBrandBlue, // ⚡ UPDATED
+                            selectedLabelColor = BricxTextPrimary // ⚡ UPDATED
                         ),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
@@ -128,8 +119,8 @@ fun TradeScreen(
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFFF5252),
-                            selectedLabelColor = Color.White
+                            selectedContainerColor = BricxDangerRed, // ⚡ UPDATED
+                            selectedLabelColor = BricxTextPrimary // ⚡ UPDATED
                         ),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
@@ -142,7 +133,7 @@ fun TradeScreen(
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 "Publicly Listed Assets (REITs)",
-                color = Color.White,
+                color = BricxTextPrimary, // ⚡ UPDATED
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium
             )
@@ -150,12 +141,11 @@ fun TradeScreen(
 
             if (liveQuotes == null || liveQuotes!!.isEmpty()) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = BrandBlue)
+                    CircularProgressIndicator(color = BricxBrandBlue) // ⚡ UPDATED
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(liveQuotes!!) { quote ->
-                        // FIXED NAME MAPPING (Removed .NS)
                         val cleanName = when (quote.symbol) {
                             "MINDSPACE" -> "Mindspace Business Parks"
                             "EMBASSY" -> "Embassy Office Parks"
@@ -192,11 +182,15 @@ fun ReitListItem(
     onClick: () -> Unit
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = CardDark),
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable { onClick() },
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            BricxBorder
+        ) // ⚡ ADDED BORDER FOR CONSISTENCY
     ) {
         Row(
             modifier = Modifier
@@ -206,14 +200,28 @@ fun ReitListItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Real Estate Investment Trust ⭐", color = Color.Gray, fontSize = 12.sp)
+                Text(
+                    name,
+                    color = BricxTextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                ) // ⚡ UPDATED
+                Text(
+                    "Real Estate Investment Trust ⭐",
+                    color = BricxTextSecondary,
+                    fontSize = 12.sp
+                ) // ⚡ UPDATED
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(price, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    price,
+                    color = BricxTextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                ) // ⚡ UPDATED
                 Text(
                     change,
-                    color = if (isPositive) GreenPositive else Color(0xFFFF5252),
+                    color = if (isPositive) BricxSuccessGreen else BricxDangerRed, // ⚡ UPDATED
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )

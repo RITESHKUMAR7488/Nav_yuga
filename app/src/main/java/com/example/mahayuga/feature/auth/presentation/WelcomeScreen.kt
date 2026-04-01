@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/auth/presentation/WelcomeScreen.kt
 package com.example.mahayuga.feature.auth.presentation
 
 import androidx.compose.animation.AnimatedVisibility
@@ -18,11 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.em
 import androidx.navigation.NavController
+import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 import kotlinx.coroutines.delay
-
-private val NavyBackground = Color(0xFF080F18) // Updated App Background
-private val NavyLightSurface = Color(0xFF1E293B)
-private val TextWhite = Color(0xFFFFFFFF)
 
 @Composable
 fun WelcomeScreen(navController: NavController) {
@@ -42,7 +41,7 @@ fun WelcomeScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NavyBackground)
+            .background(BricxBackground) // ⚡ UPDATED
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -53,7 +52,7 @@ fun WelcomeScreen(navController: NavController) {
             text = displayedText,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
-                color = TextWhite
+                color = BricxTextPrimary // ⚡ UPDATED
             ),
             textAlign = TextAlign.Center
         )
@@ -76,8 +75,8 @@ fun WelcomeScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Investing For Tomorrow", // Corrected Tagline
-                    color = Color(0xFF14B8A6),
+                    text = "SMART REAL ESTATE INVESTING",
+                    color = BricxBrandTeal, // ⚡ UPDATED
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.1.em,
@@ -101,34 +100,24 @@ fun WelcomeScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Button(
+                // ⚡ REPLACED RAW BUTTONS WITH BRICX COMPONENTS
+                BricxPrimaryButton(
+                    text = "Log in",
                     onClick = { navController.navigate("login") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = TextWhite,
-                        contentColor = NavyBackground
-                    ),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("Log in", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
+                    backgroundColor = BricxTextPrimary // White button for primary action here
+                )
 
-                Button(
+                BricxPrimaryButton(
+                    text = "Sign up",
                     onClick = { navController.navigate("register") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = NavyLightSurface,
-                        contentColor = TextWhite
-                    ),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = ButtonDefaults.buttonElevation(0.dp)
-                ) {
-                    Text("Sign up", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                }
+                    backgroundColor = BricxSurfaceCardLight // Secondary action look
+                )
             }
         }
         Spacer(modifier = Modifier.height(40.dp))
