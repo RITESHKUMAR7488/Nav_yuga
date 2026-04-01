@@ -8,10 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -24,9 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.mahayuga.feature.navyuga.presentation.home.GroupedHeaderIcons
+import com.example.mahayuga.core.common.BricxHubTopAppBar
 import com.example.mahayuga.feature.navyuga.presentation.home.LiveAssetTradingCard
-import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED NEW THEME
+import com.example.mahayuga.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,50 +42,22 @@ fun WatchlistScreen(
     var searchQuery by remember { mutableStateOf("") }
 
     Scaffold(
-        containerColor = BricxBackground, // ⚡ UPDATED
+        containerColor = BricxBackground,
         topBar = {
             Column(
                 modifier = Modifier
-                    .background(BricxBackground) // ⚡ UPDATED
+                    .background(BricxBackground)
                     .statusBarsPadding()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.Bookmark,
-                            contentDescription = "Watchlist Icon",
-                            tint = BricxBrandTeal, // ⚡ UPDATED
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Watchlist",
-                            color = BricxTextPrimary, // ⚡ UPDATED
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                BricxHubTopAppBar(
+                    title = "Watchlist",
+                    icon = Icons.Filled.Bookmark,
+                    onSearchClick = { isSearchActive = !isSearchActive },
+                    onNotificationClick = onNavigateToNotifications,
+                    onMessageClick = onNavigateToMessages
+                )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        GroupedHeaderIcons(
-                            listOf(Icons.Outlined.Search to { isSearchActive = !isSearchActive })
-                        )
-                        GroupedHeaderIcons(
-                            listOf(
-                                Icons.Outlined.Notifications to { onNavigateToNotifications() },
-                                Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
-                            )
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f)) // ⚡ UPDATED
+                HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f))
 
                 if (isSearchActive) {
                     OutlinedTextField(
@@ -97,17 +66,12 @@ fun WatchlistScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        placeholder = {
-                            Text(
-                                "Search Watchlist...",
-                                color = BricxTextSecondary
-                            )
-                        }, // ⚡ UPDATED
+                        placeholder = { Text("Search Watchlist...", color = BricxTextSecondary) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BricxBrandTeal, // ⚡ UPDATED
-                            unfocusedBorderColor = BricxBorder, // ⚡ UPDATED
-                            focusedTextColor = BricxTextPrimary, // ⚡ UPDATED
-                            unfocusedTextColor = BricxTextPrimary // ⚡ UPDATED
+                            focusedBorderColor = BricxBrandTeal,
+                            unfocusedBorderColor = BricxBorder,
+                            focusedTextColor = BricxTextPrimary,
+                            unfocusedTextColor = BricxTextPrimary
                         ),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -116,15 +80,15 @@ fun WatchlistScreen(
 
                 TabRow(
                     selectedTabIndex = selectedTab,
-                    containerColor = BricxBackground, // ⚡ UPDATED
-                    contentColor = BricxTextPrimary, // ⚡ UPDATED
+                    containerColor = BricxBackground,
+                    contentColor = BricxTextPrimary,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = BricxBrandTeal // ⚡ UPDATED
+                            color = BricxBrandTeal
                         )
                     },
-                    divider = { HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f)) } // ⚡ UPDATED
+                    divider = { HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f)) }
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
@@ -134,7 +98,7 @@ fun WatchlistScreen(
                                 Text(
                                     title,
                                     fontSize = 16.sp,
-                                    color = if (selectedTab == index) BricxTextPrimary else BricxTextSecondary, // ⚡ UPDATED
+                                    color = if (selectedTab == index) BricxTextPrimary else BricxTextSecondary,
                                     fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -151,7 +115,7 @@ fun WatchlistScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = BricxBrandTeal) // ⚡ UPDATED
+                CircularProgressIndicator(color = BricxBrandTeal)
             }
         } else if (uiState.error != null) {
             Box(
@@ -160,17 +124,14 @@ fun WatchlistScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = uiState.error ?: "Error Fetching Data",
-                    color = BricxDangerRed
-                ) // ⚡ UPDATED
+                Text(text = uiState.error ?: "Error Fetching Data", color = BricxDangerRed)
             }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .background(BricxBackground), // ⚡ UPDATED
+                    .background(BricxBackground),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -200,23 +161,18 @@ fun WatchlistScreen(
                                 .padding(40.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                "No assets in watchlist.",
-                                color = BricxTextSecondary
-                            )
-                        } // ⚡ UPDATED
+                            Text("No assets in watchlist.", color = BricxTextSecondary)
+                        }
                     }
                 } else {
                     items(displayedAssets, key = { it.symbol }) { quote ->
                         val isSmReit = smReitSymbols.contains(quote.symbol)
-
                         LiveAssetTradingCard(
-                            quote = quote,
-                            isSmReit = isSmReit,
-                            isSaved = true,
+                            quote = quote, isSmReit = isSmReit, isSaved = true,
                             onCardClick = {
-                                if (isSmReit) onNavigateToSmReitDetail(quote.symbol)
-                                else onNavigateToReitDetail(quote.symbol)
+                                if (isSmReit) onNavigateToSmReitDetail(quote.symbol) else onNavigateToReitDetail(
+                                    quote.symbol
+                                )
                             },
                             onSaveClick = {
                                 viewModel.removeWatchlist(quote.symbol)

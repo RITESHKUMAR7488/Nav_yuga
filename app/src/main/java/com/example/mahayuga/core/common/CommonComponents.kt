@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -42,6 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.mahayuga.ui.theme.*
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.vector.ImageVector
 
 // ==========================================
 // 1. NAVIGATION & LAYOUTS
@@ -523,5 +529,69 @@ fun SparklineGraph(
                 join = StrokeJoin.Round
             )
         )
+    }
+}
+// ⚡ THE NEW UNIVERSAL HUB HEADER
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BricxHubTopAppBar(
+    title: String,
+    icon: ImageVector,
+    onSearchClick: () -> Unit,
+    onNotificationClick: () -> Unit,
+    onMessageClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                Icon(icon, contentDescription = title, tint = BricxBrandTeal, modifier = Modifier.size(28.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(title, color = BricxTextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            }
+        },
+        actions = {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(end = 16.dp)) {
+                GroupedHeaderIcons(listOf(Icons.Outlined.Search to onSearchClick))
+                GroupedHeaderIcons(
+                    listOf(
+                        Icons.Outlined.Notifications to onNotificationClick,
+                        Icons.AutoMirrored.Outlined.Send to onMessageClick
+                    )
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = BricxBackground,
+            scrolledContainerColor = BricxBackground
+        )
+    )
+}
+
+// ⚡ MOVED FROM HOMESCREEN TO MAKE IT UNIVERSALLY REUSABLE
+@Composable
+fun GroupedHeaderIcons(icons: List<Pair<ImageVector, () -> Unit>>) {
+    Row(
+        modifier = Modifier
+            .shadow(elevation = 6.dp, shape = RoundedCornerShape(50))
+            .background(BricxSurfaceCard.copy(alpha = 0.85f), RoundedCornerShape(50))
+            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icons.forEach { (icon, onClick) ->
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = BricxTextPrimary,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onClick
+                    )
+            )
+        }
     }
 }

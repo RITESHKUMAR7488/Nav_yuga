@@ -11,10 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Send
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PieChart
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -26,9 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
-import com.example.mahayuga.feature.navyuga.presentation.home.GroupedHeaderIcons
-import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED NEW THEME
+import com.example.mahayuga.core.common.*
+import com.example.mahayuga.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,68 +43,34 @@ fun PortfolioScreen(
     val filterTabsList = listOf("All", "SM REITs", "REITs")
 
     Scaffold(
-        containerColor = BricxBackground, // ⚡ UPDATED
+        containerColor = BricxBackground,
         topBar = {
-            Column(
-                modifier = Modifier
-                    .background(BricxBackground) // ⚡ UPDATED
-                    .statusBarsPadding()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Outlined.PieChart,
-                            contentDescription = "Portfolio Icon",
-                            tint = BricxBrandTeal, // ⚡ UPDATED
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Portfolio",
-                            color = BricxTextPrimary, // ⚡ UPDATED
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+            Column(modifier = Modifier
+                .background(BricxBackground)
+                .statusBarsPadding()) {
+                BricxHubTopAppBar(
+                    title = "Portfolio",
+                    icon = Icons.Outlined.PieChart,
+                    onSearchClick = {
+                        Toast.makeText(context, "Search", Toast.LENGTH_SHORT).show()
+                    },
+                    onNotificationClick = onNavigateToNotifications,
+                    onMessageClick = onNavigateToMessages
+                )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        GroupedHeaderIcons(
-                            listOf(Icons.Outlined.Search to {
-                                Toast.makeText(
-                                    context,
-                                    "Search",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            })
-                        )
-                        GroupedHeaderIcons(
-                            listOf(
-                                Icons.Outlined.Notifications to { onNavigateToNotifications() },
-                                Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
-                            )
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = BricxSurfaceCardLight.copy(alpha = 0.5f)) // ⚡ UPDATED
+                HorizontalDivider(color = BricxSurfaceCardLight.copy(alpha = 0.5f))
 
                 TabRow(
                     selectedTabIndex = mainTab,
-                    containerColor = BricxBackground, // ⚡ UPDATED
-                    contentColor = BricxTextPrimary, // ⚡ UPDATED
+                    containerColor = BricxBackground,
+                    contentColor = BricxTextPrimary,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[mainTab]),
-                            color = BricxBrandTeal // ⚡ UPDATED
+                            color = BricxBrandTeal
                         )
                     },
-                    divider = { HorizontalDivider(color = BricxSurfaceCardLight) } // ⚡ UPDATED
+                    divider = { HorizontalDivider(color = BricxSurfaceCardLight) }
                 ) {
                     mainTabsList.forEachIndexed { index, title ->
                         Tab(
@@ -118,7 +80,7 @@ fun PortfolioScreen(
                                 Text(
                                     text = title,
                                     fontSize = 16.sp,
-                                    color = if (mainTab == index) BricxTextPrimary else BricxTextSecondary, // ⚡ UPDATED
+                                    color = if (mainTab == index) BricxTextPrimary else BricxTextSecondary,
                                     fontWeight = if (mainTab == index) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -130,7 +92,7 @@ fun PortfolioScreen(
     ) { paddingValues ->
         if (state.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = BricxBrandTeal) // ⚡ UPDATED
+                CircularProgressIndicator(color = BricxBrandTeal)
             }
         } else {
             LazyColumn(
@@ -140,7 +102,6 @@ fun PortfolioScreen(
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
                 if (mainTab == 0) {
-                    // --- HOLDINGS CONTENT ---
                     item {
                         Row(
                             modifier = Modifier
@@ -154,11 +115,11 @@ fun PortfolioScreen(
                                     "Portfolio Value",
                                     color = BricxTextSecondary,
                                     fontSize = 14.sp
-                                ) // ⚡ UPDATED
+                                )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     state.portfolioValue,
-                                    color = BricxTextPrimary, // ⚡ UPDATED
+                                    color = BricxTextPrimary,
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -166,41 +127,33 @@ fun PortfolioScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         state.dailyChangeValue,
-                                        color = if (state.isPositiveChange) BricxBrandTeal else BricxDangerRed, // ⚡ UPDATED
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium
+                                        color = if (state.isPositiveChange) BricxBrandTeal else BricxDangerRed,
+                                        fontSize = 14.sp, fontWeight = FontWeight.Medium
                                     )
-                                    Text(
-                                        " | ",
-                                        color = BricxTextSecondary,
-                                        fontSize = 14.sp
-                                    ) // ⚡ UPDATED
+                                    Text(" | ", color = BricxTextSecondary, fontSize = 14.sp)
                                     Text(
                                         state.dailyChangePercent,
-                                        color = if (state.isPositiveChange) BricxBrandTeal else BricxDangerRed, // ⚡ UPDATED
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium
+                                        color = if (state.isPositiveChange) BricxBrandTeal else BricxDangerRed,
+                                        fontSize = 14.sp, fontWeight = FontWeight.Medium
                                     )
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Legend Boxes
                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     LegendBox(
                                         "SM REITs",
                                         "${state.smReitPercent.toInt()}%",
                                         BricxBrandTeal
-                                    ) // ⚡ UPDATED
+                                    )
                                     LegendBox(
                                         "REITs",
                                         "${state.reitPercent.toInt()}%",
                                         BricxBrandBlue
-                                    ) // ⚡ UPDATED
+                                    )
                                 }
                             }
 
-                            // ⚡ REPLACED CUSTOM CHART LOGIC WITH BRICX COMMON COMPONENT
                             Box(
                                 modifier = Modifier.size(120.dp),
                                 contentAlignment = Alignment.Center
@@ -225,35 +178,29 @@ fun PortfolioScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
-                    // ⚡ REPLACED GRIDSTATBOX WITH DATAMETRICROW
                     item {
                         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                             Text(
                                 "Holdings Summary",
-                                color = BricxTextPrimary, // ⚡ UPDATED
+                                color = BricxTextPrimary,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
-
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 DataMetricRow("Properties", state.propertiesCount)
-                                Box(
-                                    Modifier
-                                        .width(1.dp)
-                                        .height(30.dp)
-                                        .background(BricxBorder)
-                                ) // Separator
+                                Box(Modifier
+                                    .width(1.dp)
+                                    .height(30.dp)
+                                    .background(BricxBorder))
                                 DataMetricRow("Invested", state.totalInvested)
-                                Box(
-                                    Modifier
-                                        .width(1.dp)
-                                        .height(30.dp)
-                                        .background(BricxBorder)
-                                ) // Separator
+                                Box(Modifier
+                                    .width(1.dp)
+                                    .height(30.dp)
+                                    .background(BricxBorder))
                                 DataMetricRow("Total sq. ft.", state.totalSqFt)
                             }
                             Spacer(modifier = Modifier.height(24.dp))
@@ -262,26 +209,21 @@ fun PortfolioScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 DataMetricRow("Dividend", state.totalDividend)
-                                Box(
-                                    Modifier
-                                        .width(1.dp)
-                                        .height(30.dp)
-                                        .background(BricxBorder)
-                                ) // Separator
+                                Box(Modifier
+                                    .width(1.dp)
+                                    .height(30.dp)
+                                    .background(BricxBorder))
                                 DataMetricRow("Avg ROI", state.avgRoi)
-                                Box(
-                                    Modifier
-                                        .width(1.dp)
-                                        .height(30.dp)
-                                        .background(BricxBorder)
-                                ) // Separator
+                                Box(Modifier
+                                    .width(1.dp)
+                                    .height(30.dp)
+                                    .background(BricxBorder))
                                 DataMetricRow("Growth", state.totalGrowth)
                             }
                         }
                         Spacer(modifier = Modifier.height(32.dp))
                     }
 
-                    // Filter Tabs
                     item {
                         Row(
                             modifier = Modifier
@@ -293,7 +235,7 @@ fun PortfolioScreen(
                                 val isSelected = filterTab == index
                                 Text(
                                     text = title,
-                                    color = if (isSelected) BricxTextPrimary else BricxTextSecondary, // ⚡ UPDATED
+                                    color = if (isSelected) BricxTextPrimary else BricxTextSecondary,
                                     fontSize = 16.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     modifier = Modifier.clickable { filterTab = index }
@@ -303,7 +245,6 @@ fun PortfolioScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
-                    // Holdings List
                     val filteredHoldings = when (filterTab) {
                         1 -> state.holdings.filter { it.type == "SM REIT" }
                         2 -> state.holdings.filter { it.type == "REIT" }
@@ -321,7 +262,7 @@ fun PortfolioScreen(
                                 Text(
                                     "No holdings found in this category.",
                                     color = BricxTextSecondary
-                                ) // ⚡ UPDATED
+                                )
                             }
                         }
                     } else {
@@ -332,7 +273,6 @@ fun PortfolioScreen(
                     }
 
                 } else {
-                    // --- POSITIONS CONTENT ---
                     if (state.positions.isEmpty()) {
                         item {
                             Box(
@@ -340,18 +280,13 @@ fun PortfolioScreen(
                                     .fillMaxWidth()
                                     .padding(40.dp),
                                 contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "No active orders found.",
-                                    color = BricxTextSecondary
-                                ) // ⚡ UPDATED
-                            }
+                            ) { Text("No active orders found.", color = BricxTextSecondary) }
                         }
                     } else {
                         item {
                             Text(
                                 "Pending Orders",
-                                color = BricxTextPrimary, // ⚡ UPDATED
+                                color = BricxTextPrimary,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(
@@ -372,33 +307,24 @@ fun PortfolioScreen(
     }
 }
 
-// --- SUB-COMPONENTS ---
-
 @Composable
 fun LegendBox(title: String, value: String, color: Color) {
     Box(
         modifier = Modifier
-            .border(1.dp, BricxSurfaceCardLight, RoundedCornerShape(8.dp)) // ⚡ UPDATED
-            .background(BricxSurfaceCard, RoundedCornerShape(8.dp)) // ⚡ UPDATED
+            .border(1.dp, BricxSurfaceCardLight, RoundedCornerShape(8.dp))
+            .background(BricxSurfaceCard, RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(color, CircleShape)
-                )
+                Box(modifier = Modifier
+                    .size(8.dp)
+                    .background(color, CircleShape))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(title, color = BricxTextSecondary, fontSize = 10.sp) // ⚡ UPDATED
+                Text(title, color = BricxTextSecondary, fontSize = 10.sp)
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                value,
-                color = BricxTextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            ) // ⚡ UPDATED
+            Text(value, color = BricxTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -409,9 +335,9 @@ fun HoldingItemCard(holding: NewPortfolioHolding) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BricxSurfaceCardLight) // ⚡ UPDATED
+        border = androidx.compose.foundation.BorderStroke(1.dp, BricxSurfaceCardLight)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -421,17 +347,17 @@ fun HoldingItemCard(holding: NewPortfolioHolding) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         holding.name,
-                        color = BricxTextPrimary, // ⚡ UPDATED
+                        color = BricxTextPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(holding.type, color = BricxTextSecondary, fontSize = 12.sp) // ⚡ UPDATED
+                    Text(holding.type, color = BricxTextSecondary, fontSize = 12.sp)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Current Value", color = BricxTextSecondary, fontSize = 10.sp) // ⚡ UPDATED
+                    Text("Current Value", color = BricxTextSecondary, fontSize = 10.sp)
                     Text(
                         holding.currentValue,
-                        color = BricxTextPrimary, // ⚡ UPDATED
+                        color = BricxTextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -444,7 +370,6 @@ fun HoldingItemCard(holding: NewPortfolioHolding) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Left Details
                 Column(modifier = Modifier.weight(1f)) {
                     InlineStatText("Invested:", holding.invested)
                     InlineStatText("Units:", holding.totalUnits)
@@ -452,13 +377,12 @@ fun HoldingItemCard(holding: NewPortfolioHolding) {
                     InlineStatText("Current Price:", holding.currentPrice)
                 }
 
-                // ⚡ REPLACED CUSTOM SPARKLINE WITH BRICX COMMON COMPONENT
                 Box(
                     modifier = Modifier
                         .weight(1.2f)
                         .height(80.dp)
-                        .background(BricxBackground, RoundedCornerShape(8.dp)) // ⚡ UPDATED
-                        .border(1.dp, BricxSurfaceCardLight, RoundedCornerShape(8.dp)) // ⚡ UPDATED
+                        .background(BricxBackground, RoundedCornerShape(8.dp))
+                        .border(1.dp, BricxSurfaceCardLight, RoundedCornerShape(8.dp))
                         .padding(8.dp)
                 ) {
                     SparklineGraph(
@@ -470,19 +394,18 @@ fun HoldingItemCard(holding: NewPortfolioHolding) {
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = BricxSurfaceCardLight) // ⚡ UPDATED
+            HorizontalDivider(color = BricxSurfaceCardLight)
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Total Growth", color = BricxTextSecondary, fontSize = 12.sp) // ⚡ UPDATED
+                Text("Total Growth", color = BricxTextSecondary, fontSize = 12.sp)
                 Text(
                     text = "${if (holding.isPositiveGrowth) "+" else ""}${holding.growth}",
-                    color = if (holding.isPositiveGrowth) BricxBrandTeal else BricxDangerRed, // ⚡ UPDATED
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    color = if (holding.isPositiveGrowth) BricxBrandTeal else BricxDangerRed,
+                    fontSize = 14.sp, fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -495,9 +418,9 @@ fun PositionItemCard(position: PortfolioPosition) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BricxSurfaceCardLight) // ⚡ UPDATED
+        border = androidx.compose.foundation.BorderStroke(1.dp, BricxSurfaceCardLight)
     ) {
         Row(
             modifier = Modifier
@@ -511,21 +434,20 @@ fun PositionItemCard(position: PortfolioPosition) {
                     Surface(
                         color = if (position.orderType == "BUY") BricxBrandTeal.copy(0.2f) else BricxDangerRed.copy(
                             0.2f
-                        ), // ⚡ UPDATED
+                        ),
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             text = position.orderType,
-                            color = if (position.orderType == "BUY") BricxBrandTeal else BricxDangerRed, // ⚡ UPDATED
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
+                            color = if (position.orderType == "BUY") BricxBrandTeal else BricxDangerRed,
+                            fontSize = 10.sp, fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         position.name,
-                        color = BricxTextPrimary, // ⚡ UPDATED
+                        color = BricxTextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -533,7 +455,7 @@ fun PositionItemCard(position: PortfolioPosition) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     "Qty: ${position.quantity} @ ${position.orderPrice}",
-                    color = BricxTextSecondary, // ⚡ UPDATED
+                    color = BricxTextSecondary,
                     fontSize = 12.sp
                 )
             }
@@ -541,7 +463,7 @@ fun PositionItemCard(position: PortfolioPosition) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     position.status,
-                    color = BricxWarningOrange, // ⚡ UPDATED
+                    color = BricxWarningOrange,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -553,12 +475,7 @@ fun PositionItemCard(position: PortfolioPosition) {
 @Composable
 fun InlineStatText(label: String, value: String) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
-        Text(text = "$label ", color = BricxTextSecondary, fontSize = 11.sp) // ⚡ UPDATED
-        Text(
-            text = value,
-            color = BricxTextPrimary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold
-        ) // ⚡ UPDATED
+        Text(text = "$label ", color = BricxTextSecondary, fontSize = 11.sp)
+        Text(text = value, color = BricxTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }

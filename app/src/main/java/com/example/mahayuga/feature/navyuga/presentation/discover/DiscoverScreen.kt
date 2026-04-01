@@ -36,17 +36,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.mahayuga.feature.navyuga.presentation.home.GroupedHeaderIcons
+import com.example.mahayuga.core.common.BricxHubTopAppBar // ⚡ IMPORTED COMMON COMPONENT
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 
-// --- THEME COLORS ---
-private val BackgroundDark = Color(0xFF080F18)
-private val CardBackground = Color(0xFF0F1722)
-private val TextPrimary = Color.White
-private val TextSecondary = Color(0xFF8B9BB4)
-private val AccentTeal = Color(0xFF00BFA5)
+// --- STORY SPECIFIC COLORS (Kept local as they are specific to the Instagram ring effect) ---
 private val StoryGradientStart = Color(0xFFE1306C)
 private val StoryGradientEnd = Color(0xFFF77737)
-private val BricxStoryColor = Color(0xFF2979FF)
 
 @Composable
 fun DiscoverScreen(
@@ -67,53 +62,26 @@ fun DiscoverScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundDark)
+            .background(BricxBackground) // ⚡ UPDATED
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
             // --- HEADER ---
             Column(
                 modifier = Modifier
-                    .background(BackgroundDark)
+                    .background(BricxBackground) // ⚡ UPDATED
                     .statusBarsPadding()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Discover Icon",
-                            tint = AccentTeal,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Discover",
-                            color = TextPrimary,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                // ⚡ REPLACED CUSTOM HEADER WITH BRICXHUBTOPAPPBAR
+                BricxHubTopAppBar(
+                    title = "Discover",
+                    icon = Icons.Default.Search,
+                    onSearchClick = { isSearchActive = !isSearchActive }, // Toggles inline search
+                    onNotificationClick = onNavigateToNotifications,
+                    onMessageClick = onNavigateToMessages
+                )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        GroupedHeaderIcons(
-                            listOf(Icons.Default.Search to { isSearchActive = !isSearchActive })
-                        )
-                        GroupedHeaderIcons(
-                            listOf(
-                                Icons.Outlined.Notifications to { onNavigateToNotifications() },
-                                Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
-                            )
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = CardBackground.copy(alpha = 0.5f))
+                HorizontalDivider(color = BricxSurfaceCard.copy(alpha = 0.5f)) // ⚡ UPDATED
 
                 if (isSearchActive) {
                     OutlinedTextField(
@@ -125,14 +93,14 @@ fun DiscoverScreen(
                         placeholder = {
                             Text(
                                 "Search reels, and education...",
-                                color = Color.Gray
+                                color = BricxTextSecondary // ⚡ UPDATED
                             )
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AccentTeal,
-                            unfocusedBorderColor = CardBackground,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
+                            focusedBorderColor = BricxBrandTeal, // ⚡ UPDATED
+                            unfocusedBorderColor = BricxSurfaceCard, // ⚡ UPDATED
+                            focusedTextColor = BricxTextPrimary, // ⚡ UPDATED
+                            unfocusedTextColor = BricxTextPrimary // ⚡ UPDATED
                         ),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -144,13 +112,13 @@ fun DiscoverScreen(
             when (val state = uiState) {
                 is DiscoverState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = AccentTeal)
+                        CircularProgressIndicator(color = BricxBrandTeal) // ⚡ UPDATED
                     }
                 }
 
                 is DiscoverState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = state.message, color = Color.Red)
+                        Text(text = state.message, color = BricxDangerRed) // ⚡ UPDATED
                     }
                 }
 
@@ -182,7 +150,7 @@ fun DiscoverScreen(
                                     .padding(horizontal = 16.dp, vertical = 12.dp)
                                     .height(140.dp)
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(CardBackground)
+                                    .background(BricxSurfaceCard) // ⚡ UPDATED
                             ) {
                                 AsyncImage(
                                     model = state.adBoard.imageUrl,
@@ -209,21 +177,21 @@ fun DiscoverScreen(
                                 ) {
                                     Text(
                                         "Sponsored",
-                                        color = AccentTeal,
+                                        color = BricxBrandTeal, // ⚡ UPDATED
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         "Invest in Grade-A\nWarehousing",
-                                        color = TextPrimary,
+                                        color = BricxTextPrimary, // ⚡ UPDATED
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Button(
                                         onClick = { },
-                                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                                        colors = ButtonDefaults.buttonColors(containerColor = BricxBrandTeal), // ⚡ UPDATED
                                         shape = RoundedCornerShape(8.dp),
                                         contentPadding = PaddingValues(
                                             horizontal = 12.dp,
@@ -235,7 +203,7 @@ fun DiscoverScreen(
                                             "Learn More",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = BackgroundDark
+                                            color = BricxBackground // ⚡ UPDATED
                                         )
                                     }
                                 }
@@ -247,7 +215,7 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 "Trending Reels",
-                                color = TextPrimary,
+                                color = BricxTextPrimary, // ⚡ UPDATED
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(
@@ -294,7 +262,7 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(32.dp))
                             Text(
                                 "Learn & Grow",
-                                color = TextPrimary,
+                                color = BricxTextPrimary, // ⚡ UPDATED
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(
@@ -357,9 +325,9 @@ fun StoryCircleItem(story: DiscoverStory) {
                 .background(
                     if (story.isBricx) Brush.sweepGradient(
                         listOf(
-                            BricxStoryColor,
-                            AccentTeal,
-                            BricxStoryColor
+                            BricxBrandBlue, // ⚡ UPDATED
+                            BricxBrandTeal, // ⚡ UPDATED
+                            BricxBrandBlue  // ⚡ UPDATED
                         )
                     )
                     else if (!story.isSeen) Brush.sweepGradient(
@@ -373,7 +341,7 @@ fun StoryCircleItem(story: DiscoverStory) {
                 )
                 .padding(3.dp)
                 .clip(CircleShape)
-                .background(CardBackground),
+                .background(BricxSurfaceCard), // ⚡ UPDATED
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
@@ -397,7 +365,7 @@ fun StoryCircleItem(story: DiscoverStory) {
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = story.name,
-            color = if (story.isBricx) AccentTeal else TextPrimary,
+            color = if (story.isBricx) BricxBrandTeal else BricxTextPrimary, // ⚡ UPDATED
             fontSize = 12.sp,
             fontWeight = if (story.isBricx) FontWeight.Bold else FontWeight.Medium
         )
@@ -416,7 +384,7 @@ fun ReelGridCard(reel: DiscoverReel?, modifier: Modifier, onClick: (DiscoverReel
             .aspectRatio(0.6f)
             .clickable { onClick(reel) },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground)
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard) // ⚡ UPDATED
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -499,7 +467,7 @@ fun ReelGridCard(reel: DiscoverReel?, modifier: Modifier, onClick: (DiscoverReel
                 ) {
                     Text(
                         text = reel.assetManager,
-                        color = AccentTeal,
+                        color = BricxBrandTeal, // ⚡ UPDATED
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -508,7 +476,7 @@ fun ReelGridCard(reel: DiscoverReel?, modifier: Modifier, onClick: (DiscoverReel
                     )
                     Text(
                         text = " • AUM: ${reel.aum}",
-                        color = TextSecondary,
+                        color = BricxTextSecondary, // ⚡ UPDATED
                         fontSize = 10.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -532,7 +500,7 @@ fun EducationVideoCard(video: DiscoverEducation, onClick: () -> Unit) {
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(CardBackground)
+                .background(BricxSurfaceCard) // ⚡ UPDATED
         ) {
             AsyncImage(
                 model = video.thumbnailUrl,
@@ -564,10 +532,14 @@ fun EducationVideoCard(video: DiscoverEducation, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(CardBackground),
+                    .background(BricxSurfaceCard), // ⚡ UPDATED
                 contentAlignment = Alignment.Center
             ) {
-                Text(video.assetManager.take(1), color = AccentTeal, fontWeight = FontWeight.Bold)
+                Text(
+                    video.assetManager.take(1),
+                    color = BricxBrandTeal,
+                    fontWeight = FontWeight.Bold
+                ) // ⚡ UPDATED
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -575,7 +547,7 @@ fun EducationVideoCard(video: DiscoverEducation, onClick: () -> Unit) {
             Column {
                 Text(
                     text = video.title,
-                    color = TextPrimary,
+                    color = BricxTextPrimary, // ⚡ UPDATED
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
@@ -585,12 +557,20 @@ fun EducationVideoCard(video: DiscoverEducation, onClick: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         video.assetManager,
-                        color = AccentTeal,
+                        color = BricxBrandTeal, // ⚡ UPDATED
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
-                    Text(" • AUM: ${video.aum}", color = TextSecondary, fontSize = 12.sp)
-                    Text(" • ${video.views}", color = TextSecondary, fontSize = 12.sp)
+                    Text(
+                        " • AUM: ${video.aum}",
+                        color = BricxTextSecondary,
+                        fontSize = 12.sp
+                    ) // ⚡ UPDATED
+                    Text(
+                        " • ${video.views}",
+                        color = BricxTextSecondary,
+                        fontSize = 12.sp
+                    ) // ⚡ UPDATED
                 }
             }
         }
@@ -661,7 +641,7 @@ fun FullScreenReelView(reel: DiscoverReel, onClose: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .background(AccentTeal, CircleShape),
+                        .background(BricxBrandTeal, CircleShape), // ⚡ UPDATED
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -719,7 +699,7 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundDark)
+            .background(BricxBackground) // ⚡ UPDATED
             .statusBarsPadding()
     ) {
         // Video Player Placeholder
@@ -771,9 +751,18 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(video.title, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(
+                video.title,
+                color = BricxTextPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            ) // ⚡ UPDATED
             Spacer(modifier = Modifier.height(8.dp))
-            Text("${video.views} • 2 days ago", color = TextSecondary, fontSize = 12.sp)
+            Text(
+                "${video.views} • 2 days ago",
+                color = BricxTextSecondary,
+                fontSize = 12.sp
+            ) // ⚡ UPDATED
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -785,12 +774,12 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(CardBackground, CircleShape),
+                        .background(BricxSurfaceCard, CircleShape), // ⚡ UPDATED
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         video.assetManager.take(1),
-                        color = AccentTeal,
+                        color = BricxBrandTeal, // ⚡ UPDATED
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -798,18 +787,26 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         video.assetManager,
-                        color = TextPrimary,
+                        color = BricxTextPrimary, // ⚡ UPDATED
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
-                    Text("AUM: ${video.aum}", color = TextSecondary, fontSize = 12.sp)
+                    Text(
+                        "AUM: ${video.aum}",
+                        color = BricxTextSecondary,
+                        fontSize = 12.sp
+                    ) // ⚡ UPDATED
                 }
                 Button(
                     onClick = { },
-                    colors = ButtonDefaults.buttonColors(containerColor = TextPrimary),
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxTextPrimary), // ⚡ UPDATED
                     shape = RoundedCornerShape(50)
                 ) {
-                    Text("Subscribe", color = BackgroundDark, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Subscribe",
+                        color = BricxBackground,
+                        fontWeight = FontWeight.Bold
+                    ) // ⚡ UPDATED
                 }
             }
 
@@ -827,12 +824,12 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = CardBackground)
+            HorizontalDivider(color = BricxSurfaceCard) // ⚡ UPDATED
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 "Suggested Videos",
-                color = TextPrimary,
+                color = BricxTextPrimary, // ⚡ UPDATED
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
@@ -850,21 +847,29 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
                             .width(120.dp)
                             .aspectRatio(16f / 9f)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(CardBackground)
+                            .background(BricxSurfaceCard) // ⚡ UPDATED
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
                             "Understanding fractional real estate laws",
-                            color = TextPrimary,
+                            color = BricxTextPrimary, // ⚡ UPDATED
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Navyuga Assets", color = TextSecondary, fontSize = 12.sp)
-                        Text("34K views • 1 week ago", color = TextSecondary, fontSize = 12.sp)
+                        Text(
+                            "Navyuga Assets",
+                            color = BricxTextSecondary,
+                            fontSize = 12.sp
+                        ) // ⚡ UPDATED
+                        Text(
+                            "34K views • 1 week ago",
+                            color = BricxTextSecondary,
+                            fontSize = 12.sp
+                        ) // ⚡ UPDATED
                     }
                 }
             }
@@ -875,8 +880,8 @@ fun YouTubeStyleVideoDetail(video: DiscoverEducation, onClose: () -> Unit) {
 @Composable
 fun EduActionBtn(icon: ImageVector, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, null, tint = TextPrimary, modifier = Modifier.size(24.dp))
+        Icon(icon, null, tint = BricxTextPrimary, modifier = Modifier.size(24.dp)) // ⚡ UPDATED
         Spacer(modifier = Modifier.height(4.dp))
-        Text(label, color = TextPrimary, fontSize = 12.sp)
+        Text(label, color = BricxTextPrimary, fontSize = 12.sp) // ⚡ UPDATED
     }
 }

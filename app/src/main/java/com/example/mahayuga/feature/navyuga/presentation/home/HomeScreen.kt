@@ -22,18 +22,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -42,9 +38,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -57,40 +51,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.mahayuga.core.common.BricxHubTopAppBar
 import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
-import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED NEW THEME
+import com.example.mahayuga.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Locale
-
-@Composable
-fun GroupedHeaderIcons(icons: List<Pair<ImageVector, () -> Unit>>) {
-    Row(
-        modifier = Modifier
-            .shadow(elevation = 6.dp, shape = RoundedCornerShape(50))
-            .background(BricxSurfaceCard.copy(alpha = 0.85f), RoundedCornerShape(50)) // ⚡ UPDATED
-            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        icons.forEach { (icon, onClick) ->
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = BricxTextPrimary, // ⚡ UPDATED
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onClick
-                    )
-            )
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -115,64 +82,31 @@ fun HomeScreen(
     val pullToRefreshState = rememberPullToRefreshState()
 
     Scaffold(
-        containerColor = BricxBackground, // ⚡ UPDATED
+        containerColor = BricxBackground,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            Column(modifier = Modifier.background(BricxBackground)) { // ⚡ UPDATED
-                TopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Home,
-                                contentDescription = "Home Icon",
-                                tint = BricxBrandTeal, // ⚡ UPDATED
-                                modifier = Modifier.size(32.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                "Home",
-                                color = BricxTextPrimary, // ⚡ UPDATED
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    },
-                    actions = {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.padding(end = 16.dp)
-                        ) {
-                            GroupedHeaderIcons(listOf(Icons.Outlined.Search to { onNavigateToSearch() }))
-                            GroupedHeaderIcons(
-                                listOf(
-                                    Icons.Outlined.Notifications to { onNavigateToNotifications() },
-                                    Icons.AutoMirrored.Outlined.Send to { onNavigateToMessages() }
-                                )
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = BricxBackground, // ⚡ UPDATED
-                        scrolledContainerColor = BricxBackground // ⚡ UPDATED
-                    ),
-                    scrollBehavior = scrollBehavior
+            Column(modifier = Modifier.background(BricxBackground)) {
+                BricxHubTopAppBar(
+                    title = "Home",
+                    icon = Icons.Outlined.Home,
+                    onSearchClick = onNavigateToSearch,
+                    onNotificationClick = onNavigateToNotifications,
+                    onMessageClick = onNavigateToMessages
                 )
-                HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f)) // ⚡ UPDATED
+
+                HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f))
+
                 TabRow(
                     selectedTabIndex = pagerState.currentPage,
-                    containerColor = BricxBackground, // ⚡ UPDATED
-                    contentColor = BricxTextPrimary, // ⚡ UPDATED
+                    containerColor = BricxBackground,
+                    contentColor = BricxTextPrimary,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(
-                                tabPositions[pagerState.currentPage]
-                            ), color = BricxBrandTeal // ⚡ UPDATED
+                            Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                            color = BricxBrandTeal
                         )
                     },
-                    divider = { HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f)) } // ⚡ UPDATED
+                    divider = { HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f)) }
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
@@ -182,7 +116,7 @@ fun HomeScreen(
                                 Text(
                                     title,
                                     fontSize = 16.sp,
-                                    color = if (pagerState.currentPage == index) BricxTextPrimary else BricxTextSecondary, // ⚡ UPDATED
+                                    color = if (pagerState.currentPage == index) BricxTextPrimary else BricxTextSecondary,
                                     fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -192,14 +126,12 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
-                    color = BricxBrandTeal, // ⚡ UPDATED
+                    color = BricxBrandTeal,
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
@@ -215,15 +147,13 @@ fun HomeScreen(
                     ) {
                         val listState = rememberLazyListState()
                         LaunchedEffect(scrollToTopTrigger) {
-                            if (scrollToTopTrigger) listState.animateScrollToItem(
-                                0
-                            )
+                            if (scrollToTopTrigger) listState.animateScrollToItem(0)
                         }
                         LazyColumn(
                             state = listState,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(BricxBackground), // ⚡ UPDATED
+                                .background(BricxBackground),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 end = 16.dp,
@@ -252,7 +182,7 @@ fun HomeScreen(
                                             "No assets available right now.",
                                             color = BricxTextSecondary
                                         )
-                                    } // ⚡ UPDATED
+                                    }
                                 }
                             } else {
                                 items(filteredAssets, key = { it.symbol }) { quote ->
@@ -265,11 +195,12 @@ fun HomeScreen(
                                             ) else onNavigateToReitDetail(quote.symbol)
                                         },
                                         onSaveClick = {
-                                            viewModel.toggleWatchlist(quote.symbol); Toast.makeText(
-                                            context,
-                                            if (isSaved) "Removed from Watchlist" else "Added to Watchlist",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                            viewModel.toggleWatchlist(quote.symbol)
+                                            Toast.makeText(
+                                                context,
+                                                if (isSaved) "Removed from Watchlist" else "Added to Watchlist",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         },
                                         onShareClick = {
                                             Toast.makeText(
@@ -294,7 +225,8 @@ fun HomeScreen(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { isTickerOpen = false })
+                        ) { isTickerOpen = false }
+                )
             }
 
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
@@ -302,7 +234,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
                         contentDescription = "Open Ticker",
-                        tint = BricxTextPrimary.copy(alpha = 0.6f), // ⚡ UPDATED
+                        tint = BricxTextPrimary.copy(alpha = 0.6f),
                         modifier = Modifier
                             .size(36.dp)
                             .padding(end = 4.dp)
@@ -331,7 +263,7 @@ fun HomeScreen(
                             .fillMaxHeight()
                             .padding(bottom = 100.dp)
                             .background(
-                                color = BricxSurfaceCard.copy(alpha = 0.98f), // ⚡ UPDATED
+                                color = BricxSurfaceCard.copy(alpha = 0.98f),
                                 shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
                             )
                             .border(
@@ -356,18 +288,18 @@ fun HomeScreen(
                             ) {
                                 Text(
                                     "Markets",
-                                    color = BricxTextPrimary, // ⚡ UPDATED
+                                    color = BricxTextPrimary,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     "By BricX",
-                                    color = BricxBrandTeal, // ⚡ UPDATED
+                                    color = BricxBrandTeal,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
-                            HorizontalDivider(color = BricxBorder.copy(alpha = 0.8f)) // ⚡ UPDATED
+                            HorizontalDivider(color = BricxBorder.copy(alpha = 0.8f))
                             val tickerListState = rememberLazyListState()
                             LaunchedEffect(isTickerOpen) {
                                 if (isTickerOpen) {
@@ -402,7 +334,7 @@ fun HomeScreen(
                                             Text(
                                                 quote.name.split(",")[0].take(10)
                                                     .uppercase(Locale.ROOT),
-                                                color = BricxTextPrimary, // ⚡ UPDATED
+                                                color = BricxTextPrimary,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 maxLines = 1,
@@ -418,7 +350,7 @@ fun HomeScreen(
                                                     )
                                                 }",
                                                 currentValue = quote.currentPrice,
-                                                defaultColor = BricxTextPrimary, // ⚡ UPDATED
+                                                defaultColor = BricxTextPrimary,
                                                 textStyle = TextStyle(fontSize = 12.sp)
                                             )
                                             Text(
@@ -429,7 +361,7 @@ fun HomeScreen(
                                                         quote.percentageChange
                                                     )
                                                 }%",
-                                                color = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange, // ⚡ UPDATED
+                                                color = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -453,7 +385,7 @@ fun LiveAssetTradingCard(
     quote: MarketQuote, isSmReit: Boolean, isSaved: Boolean,
     onCardClick: () -> Unit, onSaveClick: () -> Unit, onShareClick: () -> Unit
 ) {
-    val priceColor = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange // ⚡ UPDATED
+    val priceColor = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange
     var isNse by remember { mutableStateOf(true) }
 
     val assetData = when (quote.symbol) {
@@ -506,9 +438,9 @@ fun LiveAssetTradingCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCardClick() },
-        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BricxBorder) // ⚡ UPDATED
+        border = androidx.compose.foundation.BorderStroke(1.dp, BricxBorder)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -519,7 +451,7 @@ fun LiveAssetTradingCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = displayName,
-                        color = BricxTextPrimary, // ⚡ UPDATED
+                        color = BricxTextPrimary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -528,7 +460,7 @@ fun LiveAssetTradingCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (isSmReit) "Mumbai, Maharashtra" else "Multiple Cities",
-                        color = BricxTextSecondary, // ⚡ UPDATED
+                        color = BricxTextSecondary,
                         fontSize = 12.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -544,7 +476,7 @@ fun LiveAssetTradingCard(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share",
-                            tint = BricxTextSecondary, // ⚡ UPDATED
+                            tint = BricxTextSecondary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -558,7 +490,7 @@ fun LiveAssetTradingCard(
                         Icon(
                             imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Default.BookmarkBorder,
                             contentDescription = "Save",
-                            tint = if (isSaved) BricxBrandTeal else BricxTextSecondary // ⚡ UPDATED
+                            tint = if (isSaved) BricxBrandTeal else BricxTextSecondary
                         )
                     }
                 }
@@ -571,15 +503,9 @@ fun LiveAssetTradingCard(
             ) {
                 Column {
                     RealtimeFlickerText(
-                        text = "₹${
-                            String.format(
-                                Locale.US,
-                                "%,.2f",
-                                quote.currentPrice
-                            )
-                        }",
+                        text = "₹${String.format(Locale.US, "%,.2f", quote.currentPrice)}",
                         currentValue = quote.currentPrice,
-                        defaultColor = BricxTextPrimary, // ⚡ UPDATED
+                        defaultColor = BricxTextPrimary,
                         textStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -592,7 +518,7 @@ fun LiveAssetTradingCard(
                                 )
                             }", color = priceColor, fontSize = 14.sp, fontWeight = FontWeight.Medium
                         )
-                        Text(" | ", color = BricxTextSecondary, fontSize = 12.sp) // ⚡ UPDATED
+                        Text(" | ", color = BricxTextSecondary, fontSize = 12.sp)
                         Text(
                             text = "${if (quote.isPositive) "+" else ""}${
                                 String.format(
@@ -606,7 +532,7 @@ fun LiveAssetTradingCard(
                 }
                 Row(
                     modifier = Modifier
-                        .border(1.dp, BricxBorder, RoundedCornerShape(8.dp)) // ⚡ UPDATED
+                        .border(1.dp, BricxBorder, RoundedCornerShape(8.dp))
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { isNse = !isNse }
                         .padding(horizontal = 8.dp, vertical = 6.dp),
@@ -614,7 +540,7 @@ fun LiveAssetTradingCard(
                 ) {
                     Text(
                         text = if (isNse) "NSE" else "BSE",
-                        color = BricxTextPrimary, // ⚡ UPDATED
+                        color = BricxTextPrimary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -622,7 +548,7 @@ fun LiveAssetTradingCard(
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = "Switch Market",
-                        tint = BricxTextSecondary, // ⚡ UPDATED
+                        tint = BricxTextSecondary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -635,10 +561,7 @@ fun LiveAssetTradingCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color.White)
             ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                     AsyncImage(
                         model = images.getOrElse(page) { images.first() },
                         contentDescription = null,
@@ -656,30 +579,27 @@ fun LiveAssetTradingCard(
                 Column {
                     Text(
                         text = managerName,
-                        color = BricxTextPrimary, // ⚡ UPDATED
+                        color = BricxTextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
-                    ); Text(
-                    text = "Asset Manager",
-                    color = BricxTextSecondary,
-                    fontSize = 12.sp
-                ) // ⚡ UPDATED
+                    )
+                    Text(text = "Asset Manager", color = BricxTextSecondary, fontSize = 12.sp)
                 }
                 Column(
                     modifier = Modifier
-                        .border(1.dp, BricxBorder, RoundedCornerShape(4.dp)) // ⚡ UPDATED
+                        .border(1.dp, BricxBorder, RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "SEBI Registered",
-                        color = BricxTextSecondary, // ⚡ UPDATED
+                        color = BricxTextSecondary,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = "IN/REIT/XXXX",
-                        color = BricxTextPrimary, // ⚡ UPDATED
+                        color = BricxTextPrimary,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
