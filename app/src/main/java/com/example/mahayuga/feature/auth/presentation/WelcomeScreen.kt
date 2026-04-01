@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.em
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 
-private val NavyBackground = Color(0xFF0F172A)
+private val NavyBackground = Color(0xFF080F18) // Updated App Background
 private val NavyLightSurface = Color(0xFF1E293B)
 private val TextWhite = Color(0xFFFFFFFF)
 
@@ -64,7 +64,6 @@ fun WelcomeScreen(navController: NavController) {
             visible = showContent,
             enter = fadeIn(tween(1000)) + slideInVertically()
         ) {
-            // ⚡ BRICX BRANDING REPLACING IMAGE LOGO
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "BRICX",
@@ -77,7 +76,7 @@ fun WelcomeScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "SMART REAL ESTATE INVESTING",
+                    text = "Investing For Tomorrow", // Corrected Tagline
                     color = Color(0xFF14B8A6),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -91,7 +90,12 @@ fun WelcomeScreen(navController: NavController) {
 
         AnimatedVisibility(
             visible = showContent,
-            enter = fadeIn(tween(1000, delayMillis = 500)) + slideInVertically(initialOffsetY = { 50 })
+            enter = fadeIn(
+                tween(
+                    1000,
+                    delayMillis = 500
+                )
+            ) + slideInVertically(initialOffsetY = { 50 })
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -99,8 +103,13 @@ fun WelcomeScreen(navController: NavController) {
             ) {
                 Button(
                     onClick = { navController.navigate("login") },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TextWhite, contentColor = NavyBackground),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TextWhite,
+                        contentColor = NavyBackground
+                    ),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Log in", fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -108,8 +117,13 @@ fun WelcomeScreen(navController: NavController) {
 
                 Button(
                     onClick = { navController.navigate("register") },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NavyLightSurface, contentColor = TextWhite),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = NavyLightSurface,
+                        contentColor = TextWhite
+                    ),
                     shape = MaterialTheme.shapes.medium,
                     elevation = ButtonDefaults.buttonElevation(0.dp)
                 ) {

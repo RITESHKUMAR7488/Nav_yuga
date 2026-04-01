@@ -58,7 +58,11 @@ fun SearchScreen(
                 title = { Text("Search", color = TextWhite, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextWhite)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextWhite
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = TradeBg)
@@ -77,8 +81,20 @@ fun SearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search by Property, Asset Manager etc.", color = TextGrey, fontSize = 14.sp) },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = "Search", tint = BuyTeal) },
+                placeholder = {
+                    Text(
+                        "Search by Property, Asset Manager etc.",
+                        color = TextGrey,
+                        fontSize = 14.sp
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Search,
+                        contentDescription = "Search",
+                        tint = BuyTeal
+                    )
+                },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BuyTeal,
                     unfocusedBorderColor = Color(0xFF1A2A40),
@@ -106,37 +122,65 @@ fun SearchScreen(
                             SearchCategorySection(
                                 title = "Asset Managers",
                                 items = listOf(
-                                    Triple("Embassy Group", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab", "embassy"),
-                                    Triple("Mindspace", "https://images.unsplash.com/photo-1554118811-1e0d58224f24", "mindspace"),
-                                    Triple("Nexus Select", "https://images.unsplash.com/photo-1572025442646-866d16c84a54", "nexus")
+                                    Triple(
+                                        "Embassy Group",
+                                        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
+                                        "embassy"
+                                    ),
+                                    Triple(
+                                        "Mindspace",
+                                        "https://images.unsplash.com/photo-1554118811-1e0d58224f24",
+                                        "mindspace"
+                                    ),
+                                    Triple(
+                                        "Nexus Select",
+                                        "https://images.unsplash.com/photo-1572025442646-866d16c84a54",
+                                        "nexus"
+                                    )
                                 ),
                                 isSquareLayout = true,
                                 onItemClick = { /* Handle Asset Manager Click later */ }
                             )
                         }
 
-                        // 2. REITs
+                        // 2. REITs (Changed to Square)
                         item {
                             SearchCategorySection(
                                 title = "REITs",
                                 items = listOf(
-                                    Triple("Embassy REIT", "https://images.unsplash.com/photo-1582037928769-181f2422677e", "EMBASSY"),
-                                    Triple("Mindspace REIT", "https://images.unsplash.com/photo-1416331108676-a22ccb276e35", "MINDSPACE")
+                                    Triple(
+                                        "Embassy REIT",
+                                        "https://images.unsplash.com/photo-1582037928769-181f2422677e",
+                                        "EMBASSY"
+                                    ),
+                                    Triple(
+                                        "Mindspace REIT",
+                                        "https://images.unsplash.com/photo-1416331108676-a22ccb276e35",
+                                        "MINDSPACE"
+                                    )
                                 ),
-                                isSquareLayout = false,
+                                isSquareLayout = true,
                                 onItemClick = onNavigateToReitDetail
                             )
                         }
 
-                        // 3. SM REITs
+                        // 3. SM REITs (Changed to Square)
                         item {
                             SearchCategorySection(
                                 title = "SM REITs",
                                 items = listOf(
-                                    Triple("PropShare Titania", "https://images.unsplash.com/photo-1497366216548-37526070297c", "PSTITANIA"),
-                                    Triple("PropShare Platina", "https://images.unsplash.com/photo-1552566626-52f8b828add9", "PSPLATINA")
+                                    Triple(
+                                        "PropShare Titania",
+                                        "https://images.unsplash.com/photo-1497366216548-37526070297c",
+                                        "PSTITANIA"
+                                    ),
+                                    Triple(
+                                        "PropShare Platina",
+                                        "https://images.unsplash.com/photo-1552566626-52f8b828add9",
+                                        "PSPLATINA"
+                                    )
                                 ),
-                                isSquareLayout = false,
+                                isSquareLayout = true,
                                 onItemClick = onNavigateToSmReitDetail
                             )
                         }
@@ -145,7 +189,9 @@ fun SearchScreen(
                         if (searchResults.isEmpty()) {
                             item {
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().padding(40.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(40.dp),
                                     contentAlignment = Alignment.Center
                                 ) { Text("No assets match your search.", color = TextGrey) }
                             }
@@ -161,8 +207,20 @@ fun SearchScreen(
                                         if (isSmReit) onNavigateToSmReitDetail(quote.symbol)
                                         else onNavigateToReitDetail(quote.symbol)
                                     },
-                                    onSaveClick = { Toast.makeText(context, "Added to Watchlist", Toast.LENGTH_SHORT).show() },
-                                    onShareClick = { Toast.makeText(context, "Sharing Property...", Toast.LENGTH_SHORT).show() }
+                                    onSaveClick = {
+                                        Toast.makeText(
+                                            context,
+                                            "Added to Watchlist",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onShareClick = {
+                                        Toast.makeText(
+                                            context,
+                                            "Sharing Property...",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 )
                             }
                         }
@@ -180,7 +238,9 @@ fun SearchCategorySection(
     isSquareLayout: Boolean,
     onItemClick: (String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(bottom = 8.dp)) {
         Text(
             text = title,
             color = TextWhite,

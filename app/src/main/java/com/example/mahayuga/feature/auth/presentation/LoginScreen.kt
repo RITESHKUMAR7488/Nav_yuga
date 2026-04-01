@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -27,12 +28,13 @@ import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.components.GptTextField
 import com.example.mahayuga.navigation.AssetManagerDestinations
 
-private val NavyBackground = Color(0xFF0F172A)
+private val NavyBackground = Color(0xFF080F18)
 private val GptTextWhite = Color(0xFFFFFFFF)
 private val GptTextGrey = Color(0xFFC5C5D2)
 private val GptBrandGreen = Color(0xFF10A37F)
 private val CardBg = Color(0xFF1E293B)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     navController: NavController,
@@ -75,88 +77,99 @@ fun LoginScreen(
     val isLoading = loginState is UiState.Loading
     val errorMessage = (loginState as? UiState.Failure)?.message
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(NavyBackground)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // ⚡ BRICX BRANDING
-        Text(
-            text = "BRICX",
-            color = Color.White,
-            fontSize = 42.sp,
-            fontWeight = FontWeight.ExtraBold,
-            fontFamily = FontFamily.SansSerif,
-            letterSpacing = 0.15.em,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(40.dp))
-
-        Text(
-            "Log in",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = GptTextWhite
-            )
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-
-        GptTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = "Email address",
-            keyboardType = KeyboardType.Email,
-            imeAction = ImeAction.Next
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        GptTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = "Password",
-            keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done,
-            isPassword = true
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(bottom = 16.dp)
+    Scaffold(
+        containerColor = NavyBackground,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "BRICX",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyBackground)
             )
         }
-
-        Button(
-            onClick = { viewModel.login(email, password) },
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = GptTextWhite,
-                contentColor = NavyBackground
-            ),
-            shape = MaterialTheme.shapes.medium,
-            enabled = !isLoading
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (isLoading) CircularProgressIndicator(
-                color = NavyBackground,
-                modifier = Modifier.size(24.dp)
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                "Log in",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = GptTextWhite
+                )
             )
-            else Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        }
+            Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+            GptTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = "Email address",
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            GptTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = "Password",
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+                isPassword = true
+            )
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Don't have an account?", color = GptTextGrey)
-            TextButton(onClick = { navController.navigate("register") }) {
-                Text("Sign up", color = GptBrandGreen, fontWeight = FontWeight.Bold)
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
+            Button(
+                onClick = { viewModel.login(email, password) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GptTextWhite,
+                    contentColor = NavyBackground
+                ),
+                shape = MaterialTheme.shapes.medium,
+                enabled = !isLoading
+            ) {
+                if (isLoading) CircularProgressIndicator(
+                    color = NavyBackground,
+                    modifier = Modifier.size(24.dp)
+                )
+                else Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Don't have an account?", color = GptTextGrey)
+                TextButton(onClick = { navController.navigate("register") }) {
+                    Text("Sign up", color = GptBrandGreen, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

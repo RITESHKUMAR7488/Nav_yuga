@@ -56,7 +56,7 @@ fun NavyugaSplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black), // Pitch Black Background
+            .background(Color(0xFF080F18)), // Unified Background
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -73,7 +73,6 @@ fun NavyugaSplashScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Styled exactly like the Portfolio header (24.sp, Normal Weight)
             Text(
                 text = "BRICX",
                 fontSize = 24.sp,

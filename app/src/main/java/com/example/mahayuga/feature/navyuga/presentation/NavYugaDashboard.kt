@@ -1,5 +1,9 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/NavYugaDashboard.kt
 package com.example.mahayuga.feature.navyuga.presentation
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -37,7 +42,7 @@ private val NavyBlue = Color(0xFF080F18)
 private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
 private val SelectedIconColor = Color(0xFF14B8A6)
 
-// ⚡ FIX 1: Opaque background with 0.95f
+// Restored your exact opacity and colors
 private val FloatingNavBg = Color(0xFF0F1722).copy(alpha = 0.95f)
 private val SelectedOvalBg = Color(0xFF000000).copy(alpha = 0.4f)
 
@@ -110,6 +115,7 @@ fun NavYugaDashboard(
             }
         }
 
+        // Restored your exact shape, padding, shadow, and borders
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -133,6 +139,16 @@ fun NavYugaDashboard(
                 items.forEach { item ->
                     val isSelected = currentRoute == item.route
                     val color = if (isSelected) SelectedIconColor else UnselectedIconColor
+
+                    // Food delivery app style spring animation for icon scaling
+                    val iconScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.15f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "NavIconScale"
+                    )
 
                     Column(
                         modifier = Modifier
@@ -170,7 +186,9 @@ fun NavYugaDashboard(
                                 imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                                 contentDescription = item.label,
                                 tint = color,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .scale(iconScale) // Applied the spring animation here
                             )
                         }
                         Spacer(modifier = Modifier.height(2.dp))
