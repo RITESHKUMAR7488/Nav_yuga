@@ -1,9 +1,8 @@
+// main/java/com/example/mahayuga/navigation/AppNavigation.kt
 package com.example.mahayuga.navigation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -11,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -20,26 +20,28 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.admin.presentation.*
+import com.example.mahayuga.feature.assetmanager.presentation.AssetManagerDashboardScreen
 import com.example.mahayuga.feature.auth.data.model.UserModel
+import com.example.mahayuga.feature.auth.presentation.AssetManagerOnboardingScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
 import com.example.mahayuga.feature.auth.presentation.LoginScreen
 import com.example.mahayuga.feature.auth.presentation.RegisterScreen
 import com.example.mahayuga.feature.auth.presentation.WelcomeScreen
-import com.example.mahayuga.feature.hub.presentation.HubScreen
 import com.example.mahayuga.feature.navyuga.presentation.NavYugaDashboard
 import com.example.mahayuga.feature.navyuga.presentation.detail.PropertyDetailScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
 import com.example.mahayuga.feature.navyuga.presentation.splash.NavyugaSplashScreen
+import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen
 import com.example.mahayuga.feature.profile.presentation.AccountDetailsScreen
 import com.example.mahayuga.feature.profile.presentation.HelpCenterScreen
 import com.example.mahayuga.feature.profile.presentation.LikedPropertiesScreen
-import com.example.mahayuga.feature.profile.presentation.ProfileMenuScreen
+import com.example.mahayuga.feature.profile.presentation.ProfileScreen
 import com.example.mahayuga.feature.profile.presentation.SecurityPrivacyScreen
 import com.example.mahayuga.feature.profile.presentation.SettingsScreen
 import com.example.mahayuga.feature.profile.presentation.WalletScreen
-import com.example.mahayuga.feature.profile.presentation.AboutNavyugaScreen
 import com.example.mahayuga.feature.roi.presentation.RoiScreen
+import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
+import com.example.mahayuga.feature.navyuga.presentation.notifications.NotificationsScreen
+import com.example.mahayuga.feature.navyuga.presentation.messages.MessagesScreen
 
 @Composable
 fun AppNavigation(
@@ -55,6 +57,11 @@ fun AppNavigation(
         composable("welcome") { WelcomeScreen(navController = navController) }
         composable("login") { LoginScreen(navController = navController) }
         composable("register") { RegisterScreen(navController = navController) }
+
+        // Asset Manager Onboarding
+        composable(AssetManagerDestinations.ONBOARDING_INTRO) {
+            AssetManagerOnboardingScreen(navController = navController)
+        }
 
         // --- NAVYUGA DASHBOARD (Main Entry) ---
         composable("navyuga_dashboard") {
@@ -79,8 +86,7 @@ fun AppNavigation(
         // --- PROFILE MENU (FULL PAGE) ---
         composable("profile_menu") {
             val authViewModel: AuthViewModel = hiltViewModel()
-            ProfileMenuScreen(
-                onBackClick = { navController.popBackStack() },
+            ProfileScreen(
                 onNavigateToLiked = { navController.navigate("liked_properties") },
                 onNavigateToAccount = { navController.navigate("account_details") },
                 onNavigateToSettings = { navController.navigate("settings_screen") },
@@ -129,25 +135,41 @@ fun AppNavigation(
             val propertyId = backStackEntry.arguments?.getString("propertyId") ?: ""
             PropertyDetailScreen(
                 propertyId = propertyId,
-                onNavigateBack = { navController.popBackStack() })
+                onNavigateBack = { navController.popBackStack() },
+                onRoiClick = { navController.navigate("roi_calculator") }
+            )
+        }
+        composable(
+            "trade_asset_detail/{assetId}",
+            arguments = listOf(navArgument("assetId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val assetId = backStackEntry.arguments?.getString("assetId") ?: ""
+            com.example.mahayuga.feature.navyuga.presentation.trade.ReitDetailScreen(
+                assetId = assetId,
+                navController = navController,
+                onRoiClick = { navController.navigate("roi_calculator") }
+            )
         }
 
         composable("roi_calculator") { RoiScreen(onBackClick = { navController.popBackStack() }) }
 
-        composable(
-            "search_results/{country}/{city}",
-            arguments = listOf(
-                navArgument("country") { type = NavType.StringType },
-                navArgument("city") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val country = backStackEntry.arguments?.getString("country") ?: "India"
-            val city = backStackEntry.arguments?.getString("city") ?: "All Cities"
-            SearchResultsScreen(
-                country = country,
-                city = city,
+        // SEARCH ROUTE WITH THE 3 NEW PHASE 2 ROUTES
+        composable("search_screen") {
+            SearchScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToDetail = { id -> navController.navigate("property_detail/$id") },
-                onRoiClick = { navController.navigate("roi_calculator") }
+                onNavigateToSmReitDetail = { id -> navController.navigate("property_detail/$id") },
+                onNavigateToReitDetail = { id -> navController.navigate("trade_asset_detail/$id") }
+            )
+        }
+
+        composable("notifications_screen") {
+            NotificationsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("messages_screen") {
+            MessagesScreen(
+                assetManagerName = "BricX Support",
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -172,8 +194,9 @@ fun AppNavigation(
 
         composable("admin_create_user") { CreateUserScreen(navController) }
         composable("admin_manage_properties") { ManagePropertiesScreen(navController) }
+        composable("admin_approvals") { AdminApprovalsScreen(onBackClick = { navController.popBackStack() }) }
         composable("admin_manage_users") { ManageUsersScreen(navController) }
-        composable("admin_add_property") { AddPropertyScreen(navController) }
+        composable("add_property") { AddPropertyScreen(navController) }
 
         composable(
             "admin_edit_property/{propertyId}",
@@ -224,17 +247,18 @@ fun AppNavigation(
                 }
             )
         }
+
+        // ⚡ ASSET MANAGER DASHBOARD
+        composable(AssetManagerDestinations.DASHBOARD) {
+            AssetManagerDashboardScreen(rootNavController = navController)
+        }
     }
 }
 
+// ⚡ ADDED MISSING PLACEHOLDER COMPOSABLE
 @Composable
-fun PlaceholderScreen(title: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = title, color = MaterialTheme.colorScheme.onBackground)
+fun PlaceholderScreen(message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = message, color = Color.White)
     }
 }

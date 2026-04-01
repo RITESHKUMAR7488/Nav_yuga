@@ -22,9 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.ui.theme.*
-import java.text.NumberFormat
-import java.util.Locale
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @Composable
 fun AdminDashboardScreen(
@@ -35,7 +33,6 @@ fun AdminDashboardScreen(
     val usersState by viewModel.usersState.collectAsState()
     val propertiesState by viewModel.propertiesState.collectAsState()
 
-    // ⚡ REAL STATS CALCULATION - ROW 1
     val activePropertiesCount = if (propertiesState is UiState.Success) {
         (propertiesState as UiState.Success).data.count { it.status != "Exited" }.toString()
     } else "..."
@@ -51,14 +48,12 @@ fun AdminDashboardScreen(
         "₹${formatLargeNumber(total)}"
     } else "..."
 
-    // ⚡ NEW STATS CALCULATION - ROW 2
     val userNationalities = if (usersState is UiState.Success) {
-        // Placeholder logic: Assuming primarily India for now as address isn't structured
         val count = (usersState as UiState.Success).data.size
         if (count > 0) "1" else "0"
     } else "..."
 
-    val rentalIncomePaid = "₹0" // No transaction ledger yet, matches AdminViewModel sync logic
+    val rentalIncomePaid = "₹0"
 
     val avgReturn = if (propertiesState is UiState.Success) {
         val props = (propertiesState as UiState.Success).data
@@ -82,7 +77,6 @@ fun AdminDashboardScreen(
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // 1. HEADER
             Text(
                 text = "Navyuga Admin",
                 style = MaterialTheme.typography.headlineMedium,
@@ -97,47 +91,75 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. STATS GRID
-
-            // ROW 1
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AdminStatCard("Active Props", activePropertiesCount, SuccessGreen, Modifier.weight(1f))
-                AdminStatCard("Total Users", totalUsersCount, BrandBlue, Modifier.weight(1f))
-                AdminStatCard("Asset Vol", totalVolume, CyanAccent, Modifier.weight(1f))
+                AdminStatCard(
+                    "Active Props",
+                    activePropertiesCount,
+                    BricxSuccessGreen,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
+                AdminStatCard(
+                    "Total Users",
+                    totalUsersCount,
+                    BricxBrandBlue,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
+                AdminStatCard(
+                    "Asset Vol",
+                    totalVolume,
+                    BricxBrandTeal,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ROW 2 (NEW)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AdminStatCard("Nationalities", userNationalities, Color(0xFFFF9800), Modifier.weight(1f)) // Orange
-                AdminStatCard("Rent Paid", rentalIncomePaid, Color(0xFF9C27B0), Modifier.weight(1f))      // Purple
-                AdminStatCard("Avg Return", avgReturn, Color(0xFF00E676), Modifier.weight(1f))            // Green
+                AdminStatCard(
+                    "Nationalities",
+                    userNationalities,
+                    Color(0xFFFF9800),
+                    Modifier.weight(1f)
+                )
+                AdminStatCard("Rent Paid", rentalIncomePaid, Color(0xFF9C27B0), Modifier.weight(1f))
+                AdminStatCard(
+                    "Avg Return",
+                    avgReturn,
+                    BricxSuccessGreen,
+                    Modifier.weight(1f)
+                ) // ⚡ UPDATED
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 3. ACTION BUTTONS
+            AdminActionCard(
+                title = "Review Pending Assets",
+                subtitle = "Approve or Reject AM submissions",
+                icon = Icons.Default.VerifiedUser,
+                containerColor = Color(0xFF673AB7),
+                contentColor = Color.White,
+                onClick = { navController.navigate("admin_approvals") }
+            )
 
-            // List New Property
+            Spacer(modifier = Modifier.height(16.dp))
+
             AdminActionCard(
                 title = "List New Property",
                 subtitle = "Publish investment opportunities",
                 icon = Icons.Default.AddHome,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
-                onClick = { navController.navigate("admin_add_property") }
+                onClick = { navController.navigate("add_property") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Manage Properties
             AdminActionCard(
                 title = "Manage Properties",
                 subtitle = "Edit prices, status, or delete",
@@ -147,7 +169,6 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Manage Users
             AdminActionCard(
                 title = "Manage Users",
                 subtitle = "View investors, block accounts",
@@ -157,7 +178,6 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Register Investment
             AdminActionCard(
                 title = "Register Investment",
                 subtitle = "Record offline payments",
@@ -167,7 +187,6 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Create User
             AdminActionCard(
                 title = "Create User / Admin",
                 subtitle = "Add new staff or investors",
@@ -177,13 +196,17 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Logout
             OutlinedButton(
                 onClick = onLogout,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    BricxDangerRed
+                ), // ⚡ UPDATED
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = BricxDangerRed) // ⚡ UPDATED
             ) {
                 Icon(Icons.Default.Logout, null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -193,7 +216,6 @@ fun AdminDashboardScreen(
     }
 }
 
-// Helper to format Cr/L
 fun formatLargeNumber(value: Double): String {
     return when {
         value >= 10000000 -> String.format("%.1fCr", value / 10000000)
@@ -215,15 +237,31 @@ fun AdminStatCard(label: String, value: String, color: Color, modifier: Modifier
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp)) {
                 CircularProgressIndicator(
-                    progress = { 1f }, modifier = Modifier.fillMaxSize(), color = color.copy(alpha = 0.2f), strokeWidth = 3.dp
+                    progress = { 1f },
+                    modifier = Modifier.fillMaxSize(),
+                    color = color.copy(alpha = 0.2f),
+                    strokeWidth = 3.dp
                 )
                 CircularProgressIndicator(
-                    progress = { 0.7f }, modifier = Modifier.fillMaxSize(), color = color, strokeWidth = 3.dp
+                    progress = { 0.7f },
+                    modifier = Modifier.fillMaxSize(),
+                    color = color,
+                    strokeWidth = 3.dp
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            Text(
+                value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
         }
     }
 }
@@ -264,8 +302,17 @@ fun AdminActionCard(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = contentColor)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = contentColor.copy(alpha = 0.7f))
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor.copy(alpha = 0.7f)
+                )
             }
 
             Icon(Icons.Default.ChevronRight, null, tint = contentColor.copy(alpha = 0.5f))

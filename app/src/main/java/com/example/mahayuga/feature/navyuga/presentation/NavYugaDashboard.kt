@@ -1,43 +1,50 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/NavYugaDashboard.kt
 package com.example.mahayuga.feature.navyuga.presentation
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.mahayuga.feature.navyuga.presentation.home.HomeScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchResultsScreen
-import com.example.mahayuga.feature.navyuga.presentation.search.SearchScreen
+import com.example.mahayuga.feature.navyuga.presentation.portfolio.PortfolioScreen
 import com.example.mahayuga.feature.profile.presentation.ProfileScreen
-import com.example.mahayuga.feature.navyuga.presentation.reels.ReelsScreen
-import com.example.mahayuga.feature.navyuga.presentation.trade.TradeScreen
+import com.example.mahayuga.feature.navyuga.presentation.discover.DiscoverScreen
+import com.example.mahayuga.feature.navyuga.presentation.watchlist.WatchlistScreen
 
-private val NavBackground = Color.Black
-private val NavyBlue = Color(0xFF0F172A)
+private val NavyBlue = Color(0xFF080F18)
+private val UnselectedIconColor = Color.White.copy(alpha = 0.6f)
+private val SelectedIconColor = Color(0xFF14B8A6)
 
-private val UnselectedIconColor = Color.White
-private val SelectedIconColor = Color(0xFF2979FF)
-private val IndicatorColor = Color.Transparent
-private val BorderColor = Color.White.copy(alpha = 0.15f)
+// Restored your exact opacity and colors
+private val FloatingNavBg = Color(0xFF0F1722).copy(alpha = 0.95f)
+private val SelectedOvalBg = Color(0xFF000000).copy(alpha = 0.4f)
 
 @Composable
 fun NavYugaDashboard(
@@ -53,126 +60,46 @@ fun NavYugaDashboard(
     val navController = rememberNavController()
 
     val items = listOf(
-        BottomNavItem("Asset", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
-        // ⚡ CHANGE (Request 12): Renamed Search to Funds and changed Icon
+        BottomNavItem("Home", "ay_home", Icons.Filled.Home, Icons.Outlined.Home),
         BottomNavItem(
-            "Funds",
-            "ay_search",
-            Icons.Filled.MonetizationOn,
-            Icons.Outlined.MonetizationOn
+            "Watchlist",
+            "ay_watchlist",
+            Icons.Filled.Bookmark,
+            Icons.Outlined.BookmarkBorder
         ),
-        BottomNavItem(
-            "Trade",
-            "ay_trade",
-            Icons.AutoMirrored.Filled.TrendingUp,
-            Icons.AutoMirrored.Outlined.TrendingUp
-        ),
-        BottomNavItem("Discover", "ay_reels", Icons.Filled.Category, Icons.Outlined.Category),
+        BottomNavItem("Portfolio", "ay_portfolio", Icons.Filled.PieChart, Icons.Outlined.PieChart),
+        BottomNavItem("Discover", "ay_discover", Icons.Filled.Explore, Icons.Outlined.Explore),
         BottomNavItem("Profile", "ay_profile", Icons.Filled.Person, Icons.Outlined.Person)
     )
 
     var homeScrollTrigger by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = NavyBlue,
-        bottomBar = {
-            Column {
-                HorizontalDivider(thickness = 0.5.dp, color = BorderColor)
-                NavigationBar(
-                    containerColor = NavyBlue,
-                    contentColor = Color.White,
-                    tonalElevation = 0.dp
-                ) {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route
-
-                    items.forEach { item ->
-                        val isSelected = currentRoute == item.route ||
-                                (item.route == "ay_search" && currentRoute?.startsWith("search_results") == true)
-
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = item.label,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            // ⚡ CHANGE (Request 10): Move title closer to icon
-                            label = {
-                                Text(
-                                    item.label,
-                                    modifier = Modifier.offset(y = (-4).dp) // Adjusted based on previous step
-                                )
-                            },
-                            selected = isSelected,
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = SelectedIconColor,
-                                selectedTextColor = SelectedIconColor,
-                                indicatorColor = IndicatorColor,
-                                unselectedIconColor = UnselectedIconColor,
-                                unselectedTextColor = UnselectedIconColor
-                            ),
-                            onClick = {
-                                if (isSelected) {
-                                    if (item.route == "ay_home") {
-                                        homeScrollTrigger = !homeScrollTrigger
-                                    }
-                                } else {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(NavyBlue)) {
         NavHost(
             navController = navController,
             startDestination = "ay_home",
-            modifier = Modifier
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable("ay_home") {
                 HomeScreen(
-                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    onRoiClick = { rootNavController.navigate("roi_calculator") },
-                    scrollToTopTrigger = homeScrollTrigger,
-                    // ⚡ NEW: Pass navigation to Funds screen when Search Button on Home is clicked
-                    onNavigateToSearch = { navController.navigate("ay_search") }
+                    onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
+                    onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") },
+                    onNavigateToSearch = { rootNavController.navigate("search_screen") },
+                    onNavigateToNotifications = { rootNavController.navigate("notifications_screen") },
+                    onNavigateToMessages = { rootNavController.navigate("messages_screen") },
+                    scrollToTopTrigger = homeScrollTrigger
                 )
             }
-            composable("ay_search") {
-                SearchScreen(
-                    navController = navController,
-                    onRoiClick = { rootNavController.navigate("roi_calculator") }
+            composable("ay_watchlist") {
+                WatchlistScreen(
+                    onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
+                    onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") }
                 )
             }
-            composable(
-                "search_results/{country}/{city}",
-                arguments = listOf(
-                    navArgument("country") { type = NavType.StringType },
-                    navArgument("city") { type = NavType.StringType })
-            ) { entry ->
-                val country = entry.arguments?.getString("country") ?: "India"
-                val city = entry.arguments?.getString("city") ?: "All Cities"
-                SearchResultsScreen(
-                    country = country,
-                    city = city,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    onRoiClick = { rootNavController.navigate("roi_calculator") })
-            }
-            composable("ay_trade") { TradeScreen() }
-            composable("ay_reels") { ReelsScreen() }
+            composable("ay_portfolio") { PortfolioScreen() }
+            composable("ay_discover") { DiscoverScreen() }
             composable("ay_profile") {
                 ProfileScreen(
                     onNavigateToLiked = { rootNavController.navigate("liked_properties") },
@@ -181,9 +108,98 @@ fun NavYugaDashboard(
                     onNavigateToSecurity = onNavigateToSecurity,
                     onNavigateToHelp = onNavigateToHelp,
                     onNavigateToWallet = { rootNavController.navigate("wallet_screen") },
+                    onNavigateToAbout = { rootNavController.navigate("about_navyuga") },
                     onNavigateToMenu = onNavigateToMenu,
                     onLogout = onLogout
                 )
+            }
+        }
+
+        // Restored your exact shape, padding, shadow, and borders
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .fillMaxWidth()
+                .shadow(elevation = 8.dp, shape = RoundedCornerShape(50))
+                .background(FloatingNavBg, RoundedCornerShape(50))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(68.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                items.forEach { item ->
+                    val isSelected = currentRoute == item.route
+                    val color = if (isSelected) SelectedIconColor else UnselectedIconColor
+
+                    // Food delivery app style spring animation for icon scaling
+                    val iconScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.15f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "NavIconScale"
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = {
+                                    if (isSelected) {
+                                        if (item.route == "ay_home") homeScrollTrigger =
+                                            !homeScrollTrigger
+                                    } else {
+                                        navController.navigate(item.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                }
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(if (isSelected) SelectedOvalBg else Color.Transparent)
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label,
+                                tint = color,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .scale(iconScale) // Applied the spring animation here
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = item.label,
+                            color = color,
+                            fontSize = 10.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }

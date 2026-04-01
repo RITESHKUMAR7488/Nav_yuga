@@ -1,495 +1,609 @@
+// main/java/com/example/mahayuga/feature/navyuga/presentation/home/HomeScreen.kt
 package com.example.mahayuga.feature.navyuga.presentation.home
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.CurrencyRupee
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.mahayuga.feature.navyuga.domain.model.PropertyModel
-import com.example.mahayuga.ui.theme.BrandBlue
-import kotlin.math.roundToInt
+import coil.compose.AsyncImage
+import com.example.mahayuga.core.common.BricxHubTopAppBar
+import com.example.mahayuga.feature.navyuga.domain.model.MarketQuote
+import com.example.mahayuga.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import java.util.Locale
 
-
-private val NavyBlue = Color(0xFF0F172A)
-private val FabColor = Color(0xFF4361EE)
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
-    onNavigateToDetail: (String) -> Unit,
-    onRoiClick: () -> Unit,
+    onNavigateToSmReitDetail: (String) -> Unit,
+    onNavigateToReitDetail: (String) -> Unit,
     onNavigateToSearch: () -> Unit,
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {},
     scrollToTopTrigger: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val supportNumber by viewModel.supportNumber.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    val listState = rememberLazyListState()
-    var showFilterSheet by remember { mutableStateOf(false) }
-
-    // ⚡ Sticky Search/Filter Logic
-    // Height of Title Bar (which collapses)
-    val titleHeight = 60.dp
-    val titleHeightPx = with(LocalDensity.current) { titleHeight.toPx() }
-
-    // Total Header Height (Title + Search + Filter + Padding) used for initial content padding
-    val searchRowHeight = 64.dp
-    val filterRowHeight = 56.dp
-    val totalHeaderHeight = titleHeight + searchRowHeight + filterRowHeight
-
-    var headerOffsetHeightPx by remember { mutableFloatStateOf(0f) }
-
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val delta = available.y
-                val newOffset = headerOffsetHeightPx + delta
-                // ⚡ Only collapse up to the Title height, so Search+Filters remain visible
-                headerOffsetHeightPx = newOffset.coerceIn(-titleHeightPx, 0f)
-                return Offset.Zero
-            }
-        }
-    }
-
-    LaunchedEffect(scrollToTopTrigger) {
-        if (scrollToTopTrigger) {
-            listState.animateScrollToItem(0)
-            headerOffsetHeightPx = 0f
-        }
-    }
+    val tabs = listOf("SM REITS", "REITS")
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    var isTickerOpen by remember { mutableStateOf(false) }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    var isRefreshing by remember { mutableStateOf(false) }
+    val pullToRefreshState = rememberPullToRefreshState()
 
     Scaffold(
-        containerColor = NavyBlue,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onRoiClick,
-                containerColor = FabColor.copy(alpha = 0.8f),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier
-                    .size(60.dp)
-                    .offset(y = (-10).dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(8.dp)
+        containerColor = BricxBackground,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            Column(modifier = Modifier.background(BricxBackground)) {
+                BricxHubTopAppBar(
+                    title = "Home",
+                    icon = Icons.Outlined.Home,
+                    onSearchClick = onNavigateToSearch,
+                    onNotificationClick = onNavigateToNotifications,
+                    onMessageClick = onNavigateToMessages
+                )
+
+                HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f))
+
+                TabRow(
+                    selectedTabIndex = pagerState.currentPage,
+                    containerColor = BricxBackground,
+                    contentColor = BricxTextPrimary,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                            color = BricxBrandTeal
+                        )
+                    },
+                    divider = { HorizontalDivider(color = BricxBorder.copy(alpha = 0.5f)) }
                 ) {
-                    Icon(Icons.Default.Calculate, "Calculate ROI", modifier = Modifier.size(20.dp))
-                    Text(
-                        "ROI",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        textAlign = TextAlign.Center
-                    )
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = pagerState.currentPage == index,
+                            onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                            text = {
+                                Text(
+                                    title,
+                                    fontSize = 16.sp,
+                                    color = if (pagerState.currentPage == index) BricxTextPrimary else BricxTextSecondary,
+                                    fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
     ) { paddingValues ->
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(bottom = paddingValues.calculateBottomPadding())
-                .nestedScroll(nestedScrollConnection)
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             if (uiState.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = FabColor)
-                }
+                CircularProgressIndicator(
+                    color = BricxBrandTeal,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             } else {
-                LazyColumn(
-                    state = listState,
-                    // ⚡ Push list down by total header height
-                    contentPadding = PaddingValues(top = totalHeaderHeight + 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    if (uiState.properties.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("No properties match your filters.", color = Color.Gray)
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            coroutineScope.launch {
+                                isRefreshing = true; delay(1000); isRefreshing = false
+                            }
+                        },
+                        state = pullToRefreshState
+                    ) {
+                        val listState = rememberLazyListState()
+                        LaunchedEffect(scrollToTopTrigger) {
+                            if (scrollToTopTrigger) listState.animateScrollToItem(0)
+                        }
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(BricxBackground),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 16.dp,
+                                bottom = 100.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            val allAssets =
+                                uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
+                            val smReitsList = listOf("PSTITANIA", "PSPLATINA")
+                            val filteredAssets =
+                                if (page == 0) allAssets.filter { smReitsList.contains(it.symbol) } else allAssets.filterNot {
+                                    smReitsList.contains(it.symbol)
+                                }
+
+                            if (filteredAssets.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            "No assets available right now.",
+                                            color = BricxTextSecondary
+                                        )
+                                    }
+                                }
+                            } else {
+                                items(filteredAssets, key = { it.symbol }) { quote ->
+                                    val isSaved = uiState.watchlistedSymbols.contains(quote.symbol)
+                                    LiveAssetTradingCard(
+                                        quote = quote, isSmReit = page == 0, isSaved = isSaved,
+                                        onCardClick = {
+                                            if (page == 0) onNavigateToSmReitDetail(
+                                                quote.symbol
+                                            ) else onNavigateToReitDetail(quote.symbol)
+                                        },
+                                        onSaveClick = {
+                                            viewModel.toggleWatchlist(quote.symbol)
+                                            Toast.makeText(
+                                                context,
+                                                if (isSaved) "Removed from Watchlist" else "Added to Watchlist",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                        onShareClick = {
+                                            Toast.makeText(
+                                                context,
+                                                "Sharing Property...",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    )
+                                }
                             }
                         }
-                    } else {
-                        items(uiState.properties, key = { it.id }) { property ->
-                            InstagramStylePropertyCard(
-                                property = property,
-                                onItemClick = { onNavigateToDetail(property.id) },
-                                onLikeClick = {
-                                    viewModel.toggleLike(
-                                        property.id,
-                                        property.isLiked
-                                    )
-                                },
-                                onShareClick = {
-                                    val sendIntent: Intent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(
-                                            Intent.EXTRA_TEXT,
-                                            "Check out this property: ${property.title}"
-                                        )
-                                        type = "text/plain"
-                                    }
-                                    context.startActivity(Intent.createChooser(sendIntent, null))
-                                },
-                                onInvestClick = {
-                                    try {
-                                        val message =
-                                            "Hello, I am interested in investing in *${property.title}*."
-                                        val url =
-                                            "https://api.whatsapp.com/send?phone=$supportNumber&text=${
-                                                Uri.encode(message)
-                                            }"
-                                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                                            data = Uri.parse(url); setPackage("com.whatsapp")
-                                        }
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(
-                                            context,
-                                            "WhatsApp not found",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                            )
-                        }
                     }
-                    item { Spacer(Modifier.height(16.dp)) }
                 }
             }
 
-            // ⚡ COLLAPSIBLE + STICKY HEADER
-            // This Box contains Title, Search, and Filters
+            AnimatedVisibility(visible = isTickerOpen, enter = fadeIn(), exit = fadeOut()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { isTickerOpen = false }
+                )
+            }
+
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+                if (!isTickerOpen) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronLeft,
+                        contentDescription = "Open Ticker",
+                        tint = BricxTextPrimary.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .size(36.dp)
+                            .padding(end = 4.dp)
+                            .pointerInput(Unit) {
+                                detectHorizontalDragGestures { _, dragAmount ->
+                                    if (dragAmount < -5) {
+                                        isTickerOpen = true
+                                    }
+                                }
+                            }
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { isTickerOpen = true }
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = isTickerOpen,
+                    enter = slideInHorizontally(initialOffsetX = { it }),
+                    exit = slideOutHorizontally(targetOffsetX = { it })
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(130.dp)
+                            .fillMaxHeight()
+                            .padding(bottom = 100.dp)
+                            .background(
+                                color = BricxSurfaceCard.copy(alpha = 0.98f),
+                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = Color.White.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                            )
+                            .pointerInput(Unit) {
+                                detectHorizontalDragGestures { _, dragAmount ->
+                                    if (dragAmount > 10) {
+                                        isTickerOpen = false
+                                    }
+                                }
+                            }
+                    ) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "Markets",
+                                    color = BricxTextPrimary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "By BricX",
+                                    color = BricxBrandTeal,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            HorizontalDivider(color = BricxBorder.copy(alpha = 0.8f))
+                            val tickerListState = rememberLazyListState()
+                            LaunchedEffect(isTickerOpen) {
+                                if (isTickerOpen) {
+                                    while (isActive) {
+                                        tickerListState.animateScrollBy(
+                                            value = 60f,
+                                            animationSpec = tween(
+                                                durationMillis = 1000,
+                                                easing = LinearEasing
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                            val tickerQuotes =
+                                uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
+                            LazyColumn(
+                                state = tickerListState,
+                                modifier = Modifier.fillMaxSize(),
+                                userScrollEnabled = false,
+                                contentPadding = PaddingValues(vertical = 16.dp)
+                            ) {
+                                if (tickerQuotes.isNotEmpty()) {
+                                    items(10000) { index ->
+                                        val quote = tickerQuotes[index % tickerQuotes.size]
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                quote.name.split(",")[0].take(10)
+                                                    .uppercase(Locale.ROOT),
+                                                color = BricxTextPrimary,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            RealtimeFlickerText(
+                                                text = "₹${
+                                                    String.format(
+                                                        Locale.US,
+                                                        "%.2f",
+                                                        quote.currentPrice
+                                                    )
+                                                }",
+                                                currentValue = quote.currentPrice,
+                                                defaultColor = BricxTextPrimary,
+                                                textStyle = TextStyle(fontSize = 12.sp)
+                                            )
+                                            Text(
+                                                "${if (quote.isPositive) "+" else ""}${
+                                                    String.format(
+                                                        Locale.US,
+                                                        "%.2f",
+                                                        quote.percentageChange
+                                                    )
+                                                }%",
+                                                color = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun LiveAssetTradingCard(
+    quote: MarketQuote, isSmReit: Boolean, isSaved: Boolean,
+    onCardClick: () -> Unit, onSaveClick: () -> Unit, onShareClick: () -> Unit
+) {
+    val priceColor = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange
+    var isNse by remember { mutableStateOf(true) }
+
+    val assetData = when (quote.symbol) {
+        "PSTITANIA" -> Triple(
+            "PropShare Titania",
+            "Property Share",
+            listOf("https://images.unsplash.com/photo-1497366216548-37526070297c")
+        )
+
+        "PSPLATINA" -> Triple(
+            "PropShare Platina",
+            "Property Share",
+            listOf("https://images.unsplash.com/photo-1416331108676-a22ccb276e35")
+        )
+
+        "EMBASSY" -> Triple(
+            "Embassy REIT",
+            "Embassy Group",
+            listOf("https://images.unsplash.com/photo-1572025442646-866d16c84a54")
+        )
+
+        "MINDSPACE" -> Triple(
+            "Mindspace REIT",
+            "Mindspace Group",
+            listOf("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab")
+        )
+
+        "NEXUS" -> Triple(
+            "Nexus Select REIT",
+            "Nexus Group",
+            listOf("https://images.unsplash.com/photo-1554118811-1e0d58224f24")
+        )
+
+        "BIRET" -> Triple(
+            "Brookfield India REIT",
+            "Brookfield Group",
+            listOf("https://images.unsplash.com/photo-1582037928769-181f2422677e")
+        )
+
+        else -> Triple(
+            quote.name.split(",")[0],
+            "Knowledge Group",
+            listOf("https://images.unsplash.com/photo-1552566626-52f8b828add9")
+        )
+    }
+    val (displayName, managerName, images) = assetData
+    val pagerState = rememberPagerState(pageCount = { images.size })
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCardClick() },
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BricxBorder)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = displayName,
+                        color = BricxTextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (isSmReit) "Mumbai, Maharashtra" else "Multiple Cities",
+                        color = BricxTextSecondary,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = onShareClick,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .offset(y = (-4).dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = BricxTextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    IconButton(
+                        onClick = onSaveClick,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .offset(y = (-4).dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Save",
+                            tint = if (isSaved) BricxBrandTeal else BricxTextSecondary
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    RealtimeFlickerText(
+                        text = "₹${String.format(Locale.US, "%,.2f", quote.currentPrice)}",
+                        currentValue = quote.currentPrice,
+                        defaultColor = BricxTextPrimary,
+                        textStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${if (quote.isPositive) "+" else ""}₹${
+                                String.format(
+                                    Locale.US,
+                                    "%.2f",
+                                    Math.abs(quote.priceChange)
+                                )
+                            }", color = priceColor, fontSize = 14.sp, fontWeight = FontWeight.Medium
+                        )
+                        Text(" | ", color = BricxTextSecondary, fontSize = 12.sp)
+                        Text(
+                            text = "${if (quote.isPositive) "+" else ""}${
+                                String.format(
+                                    Locale.US,
+                                    "%.2f",
+                                    quote.percentageChange
+                                )
+                            }%", color = priceColor, fontSize = 14.sp, fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .border(1.dp, BricxBorder, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { isNse = !isNse }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isNse) "NSE" else "BSE",
+                        color = BricxTextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.SwapVert,
+                        contentDescription = "Switch Market",
+                        tint = BricxTextSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset { IntOffset(x = 0, y = headerOffsetHeightPx.roundToInt()) }
-                    .background(NavyBlue)
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White)
+            ) {
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                    AsyncImage(
+                        model = images.getOrElse(page) { images.first() },
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
             ) {
                 Column {
-                    // 1. Title (Collapses away)
-                    HomeTopBar(modifier = Modifier.height(titleHeight))
-
-                    // 2. Search Bar (Sticks)
-                    // ⚡ Search is now a BUTTON triggering navigation
-                    SearchBarButton(
-                        modifier = Modifier.height(searchRowHeight),
-                        onClick = onNavigateToSearch,
-                        onFilterClick = { showFilterSheet = true }
+                    Text(
+                        text = managerName,
+                        color = BricxTextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
-
-                    // 3. Filter Buttons (Sticks)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(filterRowHeight)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterButtonOutline(
-                            text = "Funding",
-                            count = uiState.fundingCount, // ⚡ Dynamic filtered counts
-                            isSelected = uiState.selectedFilter == "Funding",
-                            modifier = Modifier.weight(1f)
-                        ) { viewModel.updateFilter("Funding") }
-
-                        FilterButtonOutline(
-                            text = "Funded",
-                            count = uiState.fundedCount,
-                            isSelected = uiState.selectedFilter == "Funded",
-                            modifier = Modifier.weight(1f)
-                        ) { viewModel.updateFilter("Funded") }
-
-                        FilterButtonOutline(
-                            text = "Exited",
-                            count = uiState.exitedCount,
-                            isSelected = uiState.selectedFilter == "Exited",
-                            modifier = Modifier.weight(1f)
-                        ) { viewModel.updateFilter("Exited") }
-                    }
+                    Text(text = "Asset Manager", color = BricxTextSecondary, fontSize = 12.sp)
                 }
-            }
-        }
-
-        if (showFilterSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showFilterSheet = false },
-                containerColor = Color(0xFF1E1E1E)
-            ) {
                 Column(
                     modifier = Modifier
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState())
+                        .border(1.dp, BricxBorder, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Filter Properties",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        TextButton(onClick = { viewModel.clearAllFilters() }) {
-                            Text(
-                                "Clear All",
-                                color = FabColor
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
-                    FilterOptionRow(
-                        "Location",
-                        listOf("Mumbai", "Bangalore", "Delhi", "Kolkata", "Gurugram"),
-                        uiState.activeLocations
-                    ) { viewModel.toggleLocation(it) }
-                    HorizontalDivider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 16.dp)
+                    Text(
+                        text = "SEBI Registered",
+                        color = BricxTextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
                     )
-                    FilterOptionRow(
-                        "Budget (Valuation)",
-                        listOf("Upto 50L", "50L - 2 Cr", "Above 2 Cr"),
-                        uiState.activeBudgets
-                    ) { viewModel.toggleBudget(it) }
-                    HorizontalDivider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 16.dp)
+                    Text(
+                        text = "IN/REIT/XXXX",
+                        color = BricxTextPrimary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    FilterOptionRow(
-                        "Asset Manager",
-                        listOf("Mindspace", "Nuvama", "Brookfield"),
-                        uiState.activeManagers
-                    ) { viewModel.toggleManager(it) }
-                    HorizontalDivider(
-                        color = Color.White.copy(0.1f),
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                    FilterOptionRow(
-                        "Type",
-                        listOf("Office", "Retail", "Warehouse", "Industrial"),
-                        uiState.activeTypes
-                    ) { viewModel.toggleType(it) }
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Button(
-                        onClick = { showFilterSheet = false },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = FabColor),
-                        shape = RoundedCornerShape(12.dp)
-                    ) { Text("Show Results", fontWeight = FontWeight.Bold) }
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun HomeTopBar(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = "Navyuga",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        )
-        // Only Notification Icon
-        Icon(
-            Icons.Default.Notifications,
-            "Notifications",
-            tint = Color.White,
-            modifier = Modifier.size(26.dp)
-        )
-    }
-}
-
-@Composable
-fun SearchBarButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    onFilterClick: () -> Unit
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Mock Search Field (Clickable Box)
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .height(50.dp)
-                .clickable { onClick() },
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White.copy(alpha = 0.1f)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    null,
-                    tint = Color.White.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Search properties...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.6f)
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(50.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.White.copy(alpha = 0.1f))
-                .clickable { onFilterClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.FilterList, "Filter", tint = Color.White)
-        }
-    }
-}
-
-@Composable
-fun FilterButtonOutline(
-    text: String,
-    count: Int,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    OutlinedButton(
-        onClick = onClick,
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (isSelected) FabColor else Color.Transparent,
-            contentColor = if (isSelected) Color.White else Color.Gray
-        ),
-        border = BorderStroke(
-            1.dp,
-            if (isSelected) FabColor else Color.Gray.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(8.dp),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-        modifier = modifier.height(40.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = count.toString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isSelected) Color.White.copy(0.9f) else Color.Gray
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun FilterOptionRow(
-    title: String,
-    options: List<String>,
-    selectedOptions: Set<String>,
-    onOptionSelected: (String) -> Unit
-) {
-    Column {
-        Text(
-            title,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            options.forEach { option ->
-                val isSelected = selectedOptions.contains(option)
-                SuggestionChip(
-                    onClick = { onOptionSelected(option) },
-                    label = {
-                        Text(
-                            option,
-                            color = if (isSelected) Color.White else Color.White.copy(0.7f)
-                        )
-                    },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = if (isSelected) FabColor else Color.White.copy(alpha = 0.05f)
-                    ),
-                    border = if (isSelected) null else BorderStroke(
-                        1.dp,
-                        Color.White.copy(alpha = 0.2f)
-                    )
-                )
             }
         }
     }

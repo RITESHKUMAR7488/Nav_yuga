@@ -17,44 +17,37 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.mahayuga.ui.theme.BrandBlue
-
-private val SettingsBg = Color(0xFF0F172A)
-private val CardBg = Color(0xFF101920)
-private val BorderColor = Color(0xFF1F2B36)
-private val TextGrey = Color(0xFF888888)
+import com.example.mahayuga.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    onBackClick: () -> Unit
-) {
-    // State for notification toggle
+fun SettingsScreen(onBackClick: () -> Unit) {
     var notificationsEnabled by remember { mutableStateOf(true) }
 
     Scaffold(
-        containerColor = SettingsBg,
+        containerColor = BricxBackground,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         "Settings",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = BricxTextPrimary,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            "Back",
+                            tint = BricxTextPrimary
+                        )
                     }
                 },
-                actions = {
-                    // Empty placeholder to center title
-                    Spacer(modifier = Modifier.width(48.dp))
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SettingsBg)
+                actions = { Spacer(modifier = Modifier.width(48.dp)) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BricxBackground)
             )
         }
     ) { padding ->
@@ -66,33 +59,23 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Language (Fixed)
+            SettingsOptionCard(icon = Icons.Outlined.Language, title = "Language", value = "EN")
             SettingsOptionCard(
-                icon = Icons.Outlined.Language,
-                title = "Language",
-                value = "EN"
-            )
-
-            // 2. Currency (Changed Icon, Fixed INR)
-            SettingsOptionCard(
-                icon = Icons.Outlined.CurrencyRupee, // Changed to Rupee Icon
+                icon = Icons.Outlined.CurrencyRupee,
                 title = "Currency",
                 value = "INR"
             )
-
-            // 3. Investment Preferences (Fixed)
             SettingsOptionCard(
                 icon = Icons.Outlined.Tune,
                 title = "Investment preferences",
                 value = "Fixed"
             )
 
-            // 4. Notifications (Toggle Switch)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = CardBg),
-                border = BorderStroke(1.dp, BorderColor)
+                colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
+                border = BorderStroke(1.dp, BricxBorder)
             ) {
                 Row(
                     modifier = Modifier
@@ -103,24 +86,22 @@ fun SettingsScreen(
                     Icon(
                         Icons.Outlined.Notifications,
                         null,
-                        tint = BrandBlue,
+                        tint = BricxBrandBlue,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Text(
                         text = "Notification settings",
-                        color = Color.White,
+                        color = BricxTextPrimary,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
                     )
-
                     Switch(
                         checked = notificationsEnabled,
                         onCheckedChange = { notificationsEnabled = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = BrandBlue,
+                            checkedThumbColor = BricxTextPrimary,
+                            checkedTrackColor = BricxBrandBlue,
                             uncheckedThumbColor = Color.Gray,
                             uncheckedTrackColor = Color.DarkGray
                         )
@@ -128,14 +109,7 @@ fun SettingsScreen(
                 }
             }
 
-            // 5. Haptic Feedback REMOVED
-
-            // 6. Appearance (Fixed Dark)
-            SettingsOptionCard(
-                icon = Icons.Outlined.Contrast,
-                title = "Appearance",
-                value = "Dark"
-            )
+            SettingsOptionCard(icon = Icons.Outlined.Contrast, title = "Appearance", value = "Dark")
         }
     }
 }
@@ -152,8 +126,8 @@ fun SettingsOptionCard(
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBg),
-        border = BorderStroke(1.dp, BorderColor)
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard),
+        border = BorderStroke(1.dp, BricxBorder)
     ) {
         Row(
             modifier = Modifier
@@ -161,25 +135,21 @@ fun SettingsOptionCard(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, tint = BrandBlue, modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = BricxBrandBlue, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
-
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White,
+                color = BricxTextPrimary,
                 modifier = Modifier.weight(1f)
             )
-
             if (value != null) {
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextGrey
+                    color = BricxTextSecondary
                 )
             }
-
-            // Arrows removed per request
         }
     }
 }

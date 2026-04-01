@@ -20,7 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.auth.data.model.UserModel
-import com.example.mahayuga.ui.theme.*
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,24 +51,28 @@ fun ManageUsersScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
+
             is UiState.Success -> {
                 LazyColumn(
-                    modifier = Modifier.padding(innerPadding).padding(16.dp),
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.data) { user ->
                         AdminUserItem(user, onClick = {
-                            // ⚡ Navigate to new Detail Screen
                             navController.navigate("admin_user_detail/${user.uid}")
                         })
                     }
                 }
             }
+
             is UiState.Failure -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Error: ${state.message}", color = ErrorRed)
+                    Text("Error: ${state.message}", color = BricxDangerRed) // ⚡ UPDATED
                 }
             }
+
             else -> {}
         }
     }
@@ -76,7 +80,8 @@ fun ManageUsersScreen(
 
 @Composable
 fun AdminUserItem(user: UserModel, onClick: () -> Unit) {
-    val cardColor = if (user.isActive) MaterialTheme.colorScheme.surface else ErrorRed.copy(alpha = 0.1f)
+    val cardColor =
+        if (user.isActive) MaterialTheme.colorScheme.surface else BricxDangerRed.copy(alpha = 0.1f) // ⚡ UPDATED
 
     Card(
         colors = CardDefaults.cardColors(containerColor = cardColor),
@@ -114,7 +119,6 @@ fun AdminUserItem(user: UserModel, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                // ⚡ UPDATED: Show Phone and DOB
                 if (user.phone.isNotEmpty()) {
                     Text(
                         text = "Phone: ${user.phone}",
@@ -135,7 +139,7 @@ fun AdminUserItem(user: UserModel, onClick: () -> Unit) {
                 Text(
                     text = "Invested: ₹${user.totalInvestment}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = SuccessGreen
+                    color = BricxSuccessGreen // ⚡ UPDATED
                 )
             }
 

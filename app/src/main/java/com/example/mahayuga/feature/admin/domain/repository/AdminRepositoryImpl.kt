@@ -3,6 +3,7 @@ package com.example.mahayuga.feature.admin.data.repository
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.admin.data.model.InvestmentModel
 import com.example.mahayuga.feature.admin.domain.repository.AdminRepository
+import com.example.mahayuga.feature.auth.data.model.AssetManagerModel
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -41,6 +42,7 @@ class AdminRepositoryImpl @Inject constructor(
         }
     }
 
+    // --- User Requests ---
     override fun getPendingRequests(): Flow<UiState<List<UserModel>>> = callbackFlow {
         trySend(UiState.Loading)
         val listener = firestore.collection("users")
@@ -77,6 +79,47 @@ class AdminRepositoryImpl @Inject constructor(
         }
     }
 
+    // --- Asset Manager Requests (NEW) ---
+    override fun getPendingAssetManagers(): Flow<UiState<List<AssetManagerModel>>> = callbackFlow {
+        trySend(UiState.Loading)
+        val listener = firestore.collection("asset_managers")
+            .whereEqualTo("accountStatus", "PENDING")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(UiState.Failure(error.message ?: "Sync Error"))
+                    return@addSnapshotListener
+                }
+                val managers = snapshot?.toObjects(AssetManagerModel::class.java) ?: emptyList()
+                trySend(UiState.Success(managers))
+            }
+        awaitClose { listener.remove() }
+    }
+
+    override suspend fun approveAssetManager(uid: String): UiState<String> {
+        return try {
+            // Update status to VERIFIED so they can log in
+            firestore.collection("asset_managers").document(uid)
+                .update("accountStatus", "VERIFIED")
+                .await()
+            UiState.Success("Partner Approved")
+        } catch (e: Exception) {
+            UiState.Failure(e.message ?: "Approval Failed")
+        }
+    }
+
+    override suspend fun rejectAssetManager(uid: String): UiState<String> {
+        return try {
+            // Option: Delete them or set status to REJECTED
+            firestore.collection("asset_managers").document(uid)
+                .update("accountStatus", "REJECTED")
+                .await()
+            UiState.Success("Partner Rejected")
+        } catch (e: Exception) {
+            UiState.Failure(e.message ?: "Rejection Failed")
+        }
+    }
+
+    // --- Investments ---
     override suspend fun registerInvestment(investment: InvestmentModel): UiState<String> {
         return try {
             firestore.runTransaction { transaction ->
@@ -145,7 +188,6 @@ class AdminRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    // ⚡ FIX: Correctly revert Area and Rent
     override suspend fun deleteInvestment(investment: InvestmentModel): UiState<String> {
         return try {
             firestore.runTransaction { transaction ->
@@ -156,21 +198,18 @@ class AdminRepositoryImpl @Inject constructor(
                 val propSnapshot = transaction.get(propertyRef)
                 val userSnapshot = transaction.get(userRef)
 
-                // 1. Revert Property Funding
                 if (propSnapshot.exists()) {
                     val currentFunding = propSnapshot.getString("totalFunding")?.replace(Regex("[^\\d]"), "")?.toLongOrNull() ?: 0L
                     val newFunding = (currentFunding - investment.amount).coerceAtLeast(0)
                     transaction.update(propertyRef, "totalFunding", newFunding.toString())
                 }
 
-                // 2. Revert User Stats
                 if (userSnapshot.exists() && propSnapshot.exists()) {
                     val currentInvest = userSnapshot.getLong("totalInvestment") ?: 0L
                     val currentVal = userSnapshot.getLong("currentValue") ?: 0L
                     val currentArea = userSnapshot.getDouble("totalArea") ?: 0.0
                     val currentRent = userSnapshot.getLong("totalRent") ?: 0L
 
-                    // Calculate amounts to remove
                     fun parseLong(str: String?): Long = str?.replace(Regex("[^\\d]"), "")?.toLongOrNull() ?: 0L
                     fun parseDouble(str: String?): Double = str?.replace(Regex("[^\\d.]"), "")?.toDoubleOrNull() ?: 0.0
 
@@ -190,13 +229,11 @@ class AdminRepositoryImpl @Inject constructor(
                     transaction.update(userRef, mapOf(
                         "totalInvestment" to newInvest,
                         "currentValue" to newVal,
-                        "totalArea" to newArea, // ⚡ Updated
-                        "totalRent" to newRent, // ⚡ Updated
+                        "totalArea" to newArea,
+                        "totalRent" to newRent,
                         "investedProperties" to FieldValue.arrayRemove(investment.propertyId)
                     ))
                 }
-
-                // 3. Delete the Record
                 transaction.delete(invRef)
             }.await()
             UiState.Success("Investment Deleted & Funds Reverted")

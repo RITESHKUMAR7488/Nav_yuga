@@ -23,11 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.ui.theme.BrandBlue
-import com.example.mahayuga.ui.theme.SuccessGreen
-import com.example.mahayuga.ui.theme.ErrorRed
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
-// --- STEP 1: SELECT USER ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminSelectUserScreen(
@@ -51,8 +48,10 @@ fun AdminSelectUserScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            // Search Bar
+        Column(modifier = Modifier
+            .padding(padding)
+            .fillMaxSize()
+            .padding(16.dp)) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -71,7 +70,6 @@ fun AdminSelectUserScreen(
                     }
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(filteredUsers) { user ->
-                            // ⚡ FIX: Direct usage of AdminUserItem with the new onClick signature
                             AdminUserItem(
                                 user = user,
                                 onClick = {
@@ -82,17 +80,22 @@ fun AdminSelectUserScreen(
                         }
                     }
                 }
-                is UiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                is UiState.Failure -> Text("Error loading users", color = ErrorRed)
+
+                is UiState.Loading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+
+                is UiState.Failure -> Text(
+                    "Error loading users",
+                    color = BricxDangerRed
+                ) // ⚡ UPDATED
                 else -> {}
             }
         }
     }
 }
 
-// --- STEP 2: SELECT PROPERTY ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminSelectPropertyScreen(
@@ -116,16 +119,17 @@ fun AdminSelectPropertyScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            // Context Header
+        Column(modifier = Modifier
+            .padding(padding)
+            .fillMaxSize()
+            .padding(16.dp)) {
             Text(
                 "Investing for: ${viewModel.selectedUser?.name}",
                 style = MaterialTheme.typography.labelLarge,
-                color = BrandBlue
+                color = BricxBrandBlue // ⚡ UPDATED
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -139,9 +143,7 @@ fun AdminSelectPropertyScreen(
 
             when (val state = propertiesState) {
                 is UiState.Success -> {
-                    val filteredProps = state.data.filter {
-                        it.title.contains(searchQuery, true)
-                    }
+                    val filteredProps = state.data.filter { it.title.contains(searchQuery, true) }
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(filteredProps) { property ->
                             Card(
@@ -159,39 +161,51 @@ fun AdminSelectPropertyScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text(property.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                        // ⚡ UPDATED: Show Asset ID
+                                        Text(
+                                            property.title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                         if (property.assetId.isNotEmpty()) {
                                             Text(
                                                 "ID: ${property.assetId}",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = BrandBlue
-                                            )
+                                                color = BricxBrandBlue
+                                            ) // ⚡ UPDATED
                                         }
                                     }
-
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("Valuation: ₹${property.totalValuation}", style = MaterialTheme.typography.bodySmall, color = BrandBlue)
-                                        Text("Funded: ₹${property.totalFunding}", style = MaterialTheme.typography.bodySmall, color = SuccessGreen)
+                                        Text(
+                                            "Valuation: ₹${property.totalValuation}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = BricxBrandBlue
+                                        ) // ⚡ UPDATED
+                                        Text(
+                                            "Funded: ₹${property.totalFunding}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = BricxSuccessGreen
+                                        ) // ⚡ UPDATED
                                     }
                                 }
                             }
                         }
                     }
                 }
-                is UiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+
+                is UiState.Loading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+
                 else -> {}
             }
         }
     }
 }
 
-// --- STEP 3: INVESTMENT FORM ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminInvestmentFormScreen(
@@ -201,20 +215,18 @@ fun AdminInvestmentFormScreen(
     val context = LocalContext.current
     var amount by remember { mutableStateOf("") }
     val uploadState by viewModel.propertyUploadState.collectAsState()
-
-    // Payment Mode State
     val paymentModes = listOf("CASH", "CHEQUE", "ONLINE")
     var selectedMode by remember { mutableStateOf("CASH") }
     var referenceNumber by remember { mutableStateOf("") }
 
-    // Collect one-time events (Toast messages)
     LaunchedEffect(Unit) {
         viewModel.investmentStatus.collect { msg ->
             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
             if (msg.contains("Success")) {
-                // Navigate back to Admin Dashboard, clearing the stack
                 navController.navigate("admin_dashboard") {
-                    popUpTo("admin_dashboard") { inclusive = true }
+                    popUpTo("admin_dashboard") {
+                        inclusive = true
+                    }
                 }
             }
         }
@@ -234,7 +246,9 @@ fun AdminInvestmentFormScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -242,42 +256,47 @@ fun AdminInvestmentFormScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Summary Card
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = BrandBlue.copy(alpha = 0.1f)),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    colors = CardDefaults.cardColors(containerColor = BricxBrandBlue.copy(alpha = 0.1f)), // ⚡ UPDATED
+                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Person, null, tint = BrandBlue)
+                            Icon(Icons.Default.Person, null, tint = BricxBrandBlue) // ⚡ UPDATED
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text("Investor", style = MaterialTheme.typography.labelSmall)
-                                Text(viewModel.selectedUser?.name ?: "Unknown User", fontWeight = FontWeight.Bold)
+                                Text(
+                                    viewModel.selectedUser?.name ?: "Unknown User",
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-                        Divider(modifier = Modifier.padding(vertical = 12.dp), color = BrandBlue.copy(alpha = 0.2f))
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = BricxBrandBlue.copy(alpha = 0.2f)
+                        ) // ⚡ UPDATED
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.HomeWork, null, tint = BrandBlue)
+                            Icon(Icons.Default.HomeWork, null, tint = BricxBrandBlue) // ⚡ UPDATED
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text("Property", style = MaterialTheme.typography.labelSmall)
-                                Text(viewModel.selectedProperty?.title ?: "Unknown Property", fontWeight = FontWeight.Bold)
-                                // ⚡ UPDATED: Show Asset ID in Summary
+                                Text(
+                                    viewModel.selectedProperty?.title ?: "Unknown Property",
+                                    fontWeight = FontWeight.Bold
+                                )
                                 if (!viewModel.selectedProperty?.assetId.isNullOrEmpty()) {
                                     Text(
                                         "ID: ${viewModel.selectedProperty?.assetId}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = BrandBlue
-                                    )
+                                        color = BricxBrandBlue
+                                    ) // ⚡ UPDATED
                                 }
                             }
                         }
                     }
                 }
 
-                // Amount Input
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { if (it.all { char -> char.isDigit() }) amount = it },
@@ -286,12 +305,11 @@ fun AdminInvestmentFormScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BrandBlue,
-                        focusedLabelColor = BrandBlue
-                    )
+                        focusedBorderColor = BricxBrandBlue,
+                        focusedLabelColor = BricxBrandBlue
+                    ) // ⚡ UPDATED
                 )
 
-                // Payment Mode Selector
                 Text("Payment Method", fontWeight = FontWeight.SemiBold)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -303,32 +321,29 @@ fun AdminInvestmentFormScreen(
                             onClick = { selectedMode = mode },
                             label = { Text(mode) },
                             leadingIcon = {
-                                if (selectedMode == mode) Icon(Icons.Default.Check, null)
+                                if (selectedMode == mode) Icon(
+                                    Icons.Default.Check,
+                                    null
+                                )
                             }
                         )
                     }
                 }
 
-                // Dynamic Reference Input
                 if (selectedMode != "CASH") {
                     OutlinedTextField(
-                        value = referenceNumber,
-                        onValueChange = { referenceNumber = it },
-                        label = {
-                            Text(if (selectedMode == "CHEQUE") "Cheque Number" else "Transaction ID")
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        value = referenceNumber, onValueChange = { referenceNumber = it },
+                        label = { Text(if (selectedMode == "CHEQUE") "Cheque Number" else "Transaction ID") },
+                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = SuccessGreen,
-                            focusedLabelColor = SuccessGreen
-                        )
+                            focusedBorderColor = BricxSuccessGreen,
+                            focusedLabelColor = BricxSuccessGreen
+                        ) // ⚡ UPDATED
                     )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Submit Button
                 Button(
                     onClick = {
                         if (amount.isNotEmpty()) {
@@ -341,13 +356,17 @@ fun AdminInvestmentFormScreen(
                             Toast.makeText(context, "Enter valid amount", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = uploadState !is UiState.Loading
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxBrandBlue), // ⚡ UPDATED
+                    shape = RoundedCornerShape(12.dp), enabled = uploadState !is UiState.Loading
                 ) {
                     if (uploadState is UiState.Loading) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
                     } else {
                         Text("CONFIRM INVESTMENT", fontWeight = FontWeight.Bold)
                     }

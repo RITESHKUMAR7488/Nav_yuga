@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/MainActivity.kt
 package com.example.mahayuga
 
 import android.os.Bundle
@@ -7,7 +8,8 @@ import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
 import com.example.mahayuga.core.data.local.PreferenceManager
 import com.example.mahayuga.navigation.AppNavigation
-import com.example.mahayuga.ui.theme.NavyugaTheme
+import com.example.mahayuga.navigation.AssetManagerDestinations
+import com.example.mahayuga.ui.theme.MahayugaTheme // ⚡ UPDATED IMPORT
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -24,18 +26,30 @@ class MainActivity : FragmentActivity() {
         val initialDarkMode = preferenceManager.isDarkMode
         val initialLoggedIn = preferenceManager.isLoggedIn
         val userRole = preferenceManager.userRole
+        val lastMode = preferenceManager.lastActiveMode
 
         setContent {
             var isDarkTheme by remember { mutableStateOf(initialDarkMode) }
 
-            // ⚡ FIX: Logged-in users start at Splash (for Biometrics), not Dashboard
             val startDestination = if (initialLoggedIn) {
-                if (userRole == "admin") "admin_dashboard" else "navyuga_splash"
+                when (lastMode) {
+                    "ADMIN" -> "admin_dashboard"
+                    "AM_WORK" -> AssetManagerDestinations.DASHBOARD
+                    "INVESTOR" -> "navyuga_splash"
+                    else -> {
+                        when (userRole) {
+                            "admin" -> "admin_dashboard"
+                            "asset_manager" -> AssetManagerDestinations.DASHBOARD
+                            else -> "navyuga_splash"
+                        }
+                    }
+                }
             } else {
                 "welcome"
             }
 
-            NavyugaTheme(darkTheme = isDarkTheme) {
+            // ⚡ UPDATED THEME NAME
+            MahayugaTheme(darkTheme = isDarkTheme) {
                 AppNavigation(
                     startDestination = startDestination,
                     isDarkTheme = isDarkTheme,

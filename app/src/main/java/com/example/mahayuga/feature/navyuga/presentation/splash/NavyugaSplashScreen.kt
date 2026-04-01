@@ -20,47 +20,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mahayuga.R
 import com.example.mahayuga.core.common.BiometricAuthenticator
-import com.example.mahayuga.core.common.UiState
-import com.example.mahayuga.feature.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun NavyugaSplashScreen(
-    onSplashFinished: () -> Unit,
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    onSplashFinished: () -> Unit
 ) {
-    val currentUserState by profileViewModel.currentUser.collectAsState()
     val alpha = remember { Animatable(0f) }
     val context = LocalContext.current
     val biometricAuth = remember { BiometricAuthenticator(context) }
 
-    val userName = if (currentUserState is UiState.Success) {
-        val fullName = (currentUserState as UiState.Success).data.name
-        if (fullName.isNotBlank()) fullName.trim().substringBefore(" ") else "User"
-    } else "User"
-
     LaunchedEffect(Unit) {
-        // 1. Animate Logo
+        // Animate Logo
         alpha.animateTo(1f, animationSpec = tween(800))
-        delay(1500) // Keep logo visible for 1.5s
+        delay(1500)
 
-        // 2. Trigger Biometrics (if Activity available)
+        // Trigger Biometrics
         val activity = context as? FragmentActivity
         if (activity != null) {
             biometricAuth.authenticate(
                 activity = activity,
-                title = "Unlock Navyuga",
+                title = "Unlock BRICX",
                 onSuccess = { onSplashFinished() },
                 onError = { errorMsg ->
                     Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                    // Optional: You might want to finish the app or allow retry here
                 }
             )
         } else {
-            // Fallback if not fragment activity (shouldn't happen)
             onSplashFinished()
         }
     }
@@ -68,54 +56,39 @@ fun NavyugaSplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A)),
+            .background(Color(0xFF080F18)), // Unified Background
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "Hi $userName!",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                modifier = Modifier.alpha(alpha.value)
-            )
-
-            Spacer(modifier = Modifier.height(90.dp))
-
             Image(
-                painter = painterResource(id = R.drawable.navyuga),
-                contentDescription = null,
+                painter = painterResource(id = R.mipmap.ic_launcher_foreground), // BRICX Logo
+                contentDescription = "BRICX Logo",
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(160.dp)
                     .alpha(alpha.value)
             )
+
             Spacer(modifier = Modifier.height(16.dp))
+
             Text(
-                text = "NAVYUGA",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
-                ),
+                text = "BRICX",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 2.sp,
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.alpha(alpha.value)
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = "Ownership For All",
+                text = "Investing For Tomorrow",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.alpha(alpha.value)
-            )
-
-            Spacer(modifier = Modifier.height(90.dp))
-
-            Text(
-                text = "A New Era Of Real Estate Investing",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
+                color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier.alpha(alpha.value)
             )
         }

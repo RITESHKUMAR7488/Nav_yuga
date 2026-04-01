@@ -1,12 +1,12 @@
 package com.example.mahayuga.feature.admin.presentation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
@@ -14,13 +14,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
+import com.example.mahayuga.feature.auth.data.model.AssetManagerModel
 import com.example.mahayuga.feature.auth.data.model.UserModel
-import com.example.mahayuga.ui.theme.*
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,12 +30,15 @@ fun CreateUserScreen(
     navController: NavController,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    val requestsState by viewModel.requestsState.collectAsState()
+    val investorRequests by viewModel.requestsState.collectAsState()
+    val partnerRequests by viewModel.amRequestsState.collectAsState()
+
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registration Requests") },
+                title = { Text("Approve Requests") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -48,58 +53,136 @@ fun CreateUserScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
 
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-            when (val state = requestsState) {
-                is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                is UiState.Failure -> Text("Error: ${state.message}", color = ErrorRed, modifier = Modifier.align(Alignment.Center))
-                is UiState.Success -> {
-                    val requests = state.data
-                    if (requests.isEmpty()) {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("No Pending Requests", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    } else {
-                        LazyColumn(contentPadding = PaddingValues(16.dp)) {
-                            items(requests) { user ->
-                                RequestItem(
-                                    user = user,
-                                    onApprove = { role -> viewModel.approveUser(user.uid, role) },
-                                    onReject = { viewModel.rejectUser(user.uid) }
-                                )
-                            }
-                        }
-                    }
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = BricxBrandBlue // ⚡ UPDATED
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Investors") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Partners (AM)") }
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                if (selectedTab == 0) {
+                    InvestorList(investorRequests, viewModel)
+                } else {
+                    PartnerList(partnerRequests, viewModel)
                 }
-                else -> {}
             }
         }
     }
 }
 
 @Composable
+fun InvestorList(state: UiState<List<UserModel>>, viewModel: AdminViewModel) {
+    when (state) {
+        is UiState.Loading -> CircularProgressIndicator()
+        is UiState.Failure -> Text("Error: ${state.message}", color = BricxDangerRed) // ⚡ UPDATED
+        is UiState.Success -> {
+            val requests = state.data
+            if (requests.isEmpty()) {
+                Text("No Pending Investor Requests", color = Color.Gray)
+            } else {
+                LazyColumn {
+                    items(requests) { user ->
+                        RequestItem(
+                            title = user.name,
+                            subtitle = "${user.email}\nDOB: ${user.dob}",
+                            onApprove = { role -> viewModel.approveUser(user.uid, role) },
+                            onReject = { viewModel.rejectUser(user.uid) },
+                            isInvestor = true
+                        )
+                    }
+                }
+            }
+        }
+
+        else -> {}
+    }
+}
+
+@Composable
+fun PartnerList(state: UiState<List<AssetManagerModel>>, viewModel: AdminViewModel) {
+    when (state) {
+        is UiState.Loading -> CircularProgressIndicator()
+        is UiState.Failure -> Text("Error: ${state.message}", color = BricxDangerRed) // ⚡ UPDATED
+        is UiState.Success -> {
+            val requests = state.data
+            if (requests.isEmpty()) {
+                Text("No Pending Partner Applications", color = Color.Gray)
+            } else {
+                LazyColumn {
+                    items(requests) { am ->
+                        RequestItem(
+                            title = am.entityLegalName,
+                            subtitle = "Brand: ${am.brandName}\nContact: ${am.contactName} (${am.mobile})\nAUM: ${am.aumRange}",
+                            onApprove = { viewModel.approveAssetManager(am.uid) },
+                            onReject = { viewModel.rejectAssetManager(am.uid) },
+                            isInvestor = false
+                        )
+                    }
+                }
+            }
+        }
+
+        else -> {}
+    }
+}
+
+@Composable
 fun RequestItem(
-    user: UserModel,
+    title: String,
+    subtitle: String,
     onApprove: (String) -> Unit,
-    onReject: () -> Unit
+    onReject: () -> Unit,
+    isInvestor: Boolean
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = BrandBlue)
+                Icon(
+                    imageVector = if (isInvestor) Icons.Default.Person else Icons.Default.Business,
+                    contentDescription = null,
+                    tint = BricxBrandBlue // ⚡ UPDATED
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(user.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(user.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("DOB: ${user.dob}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
@@ -107,12 +190,13 @@ fun RequestItem(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
-                    onClick = { showDialog = true }, // Open Role Selection
+                    onClick = {
+                        if (isInvestor) showDialog = true else onApprove("asset_manager")
+                    },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxSuccessGreen) // ⚡ UPDATED
                 ) {
-                    // ⚡ FIX: Added Modifier.size
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Approve")
                 }
@@ -120,10 +204,9 @@ fun RequestItem(
                 OutlinedButton(
                     onClick = onReject,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = BricxDangerRed) // ⚡ UPDATED
                 ) {
-                    // ⚡ FIX: Added Modifier.size
-                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Reject")
                 }
@@ -131,11 +214,11 @@ fun RequestItem(
         }
     }
 
-    if (showDialog) {
+    if (showDialog && isInvestor) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Select Role") },
-            text = { Text("Approve ${user.name} as:") },
+            text = { Text("Approve as:") },
             confirmButton = {
                 Button(onClick = { onApprove("user"); showDialog = false }) {
                     Text("User")
@@ -144,7 +227,10 @@ fun RequestItem(
             dismissButton = {
                 Button(
                     onClick = { onApprove("admin"); showDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 ) {
                     Text("Admin")
                 }

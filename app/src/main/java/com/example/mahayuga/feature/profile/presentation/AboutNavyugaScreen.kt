@@ -27,20 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mahayuga.R
+import com.example.mahayuga.core.common.BricxTopAppBar // ⚡ IMPORTED COMMON COMPONENT
+import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Navyuga Theme Colors
-private val ScreenBg = Color(0xFF050505)
-private val NavyBlue = Color(0xFF0F172A)
-private val CardBg = Color(0xFF101920) // Dark Slate
-private val BrandBlue = Color(0xFF2979FF)
-private val TextWhite = Color(0xFFFFFFFF)
-private val TextGrey = Color(0xFF94A3B8)
-
-data class StatItem(
-    val value: String,
-    val label: String
-)
+data class StatItem(val value: String, val label: String)
 
 data class Founder(
     val name: String,
@@ -52,17 +43,12 @@ data class Founder(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutNavyugaScreen(
-    onBackClick: () -> Unit
-) {
-    // ⚡ REQUEST 6: Fetch Stats Real-time
+fun AboutNavyugaScreen(onBackClick: () -> Unit) {
     var stats by remember {
         mutableStateOf(
             listOf(
-                StatItem("0", "Registered Users"),
-                StatItem("0", "Property Transactions"),
-                StatItem("0", "User Nationalities"),
-                StatItem("0", "Rental Income Paid"),
+                StatItem("0", "Registered Users"), StatItem("0", "Property Transactions"),
+                StatItem("0", "User Nationalities"), StatItem("0", "Rental Income Paid"),
                 StatItem("0%", "Avg Returns")
             )
         )
@@ -93,45 +79,30 @@ fun AboutNavyugaScreen(
             }
     }
 
-    // 2. Founders Data
     val founders = listOf(
         Founder(
-            name = "Yaman Ondhia",
-            title = "Founder and CEO",
-            description = "“Navyuga is a vision to make Real Assets accessible. Building an infrastructure that enables Asset Managers to digitalise real estate and help investors reach the level of transparency it needs to own a part of the world. The vision is clearly stated in the tagline- Ownership For All”",
-            imageRes = R.drawable.ic_founder,
-            linkedinUrl = "https://www.linkedin.com/in/yaman-ondhia-873310224?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app"
+            "Yaman Ondhia",
+            "Founder and CEO",
+            "“Navyuga is a vision to make Real Assets accessible. Building an infrastructure that enables Asset Managers to digitalise real estate and help investors reach the level of transparency it needs to own a part of the world. The vision is clearly stated in the tagline- Ownership For All”",
+            R.drawable.ic_founder,
+            "https://www.linkedin.com/in/yaman-ondhia"
         ),
         Founder(
-            name = "Eashani Sengupta",
-            title = "Co-Founder and COO",
-            description = "“Navyuga is a technology driven real estate finance infrastructure. It enables asset managers to digitally manage properties, track returns and manage investors. The long term vision is freedom.”",
-            imageRes = R.drawable.ic_cofounder,
-            linkedinUrl = "https://www.linkedin.com/in/eashani-sengupta-2a116a208?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app"
+            "Eashani Sengupta",
+            "Co-Founder and COO",
+            "“Navyuga is a technology driven real estate finance infrastructure. It enables asset managers to digitally manage properties, track returns and manage investors. The long term vision is freedom.”",
+            R.drawable.ic_cofounder,
+            "https://www.linkedin.com/in/eashani-sengupta"
         )
     )
 
     Scaffold(
-        containerColor = NavyBlue,
+        containerColor = BricxBackground, // ⚡ UPDATED
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "About Navyuga",
-                        fontWeight = FontWeight.Bold,
-                        color = TextWhite
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextWhite
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = NavyBlue)
+            // ⚡ REPLACED CUSTOM HEADER WITH BRICX COMMON COMPONENT
+            BricxTopAppBar(
+                title = "About Navyuga",
+                onNavigateBack = onBackClick
             )
         }
     ) { padding ->
@@ -141,13 +112,12 @@ fun AboutNavyugaScreen(
                 .fillMaxSize(),
             contentPadding = PaddingValues(bottom = 40.dp)
         ) {
-            // SECTION 1: NAVYUGA IN NUMBERS
             item {
                 Text(
                     text = "Navyuga in numbers",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhite,
+                    color = BricxTextPrimary, // ⚡ UPDATED
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 12.dp)
                 )
 
@@ -155,21 +125,18 @@ fun AboutNavyugaScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(stats) { stat ->
-                        StatCard(stat)
-                    }
+                    items(stats) { stat -> StatCard(stat) }
                 }
             }
 
             item { Spacer(modifier = Modifier.height(32.dp)) }
 
-            // SECTION 2: MEET THE FOUNDERS
             item {
                 Text(
                     text = "Meet the founders",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhite,
+                    color = BricxTextPrimary, // ⚡ UPDATED
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
             }
@@ -185,7 +152,7 @@ fun AboutNavyugaScreen(
 @Composable
 fun StatCard(stat: StatItem) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = CardBg),
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .width(160.dp)
@@ -202,13 +169,13 @@ fun StatCard(stat: StatItem) {
                 text = stat.value,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = BrandBlue
+                color = BricxBrandBlue // ⚡ UPDATED
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stat.label,
                 style = MaterialTheme.typography.labelSmall,
-                color = TextGrey,
+                color = BricxTextSecondary, // ⚡ UPDATED
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 lineHeight = 14.sp
             )
@@ -221,7 +188,7 @@ fun FounderCard(founder: Founder) {
     val context = LocalContext.current
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = CardBg),
+        colors = CardDefaults.cardColors(containerColor = BricxSurfaceCard), // ⚡ UPDATED
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -273,12 +240,12 @@ fun FounderCard(founder: Founder) {
                     text = founder.name,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhite
+                    color = BricxTextPrimary // ⚡ UPDATED
                 )
                 Text(
                     text = founder.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = BrandBlue,
+                    color = BricxBrandBlue, // ⚡ UPDATED
                     fontWeight = FontWeight.Medium
                 )
 
@@ -287,7 +254,7 @@ fun FounderCard(founder: Founder) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF1E293B), RoundedCornerShape(12.dp))
+                        .background(BricxSurfaceCardLight, RoundedCornerShape(12.dp)) // ⚡ UPDATED
                         .padding(16.dp)
                 ) {
                     Text(
@@ -295,7 +262,7 @@ fun FounderCard(founder: Founder) {
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontStyle = FontStyle.Italic,
                             lineHeight = 22.sp,
-                            color = TextGrey.copy(alpha = 0.9f)
+                            color = BricxTextSecondary.copy(alpha = 0.9f) // ⚡ UPDATED
                         )
                     )
                 }

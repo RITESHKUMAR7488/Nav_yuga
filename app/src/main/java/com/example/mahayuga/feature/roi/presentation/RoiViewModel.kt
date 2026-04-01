@@ -1,6 +1,10 @@
 package com.example.mahayuga.feature.roi.presentation
 
 import androidx.lifecycle.ViewModel
+import com.example.mahayuga.feature.roi.domain.usecase.CalculateCounterOfferUseCase
+import com.example.mahayuga.feature.roi.domain.usecase.CalculateRoiUseCase
+import com.example.mahayuga.feature.roi.domain.usecase.GenerateCashFlowUseCase
+import com.example.mahayuga.feature.roi.domain.usecase.RoiCalculationInput
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,7 +13,11 @@ import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
-class RoiViewModel @Inject constructor() : ViewModel() {
+class RoiViewModel @Inject constructor(
+    private val calculateRoiUseCase: CalculateRoiUseCase,
+    private val generateCashFlowUseCase: GenerateCashFlowUseCase,
+    private val calculateCounterOfferUseCase: CalculateCounterOfferUseCase
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RoiState())
     val uiState: StateFlow<RoiState> = _uiState.asStateFlow()
@@ -117,7 +125,7 @@ class RoiViewModel @Inject constructor() : ViewModel() {
             4 -> {
                 val baseCheck =
                     if (state.isBuyerMode) state.acquisitionCost.isNotBlank() else state.targetRoi.isNotBlank()
-                baseCheck && state.registryInput.isNotBlank() // ⚡ Registry is now mandatory
+                baseCheck && state.registryInput.isNotBlank()
             }
 
             else -> false
@@ -126,63 +134,35 @@ class RoiViewModel @Inject constructor() : ViewModel() {
 
     private fun calculateResults() {
         val s = _uiState.value
-        val monthlyRent = s.monthlyRent.toDoubleOrNull() ?: 0.0
-        val grossAnnualRent = monthlyRent * 12
-        val monthlyTax = s.propertyTaxMonthly.toDoubleOrNull() ?: 0.0
-        val annualTax = monthlyTax * 12
-        val monthlyMaint = s.maintenanceCost.toDoubleOrNull() ?: 0.0
-        val annualMaint = if (s.isMaintenanceByLandlord) monthlyMaint * 12 else 0.0
-        val netAnnualIncome = grossAnnualRent - annualTax - annualMaint
-        val otherCharges =
-            (s.legalCharges.toDoubleOrNull() ?: 0.0) + (s.electricityCharges.toDoubleOrNull()
-                ?: 0.0) + (s.dgCharges.toDoubleOrNull()
-                ?: 0.0) + (s.fireFightingCharges.toDoubleOrNull() ?: 0.0)
+        val input = RoiCalculationInput(
+            isBuyerMode = s.isBuyerMode,
+            monthlyRent = s.monthlyRent.toDoubleOrNull() ?: 0.0,
+            propertyTaxMonthly = s.propertyTaxMonthly.toDoubleOrNull() ?: 0.0,
+            maintenanceCost = s.maintenanceCost.toDoubleOrNull() ?: 0.0,
+            isMaintenanceByLandlord = s.isMaintenanceByLandlord,
+            legalCharges = s.legalCharges.toDoubleOrNull() ?: 0.0,
+            electricityCharges = s.electricityCharges.toDoubleOrNull() ?: 0.0,
+            dgCharges = s.dgCharges.toDoubleOrNull() ?: 0.0,
+            fireFightingCharges = s.fireFightingCharges.toDoubleOrNull() ?: 0.0,
+            registryPercent = s.registryInput.toDoubleOrNull() ?: 0.0,
+            acquisitionCost = s.acquisitionCost.toDoubleOrNull() ?: 0.0,
+            targetRoiVal = s.targetRoi.toDoubleOrNull() ?: 0.0
+        )
 
-        // ⚡ Manual Registry Logic
-        val regPercent = s.registryInput.toDoubleOrNull() ?: 0.0
+        val result = calculateRoiUseCase(input)
 
-        if (s.isBuyerMode) {
-            val acquisitionBase = s.acquisitionCost.toDoubleOrNull() ?: 0.0
-            val registry = acquisitionBase * (regPercent / 100)
-            val totalInvestment = acquisitionBase + registry + otherCharges
-            val roi = if (totalInvestment > 0) (netAnnualIncome / totalInvestment) * 100 else 0.0
-            _uiState.update {
-                it.copy(
-                    calculatedRoi = roi,
-                    totalInvestment = totalInvestment,
-                    netAnnualIncome = netAnnualIncome,
-                    grossAnnualRent = grossAnnualRent,
-                    totalPropertyTaxAnnually = annualTax,
-                    registryCost = registry,
-                    gstAmount = monthlyRent * 0.18,
-                    totalOtherCharges = otherCharges
-                )
-            }
-        } else {
-            val targetRoiVal = s.targetRoi.toDoubleOrNull() ?: 0.0
-            if (targetRoiVal > 0) {
-                // Reverse calc: Net Income / ROI = Total Investment needed
-                val requiredTotalInvestment = netAnnualIncome / (targetRoiVal / 100)
-                // Total = Base + (Base * Reg%) + Other
-                // Total - Other = Base * (1 + Reg%)
-                // Base = (Total - Other) / (1 + Reg%)
-                val baseSellingPrice =
-                    (requiredTotalInvestment - otherCharges) / (1 + (regPercent / 100))
-                val registry = baseSellingPrice * (regPercent / 100)
-                _uiState.update {
-                    it.copy(
-                        calculatedSellingPrice = baseSellingPrice,
-                        calculatedRoi = targetRoiVal,
-                        totalInvestment = requiredTotalInvestment,
-                        netAnnualIncome = netAnnualIncome,
-                        grossAnnualRent = grossAnnualRent,
-                        totalPropertyTaxAnnually = annualTax,
-                        registryCost = registry,
-                        gstAmount = monthlyRent * 0.18,
-                        totalOtherCharges = otherCharges
-                    )
-                }
-            }
+        _uiState.update {
+            it.copy(
+                calculatedRoi = result.calculatedRoi,
+                calculatedSellingPrice = result.calculatedSellingPrice,
+                totalInvestment = result.totalInvestment,
+                netAnnualIncome = result.netAnnualIncome,
+                grossAnnualRent = result.grossAnnualRent,
+                totalPropertyTaxAnnually = result.totalPropertyTaxAnnually,
+                registryCost = result.registryCost,
+                gstAmount = result.gstAmount,
+                totalOtherCharges = result.totalOtherCharges
+            )
         }
     }
 
@@ -192,28 +172,28 @@ class RoiViewModel @Inject constructor() : ViewModel() {
         val startRent = s.monthlyRent.toDoubleOrNull() ?: 0.0
         val escPercent = s.escalationPercent.toDoubleOrNull() ?: 0.0
         val escFreq = s.escalationYears.toIntOrNull() ?: 100
-        val expenses = (s.propertyTaxMonthly.toDoubleOrNull()
-            ?: 0.0) * 12 + if (s.isMaintenanceByLandlord) (s.maintenanceCost.toDoubleOrNull()
-            ?: 0.0) * 12 else 0.0
+        val annualExpenses = (s.propertyTaxMonthly.toDoubleOrNull() ?: 0.0) * 12 +
+                if (s.isMaintenanceByLandlord) (s.maintenanceCost.toDoubleOrNull() ?: 0.0) * 12 else 0.0
 
-        val cashFlowList = ArrayList<CashFlowRow>()
-        var currentMonthlyRent = startRent
-
-        for (year in 1..years) {
-            if (year > 1 && (year - 1) % escFreq == 0) currentMonthlyRent += currentMonthlyRent * (escPercent / 100)
-            val annualRent = currentMonthlyRent * 12
-            cashFlowList.add(CashFlowRow(year, annualRent, expenses, annualRent - expenses))
-        }
+        val cashFlowList = generateCashFlowUseCase(
+            years = years,
+            startRent = startRent,
+            escPercent = escPercent,
+            escFreq = escFreq,
+            annualExpenses = annualExpenses
+        )
         _uiState.update { it.copy(cashFlows = cashFlowList) }
     }
 
     fun calculateCounterOffer(desiredRoi: Double) {
         val s = _uiState.value
-        if (desiredRoi <= 0) return
-        val regPercent = s.registryInput.toDoubleOrNull() ?: 0.0
-        // Same reverse logic as seller mode
-        val counterPrice =
-            ((s.netAnnualIncome / (desiredRoi / 100)) - s.totalOtherCharges) / (1 + (regPercent / 100))
+        val registryPercent = s.registryInput.toDoubleOrNull() ?: 0.0
+        val counterPrice = calculateCounterOfferUseCase(
+            netAnnualIncome = s.netAnnualIncome,
+            totalOtherCharges = s.totalOtherCharges,
+            registryPercent = registryPercent,
+            desiredRoi = desiredRoi
+        )
         _uiState.update { it.copy(counterOfferPrice = counterPrice, counterOfferRoi = desiredRoi) }
     }
 }

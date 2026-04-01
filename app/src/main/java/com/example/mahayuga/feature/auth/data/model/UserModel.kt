@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/auth/data/model/UserModel.kt
 package com.example.mahayuga.feature.auth.data.model
 
 import com.google.firebase.firestore.PropertyName
@@ -7,7 +8,6 @@ data class UserModel(
     val email: String = "",
     val name: String = "",
     val dob: String = "",
-    // ⚡ ADDED PHONE FIELD
     val phone: String = "",
     val role: String = "user",
 
@@ -25,5 +25,8 @@ data class UserModel(
     val isApproved: Boolean = false,
 
     val likedProperties: List<String> = emptyList(),
-    val investedProperties: List<String> = emptyList()
+    val investedProperties: List<String> = emptyList(),
+
+    // ⚡ NEW: Firestore array to store Watchlisted MarketQuote Symbols
+    val watchlistedAssets: List<String> = emptyList()
 )

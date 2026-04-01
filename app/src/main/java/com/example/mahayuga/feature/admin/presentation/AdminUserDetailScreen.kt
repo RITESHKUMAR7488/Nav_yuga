@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,9 +25,7 @@ import androidx.navigation.NavController
 import com.example.mahayuga.core.common.UiState
 import com.example.mahayuga.feature.admin.data.model.InvestmentModel
 import com.example.mahayuga.feature.auth.data.model.UserModel
-import com.example.mahayuga.ui.theme.BrandBlue
-import com.example.mahayuga.ui.theme.ErrorRed
-import com.example.mahayuga.ui.theme.SuccessGreen
+import com.example.mahayuga.ui.theme.* // ⚡ UPDATED IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +34,6 @@ fun AdminUserDetailScreen(
     userId: String,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    // Load data on entry
     LaunchedEffect(userId) {
         viewModel.fetchInvestmentsForUser(userId)
     }
@@ -46,32 +42,34 @@ fun AdminUserDetailScreen(
     val usersState by viewModel.usersState.collectAsState()
     val investmentsState by viewModel.selectedUserInvestments.collectAsState()
 
-    // Find the specific user from the list
     val user = (usersState as? UiState.Success)?.data?.find { it.uid == userId }
 
-    // State for Delete Warning Dialog
     var showDeleteUserDialog by remember { mutableStateOf(false) }
 
-    // Listen for delete operations
     LaunchedEffect(Unit) {
         viewModel.deleteOperationState.collect { state ->
-            when(state) {
+            when (state) {
                 is UiState.Success -> {
                     Toast.makeText(context, state.data, Toast.LENGTH_SHORT).show()
                     if (state.data.contains("User")) {
-                        navController.popBackStack() // Go back if user deleted
+                        navController.popBackStack()
                     }
                 }
+
                 is UiState.Failure -> {
                     Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 }
+
                 else -> {}
             }
         }
     }
 
     if (user == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        Box(
+            Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) { CircularProgressIndicator() }
         return
     }
 
@@ -90,21 +88,26 @@ fun AdminUserDetailScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.padding(innerPadding).padding(16.dp),
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. User Profile Card
             item {
                 UserProfileCard(user)
             }
 
-            // 2. Danger Zone (Delete User)
             item {
                 Button(
                     onClick = { showDeleteUserDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed.copy(alpha = 0.1f), contentColor = ErrorRed),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BricxDangerRed.copy(alpha = 0.1f),
+                        contentColor = BricxDangerRed
+                    ), // ⚡ UPDATED
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
                 ) {
                     Icon(Icons.Default.DeleteForever, null)
                     Spacer(Modifier.width(8.dp))
@@ -112,7 +115,7 @@ fun AdminUserDetailScreen(
                 }
             }
 
-            item { Divider(color = MaterialTheme.colorScheme.outlineVariant) }
+            item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
             item {
                 Text(
@@ -122,32 +125,43 @@ fun AdminUserDetailScreen(
                 )
             }
 
-            // 3. Investment List
             when (investmentsState) {
                 is UiState.Loading -> item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 is UiState.Success -> {
-                    val investments = (investmentsState as UiState.Success<List<InvestmentModel>>).data
+                    val investments =
+                        (investmentsState as UiState.Success<List<InvestmentModel>>).data
                     if (investments.isEmpty()) {
                         item {
-                            Text("No investments found for this user.", color = Color.Gray, modifier = Modifier.padding(8.dp))
+                            Text(
+                                "No investments found for this user.",
+                                color = Color.Gray,
+                                modifier = Modifier.padding(8.dp)
+                            )
                         }
                     } else {
                         items(investments) { inv ->
-                            AdminInvestmentItem(inv, onDelete = { viewModel.deleteSingleInvestment(inv) })
+                            AdminInvestmentItem(
+                                inv,
+                                onDelete = { viewModel.deleteSingleInvestment(inv) })
                         }
                     }
                 }
-                is UiState.Failure -> item { Text("Failed to load investments", color = ErrorRed) }
+
+                is UiState.Failure -> item {
+                    Text(
+                        "Failed to load investments",
+                        color = BricxDangerRed
+                    )
+                } // ⚡ UPDATED
                 else -> {}
             }
         }
     }
 
-    // DELETE CONFIRMATION DIALOG
     if (showDeleteUserDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteUserDialog = false },
-            icon = { Icon(Icons.Default.Warning, null, tint = ErrorRed) },
+            icon = { Icon(Icons.Default.Warning, null, tint = BricxDangerRed) }, // ⚡ UPDATED
             title = { Text("Delete User?") },
             text = {
                 Text("This action CANNOT be undone.\n\nIt will:\n1. Revert all funding from properties.\n2. Delete all investment records.\n3. Delete the user profile forever.")
@@ -158,7 +172,7 @@ fun AdminUserDetailScreen(
                         viewModel.deleteUserPermanently(user.uid)
                         showDeleteUserDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxDangerRed) // ⚡ UPDATED
                 ) {
                     Text("Yes, Delete Everything")
                 }
@@ -173,30 +187,56 @@ fun AdminUserDetailScreen(
 @Composable
 fun UserProfileCard(user: UserModel) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.5f
+            )
+        ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = CircleShape, color = BrandBlue, modifier = Modifier.size(50.dp)) {
+                Surface(
+                    shape = CircleShape,
+                    color = BricxBrandBlue,
+                    modifier = Modifier.size(50.dp)
+                ) { // ⚡ UPDATED
                     Box(contentAlignment = Alignment.Center) {
-                        Text(user.name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            user.name.take(1).uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
                     }
                 }
                 Spacer(Modifier.width(16.dp))
                 Column {
-                    Text(user.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        user.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Email, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                        Icon(
+                            Icons.Default.Email,
+                            null,
+                            modifier = Modifier.size(14.dp),
+                            tint = Color.Gray
+                        )
                         Spacer(Modifier.width(4.dp))
-                        Text(user.email, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Text(
+                            user.email,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
                     }
                 }
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                StatItem("Total Invested", "₹${user.totalInvestment}", BrandBlue)
-                StatItem("Current Value", "₹${user.currentValue}", SuccessGreen)
+                StatItem("Total Invested", "₹${user.totalInvestment}", BricxBrandBlue) // ⚡ UPDATED
+                StatItem("Current Value", "₹${user.currentValue}", BricxSuccessGreen) // ⚡ UPDATED
             }
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -210,8 +250,17 @@ fun UserProfileCard(user: UserModel) {
 @Composable
 fun StatItem(label: String, value: String, color: Color) {
     Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = color)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
     }
 }
 
@@ -230,9 +279,11 @@ fun AdminInvestmentItem(inv: InvestmentModel, onDelete: () -> Unit) {
         ) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(inv.propertyTitle, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-
-                    // ⚡ NEW: Display Asset ID if available
+                    Text(
+                        inv.propertyTitle,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     if (inv.assetId.isNotEmpty()) {
                         Spacer(Modifier.width(8.dp))
                         Text(
@@ -245,11 +296,23 @@ fun AdminInvestmentItem(inv: InvestmentModel, onDelete: () -> Unit) {
 
                 Spacer(Modifier.height(4.dp))
 
-                Text("Invested: ₹${inv.amount}", color = SuccessGreen, style = MaterialTheme.typography.bodySmall)
-                Text("Ref: ${inv.paymentReference}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                Text(
+                    "Invested: ₹${inv.amount}",
+                    color = BricxSuccessGreen,
+                    style = MaterialTheme.typography.bodySmall
+                ) // ⚡ UPDATED
+                Text(
+                    "Ref: ${inv.paymentReference}",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
             IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(Icons.Default.DeleteForever, "Delete Investment", tint = ErrorRed)
+                Icon(
+                    Icons.Default.DeleteForever,
+                    "Delete Investment",
+                    tint = BricxDangerRed
+                ) // ⚡ UPDATED
             }
         }
     }
@@ -260,11 +323,18 @@ fun AdminInvestmentItem(inv: InvestmentModel, onDelete: () -> Unit) {
             title = { Text("Reverse Investment?") },
             text = { Text("This will subtract ₹${inv.amount} from the property funding and the user's portfolio.") },
             confirmButton = {
-                Button(onClick = { onDelete(); showDeleteDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)) {
+                Button(
+                    onClick = { onDelete(); showDeleteDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = BricxDangerRed)
+                ) { // ⚡ UPDATED
                     Text("Reverse Transaction")
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                }) { Text("Cancel") }
+            }
         )
     }
 }

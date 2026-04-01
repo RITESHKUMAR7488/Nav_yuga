@@ -1,34 +1,40 @@
+// main/java/com/example/mahayuga/ui/theme/Color.kt
 package com.example.mahayuga.ui.theme
 
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// --- DARK MODE PALETTE (Midnight Blue) ---
-val MidnightBg = Color(0xFF0B0E14)
-val MidnightCard = Color(0xFF151A23)
-val MidnightSurface = Color(0xFF1C2331)
-val TextWhiteHigh = Color(0xDEFFFFFF)
-val TextWhiteMedium = Color(0x99FFFFFF)
-val TextWhiteLow = Color(0x61FFFFFF)
+// BRICX Universal Brand Palette
+val BricxBackground = Color(0xFF080F18)
+val BricxSurfaceCard = Color(0xFF0F1722)
+val BricxSurfaceCardLight = Color(0xFF1E293B) // Used for elevated dialogs/cards
 
-// --- LIGHT MODE PALETTE (Clean Fintech) ---
-val LightBg = Color(0xFFF5F7FA)         // Very light gray/blue tint
-val LightCard = Color(0xFFFFFFFF)       // Pure white cards
-val LightSurface = Color(0xFFEEEFF2)    // Input fields background
-val TextBlackHigh = Color(0xFF1A1C1E)   // Near black for headings
-val TextBlackMedium = Color(0xFF44474E) // Dark gray for body
-val TextBlackLow = Color(0xFF74777F)
+// Text Colors
+val BricxTextPrimary = Color(0xFFFFFFFF)
+val BricxTextSecondary = Color(0xFF8B9BB4)
+val BricxTextMuted = Color(0xFFC5C5D2)
 
-// --- SHARED ACCENTS ---
-val BrandBlue = Color(0xFF2979FF)       // Primary Action Color
-val CyanAccent = Color(0xFF00E5FF)      // Dark Mode Highlight
-val DeepBlueAccent = Color(0xFF0044CC)  // Light Mode Highlight (Darker for contrast)
-val ErrorRed = Color(0xFFFF3B30)
-val SuccessGreen = Color(0xFF00E676)
-val BorderStroke = Color(0xFF2C3B4E)
-val LightBorderStroke = Color(0xFFE0E2E5)
+// Accent & Status Colors
+val BricxBrandTeal = Color(0xFF14B8A6)
+val BricxBrandBlue = Color(0xFF2979FF)
+val BricxDangerRed = Color(0xFFE53935)
+val BricxSuccessGreen = Color(0xFF00E676)
+val BricxWarningOrange = Color(0xFFFFB300)
 
-// Gradients
-val PrimaryGradient = Brush.horizontalGradient(
-    colors = listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))
-)
+// Borders & Dividers
+val BricxBorder = Color(0xFF1A2A40)
+val BricxBorderLight = Color(0xFF3E3E3E)
+val BricxDivider = Color.White.copy(alpha = 0.1f)
+
+// Chart Colors
+val ChartPeach = Color(0xFFFFD1C1)
+val ChartBlue = BricxBrandBlue
+val ChartTeal = BricxBrandTeal
+val ChartPurple = Color(0xFF7C4DFF)
+
+// Material Theme Mappings (For standard Material3 components)
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)
