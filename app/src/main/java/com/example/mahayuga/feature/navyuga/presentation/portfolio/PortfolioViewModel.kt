@@ -15,7 +15,9 @@ import javax.inject.Inject
 
 data class NewPortfolioHolding(
     val id: String,
+    val symbol: String, // Added symbol for navigation
     val name: String,
+    val location: String, // Added location field
     val type: String,
     val invested: String,
     val totalUnits: String,
@@ -67,25 +69,27 @@ class PortfolioViewModel @Inject constructor() : ViewModel() {
     }
 
     private fun loadPortfolioData() {
-        // COROUTINE EXPLANATION:
-        // viewModelScope.launch starts a coroutine tied to this ViewModel's lifecycle.
-        // The delay(800) simulates a network call to your broker API.
-        // This makes the code robust because if the user leaves the screen, the call is cleanly cancelled,
-        // and the UI thread remains completely unblocked while waiting for the data.
+        // COROUTINES IN ACTION:
+        // Function: loadPortfolioData()
+        // Usage: viewModelScope.launch { ... }
+        // Why it makes the code good: Instead of blocking the Main (UI) thread while waiting for
+        // network data, the coroutine suspends execution silently. The UI stays fully responsive,
+        // animations remain smooth, and if the user navigates away, the ViewModel safely cancels
+        // the coroutine, preventing memory leaks and crashes.
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            // Simulate broker API network delay
+            // Simulate broker API network delay non-blockingly
             delay(800)
 
             _uiState.value = NewPortfolioState(
                 isLoading = false,
-                portfolioValue = "₹48,800 Cr",
+                portfolioValue = "₹48,800",
                 dailyChangeValue = "₹346.47",
                 dailyChangePercent = "+0.54%",
                 isPositiveChange = true,
-                smReitPercent = 25f, // Adjusted for visual demonstration
-                reitPercent = 75f,
+                smReitPercent = 35f,
+                reitPercent = 65f,
                 propertiesCount = "02",
                 totalInvested = "₹5,001",
                 totalSqFt = "14",
@@ -95,31 +99,35 @@ class PortfolioViewModel @Inject constructor() : ViewModel() {
                 holdings = listOf(
                     NewPortfolioHolding(
                         id = "1",
-                        name = "Mumbai Tech Park",
+                        symbol = "PSTITANIA",
+                        name = "PropShare Titania",
+                        location = "Mumbai, Maharashtra",
                         type = "SM REIT",
-                        invested = "₹1",
-                        totalUnits = "4",
-                        pricePerUnit = "₹1",
-                        buyPrice = "₹1",
-                        currentPrice = "₹1",
-                        currentValue = "₹18,407.95",
-                        growth = "20%",
+                        invested = "₹10,000",
+                        totalUnits = "10",
+                        pricePerUnit = "₹1,000",
+                        buyPrice = "₹1,000",
+                        currentPrice = "₹1,150",
+                        currentValue = "₹11,500.00",
+                        growth = "15%",
                         isPositiveGrowth = true,
                         priceHistory = listOf(100f, 105f, 103f, 110f, 115f, 112f, 120f)
                     ),
                     NewPortfolioHolding(
                         id = "2",
+                        symbol = "EMBASSY",
                         name = "Embassy Tech Village",
+                        location = "Bengaluru, Karnataka",
                         type = "REIT",
                         invested = "₹5,000",
                         totalUnits = "10",
                         pricePerUnit = "₹500",
                         buyPrice = "₹500",
-                        currentPrice = "₹550",
-                        currentValue = "₹5,500.00",
-                        growth = "10%",
-                        isPositiveGrowth = true,
-                        priceHistory = listOf(500f, 490f, 510f, 520f, 515f, 530f, 550f)
+                        currentPrice = "₹480",
+                        currentValue = "₹4,800.00",
+                        growth = "-4%",
+                        isPositiveGrowth = false,
+                        priceHistory = listOf(500f, 490f, 510f, 495f, 485f, 490f, 480f)
                     )
                 ),
                 positions = listOf(
@@ -131,15 +139,6 @@ class PortfolioViewModel @Inject constructor() : ViewModel() {
                         quantity = "50",
                         orderPrice = "₹135.50",
                         status = "PENDING"
-                    ),
-                    PortfolioPosition(
-                        id = "P2",
-                        name = "Mindspace Business Parks",
-                        type = "REIT",
-                        orderType = "SELL",
-                        quantity = "20",
-                        orderPrice = "₹340.00",
-                        status = "EXECUTING"
                     )
                 )
             )

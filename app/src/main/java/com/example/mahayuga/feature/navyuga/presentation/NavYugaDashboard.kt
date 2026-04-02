@@ -95,7 +95,8 @@ fun NavYugaDashboard(
             composable("ay_watchlist") {
                 WatchlistScreen(
                     onNavigateToSmReitDetail = { id -> rootNavController.navigate("property_detail/$id") },
-                    onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") }
+                    onNavigateToReitDetail = { id -> rootNavController.navigate("trade_asset_detail/$id") },
+                    onNavigateToSearch = { rootNavController.navigate("search_screen") }
                 )
             }
             composable("ay_portfolio") { PortfolioScreen() }

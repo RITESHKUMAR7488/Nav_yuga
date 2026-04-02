@@ -30,6 +30,7 @@ val ChartPeach = Color(0xFFFFD1C1)
 val ChartBlue = BricxBrandBlue
 val ChartTeal = BricxBrandTeal
 val ChartPurple = Color(0xFF7C4DFF)
+val ChartSkyBlue = Color(0xFF0EA5E9) // Added for high-contrast pie chart slices
 
 // Material Theme Mappings (For standard Material3 components)
 val Purple80 = Color(0xFFD0BCFF)
