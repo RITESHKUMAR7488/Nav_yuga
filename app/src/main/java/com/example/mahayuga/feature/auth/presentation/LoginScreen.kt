@@ -1,3 +1,4 @@
+// main/java/com/example/mahayuga/feature/auth/presentation/LoginScreen.kt
 package com.example.mahayuga.feature.auth.presentation
 
 import androidx.compose.foundation.layout.*
@@ -19,10 +20,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.mahayuga.core.common.* // IMPORTS
+import com.example.mahayuga.core.common.*
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.navigation.AssetManagerDestinations
-import com.example.mahayuga.ui.theme.* // IMPORTS
+import com.example.mahayuga.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,14 +38,13 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // State handling omitted for brevity, same as before...
-
     val isLoading = loginState is com.example.mahayuga.core.common.UiState.Loading
 
     Scaffold(
         containerColor = BricxBackground,
         topBar = {
-            BricxTopAppBar(title = "BRICX", onNavigateBack = { navController.popBackStack() })
+            // ⚡ Changed Title to BricX
+            BricxTopAppBar(title = "BricX", onNavigateBack = { navController.popBackStack() })
         }
     ) { padding ->
         Column(
@@ -65,7 +65,6 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(32.dp))
 
-            // USING OUR NEW TEXT FIELD COMPONENT
             BricxTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -75,7 +74,6 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // USING OUR NEW TEXT FIELD COMPONENT
             BricxTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -87,7 +85,6 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // USING OUR NEW BUTTON COMPONENT
             if (isLoading) {
                 CircularProgressIndicator(color = BricxBrandTeal)
             } else {

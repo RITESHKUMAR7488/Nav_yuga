@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -19,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.em
 import androidx.navigation.NavController
+import com.example.mahayuga.R
 import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
 import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
 import kotlinx.coroutines.delay
@@ -41,7 +44,7 @@ fun WelcomeScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BricxBackground) // ⚡ UPDATED
+            .background(BricxBackground)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -52,7 +55,7 @@ fun WelcomeScreen(navController: NavController) {
             text = displayedText,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
-                color = BricxTextPrimary // ⚡ UPDATED
+                color = BricxTextPrimary
             ),
             textAlign = TextAlign.Center
         )
@@ -64,8 +67,17 @@ fun WelcomeScreen(navController: NavController) {
             enter = fadeIn(tween(1000)) + slideInVertically()
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // ⚡ Added BricX Logo image here
+                Image(
+                    painter = painterResource(id = R.drawable.bricx),
+                    contentDescription = "BricX Logo",
+                    modifier = Modifier.size(100.dp) // Adjust size as needed
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    text = "BRICX",
+                    text = "BricX", // ⚡ Changed BRICX to BricX
                     color = Color.White,
                     fontSize = 56.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -76,7 +88,7 @@ fun WelcomeScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "SMART REAL ESTATE INVESTING",
-                    color = BricxBrandTeal, // ⚡ UPDATED
+                    color = BricxBrandTeal,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.1.em,
@@ -100,14 +112,13 @@ fun WelcomeScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // ⚡ REPLACED RAW BUTTONS WITH BRICX COMPONENTS
                 BricxPrimaryButton(
                     text = "Log in",
                     onClick = { navController.navigate("login") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    backgroundColor = BricxTextPrimary // White button for primary action here
+                    backgroundColor = BricxBrandTeal
                 )
 
                 BricxPrimaryButton(
@@ -116,7 +127,7 @@ fun WelcomeScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    backgroundColor = BricxSurfaceCardLight // Secondary action look
+                    backgroundColor = BricxSurfaceCardLight
                 )
             }
         }

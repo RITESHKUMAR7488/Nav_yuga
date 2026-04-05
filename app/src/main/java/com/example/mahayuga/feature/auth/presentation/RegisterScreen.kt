@@ -26,8 +26,8 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.mahayuga.core.common.* // ⚡ IMPORTED COMMON COMPONENTS
-import com.example.mahayuga.ui.theme.* // ⚡ IMPORTED BRICX THEME
+import com.example.mahayuga.core.common.*
+import com.example.mahayuga.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,7 +49,8 @@ fun RegisterScreen(
 
     var selectedPlanet by remember { mutableStateOf("Earth") }
     var isPlanetExpanded by remember { mutableStateOf(false) }
-    val planets = listOf("Mars", "Earth", "Venus")
+    // ⚡ Updated to include "Venus (Out of reach)"
+    val planets = listOf("Mars", "Earth", "Venus (Out of reach)")
     var planetError by remember { mutableStateOf<String?>(null) }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -70,8 +71,9 @@ fun RegisterScreen(
     Scaffold(
         containerColor = BricxBackground,
         topBar = {
+            // ⚡ Changed Title to BricX
             BricxTopAppBar(
-                title = "BRICX",
+                title = "BricX",
                 onNavigateBack = { navController.popBackStack() }
             )
         }
