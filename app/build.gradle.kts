@@ -95,5 +95,8 @@ dependencies {
     implementation(libs.androidx.material.icons.extended.v175)
     implementation(libs.androidx.biometric)
     implementation(libs.ycharts)
+    // Video Playback (ExoPlayer Media3)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 }
 

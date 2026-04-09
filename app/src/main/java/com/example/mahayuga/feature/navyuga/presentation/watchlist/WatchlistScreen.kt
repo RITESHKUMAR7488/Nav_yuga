@@ -2,10 +2,13 @@
 package com.example.mahayuga.feature.navyuga.presentation.watchlist
 
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -25,8 +28,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mahayuga.core.common.GroupedHeaderIcons
 import com.example.mahayuga.feature.navyuga.presentation.home.LiveAssetTradingCard
 import com.example.mahayuga.ui.theme.*
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WatchlistScreen(
     onNavigateToSmReitDetail: (String) -> Unit,
@@ -36,10 +40,12 @@ fun WatchlistScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
     val tabs = listOf("All", "SM REITs", "REITs")
 
-    // Connects the app bar scroll behavior to the scaffold
+    // FIXED: Properly initialized pagerState linked to the size of the tabs
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -87,9 +93,6 @@ fun WatchlistScreen(
             }
         }
     ) { paddingValues ->
-        // The column takes the dynamic padding from the Scaffold.
-        // As the TopAppBar collapses, paddingValues.calculateTopPadding() decreases,
-        // causing the TabRow to slide up and stick to the top.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,12 +100,12 @@ fun WatchlistScreen(
                 .background(BricxBackground)
         ) {
             TabRow(
-                selectedTabIndex = selectedTab,
+                selectedTabIndex = pagerState.currentPage,
                 containerColor = BricxBackground,
                 contentColor = BricxTextPrimary,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
                         color = BricxBrandTeal
                     )
                 },
@@ -110,14 +113,18 @@ fun WatchlistScreen(
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
                         text = {
                             Text(
                                 title,
                                 fontSize = 16.sp,
-                                color = if (selectedTab == index) BricxTextPrimary else BricxTextSecondary,
-                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                                color = if (pagerState.currentPage == index) BricxTextPrimary else BricxTextSecondary,
+                                fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     )
@@ -139,58 +146,64 @@ fun WatchlistScreen(
                     Text(text = uiState.error ?: "Error Fetching Data", color = BricxDangerRed)
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    val smReitSymbols = listOf("PSTITANIA", "PSPLATINA")
-                    val displayedAssets = when (selectedTab) {
-                        1 -> uiState.watchlistedQuotes.filter { smReitSymbols.contains(it.symbol) }
-                        2 -> uiState.watchlistedQuotes.filterNot { smReitSymbols.contains(it.symbol) }
-                        else -> uiState.watchlistedQuotes
-                    }
+                // FIXED: Wrapped the lists in a HorizontalPager to actually handle the swipe gestures
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        val smReitSymbols = listOf("PSTITANIA", "PSPLATINA")
+                        val displayedAssets = when (page) {
+                            1 -> uiState.watchlistedQuotes.filter { smReitSymbols.contains(it.symbol) }
+                            2 -> uiState.watchlistedQuotes.filterNot { smReitSymbols.contains(it.symbol) }
+                            else -> uiState.watchlistedQuotes
+                        }
 
-                    if (displayedAssets.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("No assets in watchlist.", color = BricxTextSecondary)
-                            }
-                        }
-                    } else {
-                        items(displayedAssets, key = { it.symbol }) { quote ->
-                            val isSmReit = smReitSymbols.contains(quote.symbol)
-                            LiveAssetTradingCard(
-                                quote = quote,
-                                isSmReit = isSmReit,
-                                isSaved = true,
-                                onCardClick = {
-                                    if (isSmReit) onNavigateToSmReitDetail(quote.symbol)
-                                    else onNavigateToReitDetail(quote.symbol)
-                                },
-                                onSaveClick = {
-                                    viewModel.removeWatchlist(quote.symbol)
-                                    Toast.makeText(
-                                        context,
-                                        "Removed from Watchlist",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                onShareClick = {
-                                    Toast.makeText(
-                                        context,
-                                        "Sharing Property...",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                        if (displayedAssets.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("No assets in watchlist.", color = BricxTextSecondary)
                                 }
-                            )
+                            }
+                        } else {
+                            items(displayedAssets, key = { it.symbol }) { quote ->
+                                val isSmReit = smReitSymbols.contains(quote.symbol)
+                                LiveAssetTradingCard(
+                                    quote = quote,
+                                    isSmReit = isSmReit,
+                                    isSaved = true,
+                                    onCardClick = {
+                                        if (isSmReit) onNavigateToSmReitDetail(quote.symbol)
+                                        else onNavigateToReitDetail(quote.symbol)
+                                    },
+                                    onSaveClick = {
+                                        viewModel.removeWatchlist(quote.symbol)
+                                        Toast.makeText(
+                                            context,
+                                            "Removed from Watchlist",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onShareClick = {
+                                        Toast.makeText(
+                                            context,
+                                            "Sharing Property...",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+                            item { Spacer(Modifier.height(100.dp)) }
                         }
-                        item { Spacer(Modifier.height(100.dp)) }
                     }
                 }
             }

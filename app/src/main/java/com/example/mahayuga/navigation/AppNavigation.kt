@@ -24,6 +24,7 @@ import com.example.mahayuga.feature.assetmanager.presentation.AssetManagerDashbo
 import com.example.mahayuga.feature.auth.data.model.UserModel
 import com.example.mahayuga.feature.auth.presentation.AssetManagerOnboardingScreen
 import com.example.mahayuga.feature.auth.presentation.AuthViewModel
+import com.example.mahayuga.feature.auth.presentation.BrokerSelectionScreen // ⚡ REQUIRED IMPORT
 import com.example.mahayuga.feature.auth.presentation.LoginScreen
 import com.example.mahayuga.feature.auth.presentation.RegisterScreen
 import com.example.mahayuga.feature.auth.presentation.WelcomeScreen
@@ -57,6 +58,18 @@ fun AppNavigation(
         composable("welcome") { WelcomeScreen(navController = navController) }
         composable("login") { LoginScreen(navController = navController) }
         composable("register") { RegisterScreen(navController = navController) }
+
+        // ⚡ RE-ADDED MISSING BROKER ROUTE HERE
+        composable("broker_selection") {
+            BrokerSelectionScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate("navyuga_splash") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                }
+            )
+        }
 
         // Asset Manager Onboarding
         composable(AssetManagerDestinations.ONBOARDING_INTRO) {
@@ -255,7 +268,6 @@ fun AppNavigation(
     }
 }
 
-// ⚡ ADDED MISSING PLACEHOLDER COMPOSABLE
 @Composable
 fun PlaceholderScreen(message: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

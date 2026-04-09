@@ -49,7 +49,6 @@ fun RegisterScreen(
 
     var selectedPlanet by remember { mutableStateOf("Earth") }
     var isPlanetExpanded by remember { mutableStateOf(false) }
-    // ⚡ Updated to include "Venus (Out of reach)"
     val planets = listOf("Mars", "Earth", "Venus (Out of reach)")
     var planetError by remember { mutableStateOf<String?>(null) }
 
@@ -57,11 +56,12 @@ fun RegisterScreen(
     val datePickerState = rememberDatePickerState()
     val context = LocalContext.current
 
+    // ⚡ UPDATED: Routes to broker selection on success instead of login
     LaunchedEffect(registerState) {
         if (registerState is UiState.Success) {
             val successMessage = (registerState as UiState.Success<String>).data
             Toast.makeText(context, successMessage, Toast.LENGTH_LONG).show()
-            navController.navigate("login") { popUpTo("welcome") { inclusive = true } }
+            navController.navigate("broker_selection") { popUpTo("welcome") { inclusive = true } }
         }
     }
 
@@ -71,7 +71,6 @@ fun RegisterScreen(
     Scaffold(
         containerColor = BricxBackground,
         topBar = {
-            // ⚡ Changed Title to BricX
             BricxTopAppBar(
                 title = "BricX",
                 onNavigateBack = { navController.popBackStack() }

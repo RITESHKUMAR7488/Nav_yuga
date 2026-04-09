@@ -1,6 +1,7 @@
 // main/java/com/example/mahayuga/feature/auth/presentation/LoginScreen.kt
 package com.example.mahayuga.feature.auth.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -32,18 +34,48 @@ fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val loginState by viewModel.loginState.collectAsState()
-    var showWorkspaceDialog by remember { mutableStateOf(false) }
-    var currentUser by remember { mutableStateOf<UserModel?>(null) }
+    val context = LocalContext.current // ⚡ Added context for Toasts
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     val isLoading = loginState is com.example.mahayuga.core.common.UiState.Loading
 
+    // ⚡ Handles both Success Navigation AND Failure Errors now
+    LaunchedEffect(loginState) {
+        when (loginState) {
+            is UiState.Success -> {
+                val user = (loginState as UiState.Success<UserModel>).data
+                when (user.role) {
+                    "asset_manager" -> {
+                        navController.navigate(AssetManagerDestinations.DASHBOARD) {
+                            popUpTo("welcome") { inclusive = true }
+                        }
+                    }
+                    "admin" -> {
+                        navController.navigate("admin_dashboard") {
+                            popUpTo("welcome") { inclusive = true }
+                        }
+                    }
+                    else -> {
+                        navController.navigate("broker_selection") {
+                            popUpTo("welcome") { inclusive = true }
+                        }
+                    }
+                }
+            }
+            is UiState.Failure -> {
+                // If wrong password, show the error!
+                val errorMessage = (loginState as UiState.Failure).message
+                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+            }
+            else -> {}
+        }
+    }
+
     Scaffold(
         containerColor = BricxBackground,
         topBar = {
-            // ⚡ Changed Title to BricX
             BricxTopAppBar(title = "BricX", onNavigateBack = { navController.popBackStack() })
         }
     ) { padding ->

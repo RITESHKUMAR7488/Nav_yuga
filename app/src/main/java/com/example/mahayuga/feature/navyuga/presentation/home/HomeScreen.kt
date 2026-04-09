@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -77,13 +76,11 @@ fun HomeScreen(
     val tabs = listOf("SM REITS", "REITS")
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     var isTickerOpen by remember { mutableStateOf(false) }
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-    var isRefreshing by remember { mutableStateOf(false) }
-    val pullToRefreshState = rememberPullToRefreshState()
 
+    // FIXED: Removed the conflicting ScrollBehavior that was swallowing scroll events
+    // because BricxHubTopAppBar is a static component and cannot collapse.
     Scaffold(
         containerColor = BricxBackground,
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             Column(modifier = Modifier.background(BricxBackground)) {
                 BricxHubTopAppBar(
@@ -126,9 +123,11 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
                     color = BricxBrandTeal,
@@ -136,19 +135,27 @@ fun HomeScreen(
                 )
             } else {
                 HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                    val pullToRefreshState = rememberPullToRefreshState()
+                    var isRefreshing by remember { mutableStateOf(false) }
+
+                    // FIXED: Applied Modifier.fillMaxSize() to ensure bounds are strictly passed to LazyColumn
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
                         onRefresh = {
                             coroutineScope.launch {
-                                isRefreshing = true; delay(1000); isRefreshing = false
+                                isRefreshing = true
+                                delay(1000)
+                                isRefreshing = false
                             }
                         },
-                        state = pullToRefreshState
+                        state = pullToRefreshState,
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         val listState = rememberLazyListState()
                         LaunchedEffect(scrollToTopTrigger) {
                             if (scrollToTopTrigger) listState.animateScrollToItem(0)
                         }
+
                         LazyColumn(
                             state = listState,
                             modifier = Modifier
@@ -166,9 +173,8 @@ fun HomeScreen(
                                 uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
                             val smReitsList = listOf("PSTITANIA", "PSPLATINA")
                             val filteredAssets =
-                                if (page == 0) allAssets.filter { smReitsList.contains(it.symbol) } else allAssets.filterNot {
-                                    smReitsList.contains(it.symbol)
-                                }
+                                if (page == 0) allAssets.filter { smReitsList.contains(it.symbol) }
+                                else allAssets.filterNot { smReitsList.contains(it.symbol) }
 
                             if (filteredAssets.isEmpty()) {
                                 item {
@@ -190,9 +196,8 @@ fun HomeScreen(
                                     LiveAssetTradingCard(
                                         quote = quote, isSmReit = page == 0, isSaved = isSaved,
                                         onCardClick = {
-                                            if (page == 0) onNavigateToSmReitDetail(
-                                                quote.symbol
-                                            ) else onNavigateToReitDetail(quote.symbol)
+                                            if (page == 0) onNavigateToSmReitDetail(quote.symbol)
+                                            else onNavigateToReitDetail(quote.symbol)
                                         },
                                         onSaveClick = {
                                             viewModel.toggleWatchlist(quote.symbol)
@@ -217,6 +222,8 @@ fun HomeScreen(
                 }
             }
 
+            // FIXED: Removed the overarching Box overlay that intercepted touch events.
+            // Scrim and Ticker are now properly aligned directly onto the parent.
             AnimatedVisibility(visible = isTickerOpen, enter = fadeIn(), exit = fadeOut()) {
                 Box(
                     modifier = Modifier
@@ -229,145 +236,142 @@ fun HomeScreen(
                 )
             }
 
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-                if (!isTickerOpen) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronLeft,
-                        contentDescription = "Open Ticker",
-                        tint = BricxTextPrimary.copy(alpha = 0.6f),
-                        modifier = Modifier
-                            .size(36.dp)
-                            .padding(end = 4.dp)
-                            .pointerInput(Unit) {
-                                detectHorizontalDragGestures { _, dragAmount ->
-                                    if (dragAmount < -5) {
-                                        isTickerOpen = true
-                                    }
-                                }
+            if (!isTickerOpen) {
+                Icon(
+                    imageVector = Icons.Default.ChevronLeft,
+                    contentDescription = "Open Ticker",
+                    tint = BricxTextPrimary.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(36.dp)
+                        .padding(end = 4.dp)
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures { _, dragAmount ->
+                                if (dragAmount < -5) isTickerOpen = true
                             }
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { isTickerOpen = true }
-                    )
-                }
+                        }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { isTickerOpen = true }
+                )
+            }
 
-                AnimatedVisibility(
-                    visible = isTickerOpen,
-                    enter = slideInHorizontally(initialOffsetX = { it }),
-                    exit = slideOutHorizontally(targetOffsetX = { it })
+            AnimatedVisibility(
+                visible = isTickerOpen,
+                enter = slideInHorizontally(initialOffsetX = { it }),
+                exit = slideOutHorizontally(targetOffsetX = { it }),
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(130.dp)
+                        .fillMaxHeight()
+                        .padding(bottom = 100.dp)
+                        .background(
+                            color = BricxSurfaceCard.copy(alpha = 0.98f),
+                            shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = Color.White.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                        )
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures { _, dragAmount ->
+                                if (dragAmount > 10) isTickerOpen = false
+                            }
+                        }
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .width(130.dp)
-                            .fillMaxHeight()
-                            .padding(bottom = 100.dp)
-                            .background(
-                                color = BricxSurfaceCard.copy(alpha = 0.98f),
-                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "Markets",
+                                color = BricxTextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
                             )
-                            .border(
-                                width = 1.dp,
-                                color = Color.White.copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                            Text(
+                                "By BricX",
+                                color = BricxBrandTeal,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
                             )
-                            .pointerInput(Unit) {
-                                detectHorizontalDragGestures { _, dragAmount ->
-                                    if (dragAmount > 10) {
-                                        isTickerOpen = false
-                                    }
-                                }
-                            }
-                    ) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    "Markets",
-                                    color = BricxTextPrimary,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    "By BricX",
-                                    color = BricxBrandTeal,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            HorizontalDivider(color = BricxBorder.copy(alpha = 0.8f))
-                            val tickerListState = rememberLazyListState()
-                            LaunchedEffect(isTickerOpen) {
-                                if (isTickerOpen) {
-                                    while (isActive) {
-                                        tickerListState.animateScrollBy(
-                                            value = 60f,
-                                            animationSpec = tween(
-                                                durationMillis = 1000,
-                                                easing = LinearEasing
-                                            )
+                        }
+                        HorizontalDivider(color = BricxBorder.copy(alpha = 0.8f))
+
+                        val tickerListState = rememberLazyListState()
+                        LaunchedEffect(isTickerOpen) {
+                            if (isTickerOpen) {
+                                while (isActive) {
+                                    tickerListState.animateScrollBy(
+                                        value = 60f,
+                                        animationSpec = tween(
+                                            durationMillis = 1000,
+                                            easing = LinearEasing
                                         )
-                                    }
+                                    )
                                 }
                             }
-                            val tickerQuotes =
-                                uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
-                            LazyColumn(
-                                state = tickerListState,
-                                modifier = Modifier.fillMaxSize(),
-                                userScrollEnabled = false,
-                                contentPadding = PaddingValues(vertical = 16.dp)
-                            ) {
-                                if (tickerQuotes.isNotEmpty()) {
-                                    items(10000) { index ->
-                                        val quote = tickerQuotes[index % tickerQuotes.size]
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Text(
-                                                quote.name.split(",")[0].take(10)
-                                                    .uppercase(Locale.ROOT),
-                                                color = BricxTextPrimary,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            RealtimeFlickerText(
-                                                text = "₹${
-                                                    String.format(
-                                                        Locale.US,
-                                                        "%.2f",
-                                                        quote.currentPrice
-                                                    )
-                                                }",
-                                                currentValue = quote.currentPrice,
-                                                defaultColor = BricxTextPrimary,
-                                                textStyle = TextStyle(fontSize = 12.sp)
-                                            )
-                                            Text(
-                                                "${if (quote.isPositive) "+" else ""}${
-                                                    String.format(
-                                                        Locale.US,
-                                                        "%.2f",
-                                                        quote.percentageChange
-                                                    )
-                                                }%",
-                                                color = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
-                                        }
+                        }
+
+                        val tickerQuotes =
+                            uiState.tickerQuotes.filterNot { it.symbol == "^NSEI" || it.symbol == "^BSESN" }
+                        LazyColumn(
+                            state = tickerListState,
+                            modifier = Modifier.fillMaxSize(),
+                            userScrollEnabled = false,
+                            contentPadding = PaddingValues(vertical = 16.dp)
+                        ) {
+                            if (tickerQuotes.isNotEmpty()) {
+                                items(10000) { index ->
+                                    val quote = tickerQuotes[index % tickerQuotes.size]
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            quote.name.split(",")[0].take(10)
+                                                .uppercase(Locale.ROOT),
+                                            color = BricxTextPrimary,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        RealtimeFlickerText(
+                                            text = "₹${
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.2f",
+                                                    quote.currentPrice
+                                                )
+                                            }",
+                                            currentValue = quote.currentPrice,
+                                            defaultColor = BricxTextPrimary,
+                                            textStyle = TextStyle(fontSize = 12.sp)
+                                        )
+                                        Text(
+                                            "${if (quote.isPositive) "+" else ""}${
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.2f",
+                                                    quote.percentageChange
+                                                )
+                                            }%",
+                                            color = if (quote.isPositive) BricxBrandTeal else BricxWarningOrange,
+                                            fontSize = 11.sp, fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
                                     }
                                 }
                             }
@@ -504,8 +508,7 @@ fun LiveAssetTradingCard(
                 Column {
                     RealtimeFlickerText(
                         text = "₹${String.format(Locale.US, "%,.2f", quote.currentPrice)}",
-                        currentValue = quote.currentPrice,
-                        defaultColor = BricxTextPrimary,
+                        currentValue = quote.currentPrice, defaultColor = BricxTextPrimary,
                         textStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {

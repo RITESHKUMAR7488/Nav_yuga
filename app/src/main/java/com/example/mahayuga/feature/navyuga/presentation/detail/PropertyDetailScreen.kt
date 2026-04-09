@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,14 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -49,7 +48,7 @@ fun PropertyDetailScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.state.collectAsState()
-    val coroutineScope = rememberCoroutineScope() // Coroutine scope
+    val coroutineScope = rememberCoroutineScope()
 
     var isSaved by remember { mutableStateOf(false) }
     var isNse by remember { mutableStateOf(true) }
@@ -106,13 +105,18 @@ fun PropertyDetailScreen(
                 val formattedPrice =
                     if (property.totalValuation.startsWith("₹")) property.totalValuation else "₹${property.totalValuation}"
 
-                Column(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+
                     // Fixed Header
-                    Column(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
                         Text(
                             text = property.title,
                             color = BricxTextPrimary,
@@ -175,9 +179,7 @@ fun PropertyDetailScreen(
                                 selected = pagerState.currentPage == index,
                                 onClick = {
                                     coroutineScope.launch {
-                                        pagerState.animateScrollToPage(
-                                            index
-                                        )
+                                        pagerState.animateScrollToPage(index)
                                     }
                                 },
                                 text = {
@@ -201,6 +203,35 @@ fun PropertyDetailScreen(
                             when (page) {
                                 0 -> { // ESTATE TAB
                                     item {
+                                        LazyRow(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 16.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            contentPadding = PaddingValues(horizontal = 16.dp)
+                                        ) {
+                                            // ⚡ Updated to use Real Unsplash Commercial Real Estate Images
+                                            val propertyImages = listOf(
+                                                "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop",
+                                                "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop",
+                                                "https://images.unsplash.com/photo-1572025442646-866d16c84a54?q=80&w=800&auto=format&fit=crop",
+                                                "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?q=80&w=800&auto=format&fit=crop"
+                                            )
+                                            items(propertyImages.size) { index ->
+                                                AsyncImage(
+                                                    model = propertyImages[index],
+                                                    contentDescription = "Property Media",
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier
+                                                        .width(280.dp)
+                                                        .height(180.dp)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    item {
                                         Column(modifier = Modifier.padding(16.dp)) {
                                             Text(
                                                 "Property Details",
@@ -210,7 +241,6 @@ fun PropertyDetailScreen(
                                             )
                                             Spacer(modifier = Modifier.height(12.dp))
 
-                                            // USING OUR NEW GRID COMPONENT
                                             DetailGrid(
                                                 listOf(
                                                     "SM REIT Type" to "Commercial Grade-A",
@@ -232,7 +262,6 @@ fun PropertyDetailScreen(
                                             )
                                             Spacer(modifier = Modifier.height(12.dp))
 
-                                            // USING OUR NEW GRID COMPONENT
                                             DetailGrid(
                                                 listOf(
                                                     "Tenants" to property.tenantName.ifEmpty { "Multiple" },
@@ -248,78 +277,161 @@ fun PropertyDetailScreen(
                                 1 -> { // FINANCE TAB
                                     item {
                                         Column(modifier = Modifier.padding(16.dp)) {
-                                            // The Graph
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .height(200.dp)
-                                                    .background(BricxSurfaceCard, RoundedCornerShape(12.dp))
-                                                    .border(1.dp, BricxBorder, RoundedCornerShape(12.dp))
+                                                    .background(
+                                                        BricxSurfaceCard,
+                                                        RoundedCornerShape(12.dp)
+                                                    )
+                                                    .border(
+                                                        1.dp,
+                                                        BricxBorder,
+                                                        RoundedCornerShape(12.dp)
+                                                    )
                                                     .padding(12.dp)
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Fullscreen,
                                                     contentDescription = "Expand Graph",
                                                     tint = BricxTextSecondary,
-                                                    modifier = Modifier.align(Alignment.TopEnd).size(24.dp).clickable {
-                                                        Toast.makeText(context, "Full Graph", Toast.LENGTH_SHORT).show()
-                                                    }
+                                                    modifier = Modifier
+                                                        .align(Alignment.TopEnd)
+                                                        .size(24.dp)
+                                                        .clickable {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Full Graph",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
                                                 )
 
                                                 Canvas(
-                                                    modifier = Modifier.fillMaxSize().padding(end = 40.dp, top = 20.dp, bottom = 20.dp)
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .padding(
+                                                            end = 40.dp,
+                                                            top = 20.dp,
+                                                            bottom = 20.dp
+                                                        )
                                                 ) {
                                                     val path = Path()
-                                                    val points = listOf(420f, 415f, 425f, 430f, 428f, 435f, 440f, 438f, 445f, 450f)
+                                                    val points = listOf(
+                                                        420f,
+                                                        415f,
+                                                        425f,
+                                                        430f,
+                                                        428f,
+                                                        435f,
+                                                        440f,
+                                                        438f,
+                                                        445f,
+                                                        450f
+                                                    )
                                                     val stepX = size.width / (points.size - 1)
 
                                                     points.forEachIndexed { index, yValue ->
                                                         val x = index * stepX
-                                                        val normalizedY = 1f - ((yValue - 400f) / 100f).coerceIn(0f, 1f)
+                                                        val normalizedY =
+                                                            1f - ((yValue - 400f) / 100f).coerceIn(
+                                                                0f,
+                                                                1f
+                                                            )
                                                         val y = normalizedY * size.height
-                                                        if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                                                        if (index == 0) path.moveTo(
+                                                            x,
+                                                            y
+                                                        ) else path.lineTo(x, y)
                                                     }
-                                                    drawPath(path, color = BricxBrandTeal, style = Stroke(
-                                                        width = 4f
-                                                    )
+                                                    drawPath(
+                                                        path,
+                                                        color = BricxBrandTeal,
+                                                        style = Stroke(
+                                                            width = 4f
+                                                        )
                                                     )
                                                 }
 
                                                 Column(
-                                                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(top = 20.dp, bottom = 20.dp),
+                                                    modifier = Modifier
+                                                        .align(Alignment.CenterEnd)
+                                                        .fillMaxHeight()
+                                                        .padding(top = 20.dp, bottom = 20.dp),
                                                     verticalArrangement = Arrangement.SpaceBetween,
                                                     horizontalAlignment = Alignment.End
                                                 ) {
-                                                    Text("₹500", color = BricxTextSecondary, fontSize = 10.sp)
-                                                    Text("₹450", color = BricxTextSecondary, fontSize = 10.sp)
-                                                    Text("₹400", color = BricxTextSecondary, fontSize = 10.sp)
+                                                    Text(
+                                                        "₹500",
+                                                        color = BricxTextSecondary,
+                                                        fontSize = 10.sp
+                                                    )
+                                                    Text(
+                                                        "₹450",
+                                                        color = BricxTextSecondary,
+                                                        fontSize = 10.sp
+                                                    )
+                                                    Text(
+                                                        "₹400",
+                                                        color = BricxTextSecondary,
+                                                        fontSize = 10.sp
+                                                    )
                                                 }
                                             }
 
                                             Spacer(modifier = Modifier.height(12.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceEvenly
+                                            ) {
                                                 listOf("1D", "1W", "1M", "1Y", "5Y").forEach { tf ->
-                                                    Text(text = tf, color = if (tf == "1D") BricxBrandTeal else BricxTextSecondary, fontWeight = if (tf == "1D") FontWeight.Bold else FontWeight.Normal)
+                                                    Text(
+                                                        text = tf,
+                                                        color = if (tf == "1D") BricxBrandTeal else BricxTextSecondary,
+                                                        fontWeight = if (tf == "1D") FontWeight.Bold else FontWeight.Normal
+                                                    )
                                                 }
                                             }
 
                                             Spacer(modifier = Modifier.height(24.dp))
-                                            // The 4 Restored Sections
                                             ExpandableFinanceSection(
                                                 title = "Performance",
-                                                data = listOf("Today's Low" to "₹995.00", "Today's High" to "₹1,015.00", "Open" to "₹1,000.00", "Prev. Close" to "₹998.50", "Volume" to "450K", "Avg. Traded Price" to "₹1,005.20")
+                                                data = listOf(
+                                                    "Today's Low" to "₹995.00",
+                                                    "Today's High" to "₹1,015.00",
+                                                    "Open" to "₹1,000.00",
+                                                    "Prev. Close" to "₹998.50",
+                                                    "Volume" to "450K",
+                                                    "Avg. Traded Price" to "₹1,005.20"
+                                                )
                                             )
                                             ExpandableFinanceSection(
                                                 title = "Market Fundamentals",
-                                                data = listOf("Market Cap" to "₹1,200 Cr", "P/E Ratio" to "18.5", "P/B Ratio" to "1.1", "Dividend Yield" to "${property.roi}%")
+                                                data = listOf(
+                                                    "Market Cap" to "₹1,200 Cr",
+                                                    "P/E Ratio" to "18.5",
+                                                    "P/B Ratio" to "1.1",
+                                                    "Dividend Yield" to "${property.roi}%"
+                                                )
                                             )
                                             ExpandableFinanceSection(
                                                 title = "Financials (Q3)",
-                                                data = listOf("Revenue" to "₹850 Cr", "Net Profit" to "₹210 Cr", "EBITDA Margin" to "82%", "Debt to Equity" to "0.35")
+                                                data = listOf(
+                                                    "Revenue" to "₹850 Cr",
+                                                    "Net Profit" to "₹210 Cr",
+                                                    "EBITDA Margin" to "82%",
+                                                    "Debt to Equity" to "0.35"
+                                                )
                                             )
                                             ExpandableFinanceSection(
                                                 title = "Shareholding Pattern",
-                                                data = listOf("Promoters" to "15.2%", "FIIs" to "32.4%", "DIIs" to "45.1%", "Public" to "7.3%")
+                                                data = listOf(
+                                                    "Promoters" to "15.2%",
+                                                    "FIIs" to "32.4%",
+                                                    "DIIs" to "45.1%",
+                                                    "Public" to "7.3%"
+                                                )
                                             )
                                         }
                                     }

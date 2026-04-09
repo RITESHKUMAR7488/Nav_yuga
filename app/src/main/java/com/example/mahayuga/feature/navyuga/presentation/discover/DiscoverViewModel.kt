@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
-// DATA MODELS
 data class FlashVideo(
     val id: String,
     val title: String,
@@ -16,7 +15,8 @@ data class FlashVideo(
     val authorName: String,
     val likesCount: Int,
     val commentsCount: Int,
-    val thumbnailUrl: String, // Added Thumbnail
+    val mp4Url: String,
+    val thumbnailUrl: String,
     val isLiked: Boolean = false,
     val isSaved: Boolean = false
 )
@@ -29,7 +29,8 @@ data class LongVideo(
     val duration: String,
     val views: String,
     val postedTime: String,
-    val thumbnailUrl: String, // Added Thumbnail
+    val mp4Url: String,
+    val thumbnailUrl: String,
     val isPlayingPreview: Boolean = false
 )
 
@@ -40,15 +41,8 @@ data class DiscoverState(
     val topBannerUrl: String = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80",
     val flashes: List<FlashVideo> = emptyList(),
     val longVideos: List<LongVideo> = emptyList(),
-
-    // Search specific state
     val searchQuery: String = "",
-    val searchSuggestions: List<String> = listOf(
-        "Top Asset Managers",
-        "Commercial Real Estate",
-        "SM REIT Regulations",
-        "Dividend Strategies"
-    ),
+    val searchSuggestions: List<String> = listOf("Top Asset Managers", "Commercial Real Estate", "SM REIT Regulations", "Dividend Strategies"),
     val searchResults: List<Any> = emptyList()
 )
 
@@ -58,95 +52,83 @@ class DiscoverViewModel @Inject constructor() : ViewModel() {
     private val _uiState = MutableStateFlow(DiscoverState())
     val uiState: StateFlow<DiscoverState> = _uiState.asStateFlow()
 
-    // Added high-quality Unsplash real estate & business thumbnails
+    // 100% Reliable Google-hosted HTTPS MP4 testing URLs
     private val allFlashes = listOf(
         FlashVideo(
-            "f1",
-            "Why SM REITs are Booming",
-            "A quick dive into the regulatory changes making SM REITs the hottest asset class.",
-            "Bricx Daily",
-            1240,
-            89,
-            "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80"
+            id = "f1",
+            title = "Real Estate Investing",
+            description = "The number one rule you must follow before buying your first property.",
+            authorName = "Bricx Daily",
+            likesCount = 1240,
+            commentsCount = 89,
+            mp4Url = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+            thumbnailUrl = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80"
         ),
         FlashVideo(
-            "f2",
-            "Mumbai vs Bangalore CRE",
-            "Which city offers better yields for commercial real estate investors right now?",
-            "Property Insights",
-            856,
-            42,
-            "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80"
+            id = "f2",
+            title = "Commercial Yields",
+            description = "Which city offers better yields for commercial real estate investors right now?",
+            authorName = "Property Insights",
+            likesCount = 856,
+            commentsCount = 42,
+            mp4Url = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+            thumbnailUrl = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80"
         ),
         FlashVideo(
-            "f3",
-            "Understanding Cap Rates",
-            "Stop guessing. Here is the exact formula to calculate capitalization rates.",
-            "Finance Guru",
-            3200,
-            210,
-            "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?auto=format&fit=crop&q=80"
+            id = "f3",
+            title = "Why REITs are Booming",
+            description = "A quick dive into the regulatory changes making SM REITs the hottest asset class.",
+            authorName = "Finance Guru",
+            likesCount = 3200,
+            commentsCount = 210,
+            mp4Url = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+            thumbnailUrl = "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?auto=format&fit=crop&q=80"
         ),
         FlashVideo(
-            "f4",
-            "Top 3 Mistakes to Avoid",
-            "Don't lose money on your first fractional investment. Watch this.",
-            "Invest Smart",
-            150,
-            12,
-            "https://images.unsplash.com/photo-1572025442646-866d16c84a54?auto=format&fit=crop&q=80"
-        ),
-        FlashVideo(
-            "f5",
-            "Nexus Select Trust Review",
-            "A 60-second breakdown of India's first retail REIT.",
-            "REIT Tracker",
-            940,
-            65,
-            "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80"
+            id = "f4",
+            title = "Avoid these 3 Mistakes",
+            description = "Don't lose money on your first fractional investment. Watch this.",
+            authorName = "Invest Smart",
+            likesCount = 150,
+            commentsCount = 12,
+            mp4Url = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            thumbnailUrl = "https://images.unsplash.com/photo-1572025442646-866d16c84a54?auto=format&fit=crop&q=80"
         )
     )
 
     private val allLongVideos = listOf(
         LongVideo(
-            "l1",
-            "Complete Guide to Fractional Real Estate",
-            "Bricx Education",
-            "₹5,000 Cr",
-            "12:45",
-            "15K views",
-            "2 days ago",
-            "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80"
+            id = "l1",
+            title = "Complete Guide to Real Estate Investment Trusts (REITs)",
+            authorName = "Bricx Education",
+            aum = "₹5,000 Cr",
+            duration = "12:45",
+            views = "15K views",
+            postedTime = "2 days ago",
+            mp4Url = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            thumbnailUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80"
         ),
         LongVideo(
-            "l2",
-            "Interview with Mindspace REIT CEO",
-            "Market Movers",
-            "₹28,000 Cr",
-            "45:20",
-            "8.2K views",
-            "1 week ago",
-            "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80"
+            id = "l2",
+            title = "Mindspace Business Parks REIT - Full Analysis",
+            authorName = "Market Movers",
+            aum = "₹28,000 Cr",
+            duration = "45:20",
+            views = "8.2K views",
+            postedTime = "1 week ago",
+            mp4Url = "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            thumbnailUrl = "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80"
         ),
         LongVideo(
-            "l3",
-            "Tax Implications of REIT Dividends",
-            "Tax Simplified",
-            "N/A",
-            "08:15",
-            "22K views",
-            "3 weeks ago",
-            "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80"
-        ),
-        LongVideo(
-            "l4",
-            "Building a Passive Income Portfolio",
-            "Wealth Builders",
-            "N/A",
-            "18:30",
-            "5K views",
-            "1 day ago",
-            "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80"
+            id = "l3",
+            title = "Fractional Real Estate Investing in India",
+            authorName = "Wealth Builders",
+            aum = "N/A",
+            duration = "18:30",
+            views = "5K views",
+            postedTime = "1 day ago",
+            mp4Url = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            thumbnailUrl = "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80"
         )
     )
 
@@ -187,8 +169,7 @@ class DiscoverViewModel @Inject constructor() : ViewModel() {
 
         if (lowercaseQuery.isNotBlank()) {
             results.addAll(_uiState.value.flashes.filter {
-                it.title.lowercase().contains(lowercaseQuery) || it.description.lowercase()
-                    .contains(lowercaseQuery)
+                it.title.lowercase().contains(lowercaseQuery) || it.description.lowercase().contains(lowercaseQuery)
             })
             results.addAll(_uiState.value.longVideos.filter {
                 it.title.lowercase().contains(lowercaseQuery)
